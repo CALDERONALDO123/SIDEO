@@ -26,6 +26,14 @@ Notas importantes:
 - El arranque en producción debe escuchar el puerto que Render expone en `PORT` (por ejemplo con Gunicorn `--bind 0.0.0.0:$PORT`). Si no, Render suele mostrar `HTTP ERROR 502`.
 - Variables mínimas: `DJANGO_SECRET_KEY`, `DJANGO_DEBUG=false`. Render suele proveer `RENDER_EXTERNAL_HOSTNAME` automáticamente.
 
+### Superusuario sin Shell (Render Free)
+
+Si tu plan no permite abrir Shell, puedes crear el superusuario automáticamente configurando estas variables de entorno y redeployando:
+
+- `DJANGO_SUPERUSER_USERNAME`
+- `DJANGO_SUPERUSER_PASSWORD`
+- `DJANGO_SUPERUSER_EMAIL` (opcional)
+
 ## Asistente IA (OpenRouter)
 
 Este proyecto incluye un "Asistente IA" en el Dashboard del análisis CBA que genera un resumen técnico de decisión.
