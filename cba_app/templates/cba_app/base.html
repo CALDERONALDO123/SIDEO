@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'cba_app/style.css' %}?v={% now 'U' %}">
+    <link rel="stylesheet" href="{% static 'cba_app/style.css' %}">
 
     {# Tailwind + Flowbite (solo para UI del panel/dashboard). Preflight OFF para no resetear CSS existente. #}
     {% if user.is_authenticated %}
@@ -83,7 +83,7 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <script src="{% static 'cba_app/sideo.js' %}?v={% now 'U' %}"></script>
+    <script src="{% static 'cba_app/sideo.js' %}"></script>
     {% if user.is_authenticated %}
         <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.js" defer></script>
     {% endif %}

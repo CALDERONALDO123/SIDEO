@@ -34,5 +34,5 @@
 
 {% block extra_js %}
     {{ latest_items|json_script:"homeDashboardPayload" }}
-    <script src="{% static 'cba_app/home.js' %}?v={% now 'U' %}" defer></script>
+    <script src="{% static 'cba_app/home.js' %}" defer></script>
 {% endblock %}

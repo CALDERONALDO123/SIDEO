@@ -14,6 +14,8 @@ from pathlib import Path
 import os
 import importlib.util
 
+from django.core.exceptions import ImproperlyConfigured
+
 try:
     import dj_database_url  # type: ignore
 except Exception:  # pragma: no cover
@@ -88,8 +90,20 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
 ]
 
-if _module_available("whitenoise"):
+# En producción (DEBUG=False) necesitamos servir estáticos. En Render, lo más simple es WhiteNoise.
+# Si WhiteNoise no está instalado, preferimos fallar explícitamente (en vez de servir la web sin CSS/JS).
+if not DEBUG:
+    try:
+        import whitenoise  # noqa: F401
+    except Exception as exc:  # pragma: no cover
+        raise ImproperlyConfigured(
+            "WhiteNoise es requerido cuando DJANGO_DEBUG=false. "
+            "Instala dependencias con `pip install -r requirements.txt`."
+        ) from exc
+
     MIDDLEWARE.append('whitenoise.middleware.WhiteNoiseMiddleware')
+    # Fallback: permite servir desde finders si collectstatic no se ejecutó por alguna razón.
+    WHITENOISE_USE_FINDERS = True
 
 MIDDLEWARE += [
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -185,8 +199,7 @@ STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 if not DEBUG:
-    if _module_available("whitenoise"):
-        STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Media files (uploads)
 MEDIA_URL = '/media/'
