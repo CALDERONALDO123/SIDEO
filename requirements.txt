@@ -3,3 +3,12 @@ asgiref==3.11.1
 sqlparse==0.5.5
 tzdata==2025.3
 pypdfium2==5.5.0
+
+# Producción (Render)
+gunicorn
+whitenoise
+dj-database-url
+psycopg[binary]
+
+# Media (Cloudinary)
+django-cloudinary-storage

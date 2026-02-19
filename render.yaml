@@ -1,0 +1,33 @@
+databases:
+  - name: sideo-db
+    plan: free
+    databaseName: sideo
+    user: sideo
+
+services:
+  - type: web
+    name: sideo
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
+    startCommand: gunicorn cba_project.wsgi:application --log-file -
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.11
+      - key: DJANGO_DEBUG
+        value: "false"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_ALLOWED_HOSTS
+        value: ""
+      - key: DJANGO_CSRF_TRUSTED_ORIGINS
+        value: ""
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sideo-db
+          property: connectionString
+      # Configurar manualmente en Render:
+      # - CLOUDINARY_URL
+      # - OPENROUTER_API_KEY
+      # - POWER_BI_DASHBOARD_URL (opcional)
+      # - POWER_BI_FEED_TOKEN (opcional)
