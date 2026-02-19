@@ -42,6 +42,20 @@ from .ai import generate_decision_assistant_text, generate_inconsistency_report_
 from .guide_meta import ensure_guide_meta, compute_and_store_guide_meta
 
 
+def _safe_storage_exists(storage_name: str) -> bool:
+    """Devuelve si existe un archivo en default_storage sin tumbar la vista.
+
+    En producción, `default_storage` puede apuntar a Cloudinary u otro backend.
+    Si hay mala configuración (credenciales/URL), `exists()` puede lanzar excepción.
+    Para pantallas como Home/Login preferimos degradar (mostrar que no hay PDF) y no 500.
+    """
+
+    try:
+        return bool(default_storage.exists(storage_name))
+    except Exception:
+        return False
+
+
 def _powerbi_token_ok(request) -> bool:
     """Valida el token para endpoints de feed (Power BI).
 
@@ -212,7 +226,7 @@ def cba_home(request):
     import json
 
     total_results = CBAResult.objects.count()
-    guide_pdf_available = default_storage.exists("guides/guia.pdf")
+    guide_pdf_available = _safe_storage_exists("guides/guia.pdf")
 
     latest_result = CBAResult.objects.order_by("-created_at").first()
     latest_setup = None
@@ -1463,7 +1477,7 @@ def cba_guide(request):
 
     storage_name = "guides/guia.pdf"
     pdf_url = None
-    if default_storage.exists(storage_name):
+    if _safe_storage_exists(storage_name):
         pdf_url = settings.MEDIA_URL.rstrip("/") + "/" + storage_name
     download_url = reverse("cba_guide_download") if pdf_url else None
     pdf_version = None
@@ -1499,9 +1513,13 @@ def cba_guide(request):
     if request.method == "POST":
         form = GuidePdfUploadForm(request.POST, request.FILES)
         if form.is_valid():
-            if default_storage.exists(storage_name):
-                default_storage.delete(storage_name)
-            default_storage.save(storage_name, form.cleaned_data["pdf_file"])
+            try:
+                if _safe_storage_exists(storage_name):
+                    default_storage.delete(storage_name)
+                default_storage.save(storage_name, form.cleaned_data["pdf_file"])
+            except Exception:
+                messages.error(request, "No se pudo guardar la guía (storage no disponible).")
+                return redirect("cba_guide")
             try:
                 compute_and_store_guide_meta()
             except Exception:
@@ -1535,7 +1553,7 @@ def cba_guide(request):
 @require_POST
 def cba_guide_share_create(request):
     storage_name = "guides/guia.pdf"
-    if not default_storage.exists(storage_name):
+    if not _safe_storage_exists(storage_name):
         return redirect(reverse("cba_guide") + "?" + urlencode({"share_error": "1"}))
 
     form = GuideShareLinkForm(request.POST)
@@ -1601,7 +1619,7 @@ def cba_guide_shared(request, token: str):
         )
 
     storage_name = "guides/guia.pdf"
-    if not default_storage.exists(storage_name):
+    if not _safe_storage_exists(storage_name):
         raise Http404("No hay guía disponible.")
 
     page_raw = request.GET.get("page", "1")
@@ -1637,10 +1655,13 @@ def cba_guide_shared_pdf(request, token: str):
         raise Http404("No autorizado")
 
     storage_name = "guides/guia.pdf"
-    if not default_storage.exists(storage_name):
+    if not _safe_storage_exists(storage_name):
         raise Http404("No hay guía disponible.")
 
-    fh = default_storage.open(storage_name, "rb")
+    try:
+        fh = default_storage.open(storage_name, "rb")
+    except Exception:
+        raise Http404("No hay guía disponible.")
     # PDF.js necesita acceso directo al contenido
     return FileResponse(fh, content_type="application/pdf")
 
@@ -1651,22 +1672,28 @@ def cba_guide_shared_download(request, token: str):
         raise Http404("No autorizado")
 
     storage_name = "guides/guia.pdf"
-    if not default_storage.exists(storage_name):
+    if not _safe_storage_exists(storage_name):
         raise Http404("No hay guía disponible.")
 
     safe_title = slugify(link.title.strip()) if (link.title or "").strip() else "guia"
     filename = f"{safe_title}.pdf"
-    fh = default_storage.open(storage_name, "rb")
+    try:
+        fh = default_storage.open(storage_name, "rb")
+    except Exception:
+        raise Http404("No hay guía disponible.")
     return FileResponse(fh, as_attachment=True, filename=filename)
 
 
 @login_required
 def cba_guide_download(request):
     storage_name = "guides/guia.pdf"
-    if not default_storage.exists(storage_name):
+    if not _safe_storage_exists(storage_name):
         raise Http404("No hay guía disponible.")
 
-    fh = default_storage.open(storage_name, "rb")
+    try:
+        fh = default_storage.open(storage_name, "rb")
+    except Exception:
+        raise Http404("No hay guía disponible.")
     return FileResponse(fh, as_attachment=True, filename="guia.pdf")
 
 
