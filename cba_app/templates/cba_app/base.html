@@ -1,0 +1,93 @@
+{% load static %}
+{% with url_name=request.resolver_match.url_name %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SIDEO - Sistema Inteligente de Decisión</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'cba_app/style.css' %}?v={% now 'U' %}">
+
+    {# Tailwind + Flowbite (solo para UI del panel/dashboard). Preflight OFF para no resetear CSS existente. #}
+    {% if user.is_authenticated %}
+        <script>
+            window.tailwind = window.tailwind || {};
+            window.tailwind.config = {
+                corePlugins: {
+                    preflight: false
+                }
+            };
+        </script>
+        <script src="https://cdn.tailwindcss.com" defer></script>
+    {% endif %}
+</head>
+<body class="{% if user.is_authenticated and url_name and url_name != 'cba_home' and url_name != 'cba_dashboard' and url_name != 'cba_login' and url_name != 'cba_signup' and url_name != 'powerbi_feed_results' and url_name != 'powerbi_feed_dashboard_rows' and url_name != 'cba_saved_result_public' and url_name != 'cba_saved_result_public_json' and url_name != 'cba_saved_result_powerbi' and url_name != 'cba_saved_result_powerbi_config' and url_name != 'cba_guide_shared' and url_name != 'cba_guide_shared_pdf' and url_name != 'cba_guide_shared_download' %}layout--panel {% endif %}{% block body_class %}{% endblock %}">
+    <header class="sideo-header">
+        <div class="sideo-logo">
+            <a href="{% url 'cba_home' %}" class="sideo-logo__link" aria-label="Ir al panel principal">
+                <!-- Reemplaza la ruta de la imagen por el archivo real en static/cba_app -->
+                <img src="{% static 'cba_app/sideo-logo.png' %}" alt="SIDEO logo">
+            </a>
+        </div>
+        <div class="sideo-title">
+            <h1>SIDEO</h1>
+            <p>Sistema Inteligente de Decisión basado en la Evaluación de Opciones</p>
+        </div>
+
+        <div class="sideo-header__actions">
+            {% if user.is_authenticated %}
+                <a class="sideo-header__user-link" href="{% url 'cba_profile' %}">
+                    {% if user.first_name or user.last_name %}{{ user.first_name }} {{ user.last_name }}{% else %}{{ user.username }}{% endif %}
+                </a>
+                <form method="post" action="{% url 'cba_logout' %}" class="sideo-header__logout-form">
+                    {% csrf_token %}
+                    <button type="submit" class="sideo-header__link sideo-header__logout">Cerrar sesión</button>
+                </form>
+            {% else %}
+                <a class="sideo-header__link" href="{% url 'cba_login' %}">Ingresar</a>
+            {% endif %}
+        </div>
+    </header>
+
+    <main class="sideo-main">
+        {% if user.is_authenticated and url_name and url_name != 'cba_home' and url_name != 'cba_dashboard' and url_name != 'cba_login' and url_name != 'cba_signup' and url_name != 'powerbi_feed_results' and url_name != 'powerbi_feed_dashboard_rows' and url_name != 'cba_saved_result_public' and url_name != 'cba_saved_result_public_json' and url_name != 'cba_saved_result_powerbi' and url_name != 'cba_saved_result_powerbi_config' and url_name != 'cba_guide_shared' and url_name != 'cba_guide_shared_pdf' and url_name != 'cba_guide_shared_download' %}
+            <div class="dashboard-layout">
+                {% with active='home' %}
+                    {% if url_name|slice:':8' == 'cba_step' %}
+                        {% with active='step' %}{% include 'cba_app/_panel_sidebar.html' with active=active about_anchor=0 %}{% endwith %}
+                    {% elif url_name == 'cba_saved_results' or url_name|slice:':15' == 'cba_saved_result' %}
+                        {% with active='saved' %}{% include 'cba_app/_panel_sidebar.html' with active=active about_anchor=0 %}{% endwith %}
+                    {% elif url_name|slice:':8' == 'cba_guide' %}
+                        {% with active='guide' %}{% include 'cba_app/_panel_sidebar.html' with active=active about_anchor=0 %}{% endwith %}
+                    {% else %}
+                        {% include 'cba_app/_panel_sidebar.html' with active=active about_anchor=0 %}
+                    {% endif %}
+                {% endwith %}
+
+                <section class="dashboard-content" aria-label="Contenido">
+        {% endif %}
+
+        {% block content %}{% endblock %}
+
+        {% if user.is_authenticated and url_name and url_name != 'cba_home' and url_name != 'cba_dashboard' and url_name != 'cba_login' and url_name != 'cba_signup' and url_name != 'powerbi_feed_results' and url_name != 'powerbi_feed_dashboard_rows' and url_name != 'cba_saved_result_public' and url_name != 'cba_saved_result_public_json' and url_name != 'cba_saved_result_powerbi' and url_name != 'cba_saved_result_powerbi_config' and url_name != 'cba_guide_shared' and url_name != 'cba_guide_shared_pdf' and url_name != 'cba_guide_shared_download' %}
+                </section>
+            </div>
+        {% endif %}
+    </main>
+
+    <footer class="sideo-footer">
+        <span>&copy; {% now "Y" %} SIDEO</span>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="{% static 'cba_app/sideo.js' %}?v={% now 'U' %}"></script>
+    {% if user.is_authenticated %}
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.js" defer></script>
+    {% endif %}
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
+{% endwith %}

@@ -1,0 +1,41 @@
+<div class="table-wrapper dashboard-metrics" aria-label="Indicadores">
+    <div class="dashboard-section-head">
+        <p class="dashboard-section-head__eyebrow">Resumen</p>
+        <h3 class="dashboard-section-head__title">Estado del sistema</h3>
+    </div>
+
+    <div class="dashboard-metrics__grid">
+        <div class="dashboard-metrics__item">
+            <span class="dashboard-metrics__icon" aria-hidden="true">📊</span>
+            <div class="dashboard-metrics__label">Análisis guardados</div>
+            <div class="dashboard-metrics__value">{{ total_results|default:0 }}</div>
+            <p class="dashboard-metrics__hint">Histórico disponible para consulta</p>
+        </div>
+
+        <div class="dashboard-metrics__item">
+            <span class="dashboard-metrics__icon" aria-hidden="true">⏱</span>
+            <div class="dashboard-metrics__label">Último guardado</div>
+            <div class="dashboard-metrics__value">
+                {% if latest_result %}
+                    <a class="link" href="{% url 'cba_saved_result_detail' latest_result.id %}">{{ latest_result.created_at|date:"d/m/Y H:i" }}</a>
+                {% else %}
+                    -
+                {% endif %}
+            </div>
+            <p class="dashboard-metrics__hint">Registro más reciente del panel</p>
+        </div>
+
+        <div class="dashboard-metrics__item">
+            <span class="dashboard-metrics__icon" aria-hidden="true">📄</span>
+            <div class="dashboard-metrics__label">Guía PDF</div>
+            <div class="dashboard-metrics__value">
+                {% if guide_pdf_available %}
+                    <span class="dashboard-status dashboard-status--ok">Disponible</span>
+                {% else %}
+                    <span class="dashboard-status dashboard-status--muted">No cargada</span>
+                {% endif %}
+            </div>
+            <p class="dashboard-metrics__hint">Manual de uso para el equipo</p>
+        </div>
+    </div>
+</div>

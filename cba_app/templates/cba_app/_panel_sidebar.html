@@ -1,0 +1,154 @@
+<aside class="dashboard-sidebar dashboard-sidebar--tw" aria-label="Accesos principales">
+    <div class="dashboard-sidebar__header px-4 pt-4">
+        <div class="dashboard-sidebar__header-row flex items-start justify-between gap-3">
+            <h2 class="dashboard-sidebar__title">Menú</h2>
+            <button type="button" class="dashboard-sidebar__toggle shrink-0" id="homeSidebarToggle" aria-label="Ocultar menú" aria-expanded="true">‹</button>
+        </div>
+        <p class="dashboard-subtitle dashboard-sidebar__subtitle mt-2">Gestiona tus análisis CBA, consulta resultados anteriores y revisa la guía de uso.</p>
+    </div>
+
+    <nav class="dashboard-nav dashboard-nav--tw px-3 pb-4" aria-label="Navegación del panel">
+        <div class="sidebar-nav-group" role="list">
+            <a class="dashboard-nav__item dashboard-nav__item--tw flex flex-row items-center justify-between gap-3 px-4 py-3 transition {% if active == 'home' %}is-active{% endif %}" href="{% url 'cba_home' %}" aria-label="Panel principal" {% if active == 'home' %}aria-current="page"{% endif %}>
+                <div class="dashboard-nav__text">
+                    <span class="dashboard-nav__icon" aria-hidden="true">⌂</span>
+                    <h3>Panel principal</h3>
+                </div>
+                <span class="dashboard-nav__cta" aria-hidden="true"><span class="dashboard-nav__cta-text">Ir</span> <span class="arrow">›</span></span>
+            </a>
+
+            <a class="dashboard-nav__item dashboard-nav__item--tw dashboard-nav__item--primary flex flex-row items-center justify-between gap-3 px-4 py-3 transition {% if active == 'step' %}is-active{% endif %}" href="{% url 'cba_step1' %}" aria-label="Seleccionar con CBA" {% if active == 'step' %}aria-current="page"{% endif %}>
+                <div class="dashboard-nav__text">
+                    <span class="dashboard-nav__icon" aria-hidden="true">⚙︎</span>
+                    <h3>Seleccionar con CBA</h3>
+                </div>
+                <span class="dashboard-nav__cta"><span class="dashboard-nav__cta-text">Comenzar análisis</span> <span class="arrow">›</span></span>
+            </a>
+
+            <a class="dashboard-nav__item dashboard-nav__item--tw dashboard-nav__item--secondary flex flex-row items-center justify-between gap-3 px-4 py-3 transition {% if active == 'saved' %}is-active{% endif %}" href="{% url 'cba_saved_results' %}" aria-label="Archivos guardados" {% if active == 'saved' %}aria-current="page"{% endif %}>
+                <div class="dashboard-nav__text">
+                    <span class="dashboard-nav__icon" aria-hidden="true">📁</span>
+                    <h3>Archivos guardados</h3>
+                </div>
+                <span class="dashboard-nav__cta"><span class="dashboard-nav__cta-text">Ver resultados</span> <span class="arrow">›</span></span>
+            </a>
+
+            <a class="dashboard-nav__item dashboard-nav__item--tw dashboard-nav__item--info flex flex-row items-center justify-between gap-3 px-4 py-3 transition {% if active == 'guide' %}is-active{% endif %}" href="{% url 'cba_guide' %}" aria-label="Guía" {% if active == 'guide' %}aria-current="page"{% endif %}>
+                <div class="dashboard-nav__text">
+                    <span class="dashboard-nav__icon" aria-hidden="true">📖</span>
+                    <h3>Guía</h3>
+                </div>
+                <span class="dashboard-nav__cta"><span class="dashboard-nav__cta-text">Ver guía</span> <span class="arrow">›</span></span>
+            </a>
+
+            {% if about_anchor %}
+                <button type="button" class="dashboard-nav__item dashboard-nav__item--tw dashboard-nav__item--pinned dashboard-nav__item--button flex flex-row items-center justify-between gap-3 px-4 py-3 transition" id="aboutSideoNav" aria-controls="about-sideo" aria-expanded="false" aria-label="Acerca de SIDEO">
+                    <div class="dashboard-nav__text">
+                        <h3>
+                            <span class="dashboard-nav__icon" aria-hidden="true">ⓘ</span>
+                            <span class="dashboard-nav__label dashboard-nav__label--full">Acerca de SIDEO</span>
+                            <span class="dashboard-nav__label dashboard-nav__label--short" aria-hidden="true">SIDEO</span>
+                        </h3>
+                    </div>
+                    <span class="dashboard-nav__cta"><span class="dashboard-nav__cta-text">Ver detalle</span> <span class="arrow">›</span></span>
+                </button>
+            {% else %}
+                <a class="dashboard-nav__item dashboard-nav__item--tw dashboard-nav__item--pinned flex flex-row items-center justify-between gap-3 px-4 py-3 transition" href="{% url 'cba_home' %}#about-sideo" id="aboutSideoNav" aria-controls="about-sideo" aria-expanded="false" aria-label="Acerca de SIDEO">
+                    <div class="dashboard-nav__text">
+                        <h3>
+                            <span class="dashboard-nav__icon" aria-hidden="true">ⓘ</span>
+                            <span class="dashboard-nav__label dashboard-nav__label--full">Acerca de SIDEO</span>
+                            <span class="dashboard-nav__label dashboard-nav__label--short" aria-hidden="true">SIDEO</span>
+                        </h3>
+                    </div>
+                    <span class="dashboard-nav__cta"><span class="dashboard-nav__cta-text">Ver detalle</span> <span class="arrow">›</span></span>
+                </a>
+            {% endif %}
+
+        </div>
+    </nav>
+
+    <div class="dashboard-sidebar__footer px-4 pb-4">
+        <div class="sidebar-footer-card" aria-label="Usuario y preferencias">
+            <div class="sidebar-user" aria-label="Usuario">
+                <div class="sidebar-user__avatar" aria-hidden="true">
+                    {% if user.first_name or user.last_name %}
+                        {{ user.first_name|slice:':1' }}{{ user.last_name|slice:':1' }}
+                    {% else %}
+                        {{ user.username|slice:':2' }}
+                    {% endif %}
+                </div>
+                <div class="sidebar-user__meta">
+                    <div class="sidebar-user__name">
+                        {% if user.first_name or user.last_name %}
+                            {{ user.first_name }} {{ user.last_name }}
+                        {% else %}
+                            {{ user.username }}
+                        {% endif %}
+                    </div>
+                    <div class="sidebar-user__role">
+                        {% if user.is_superuser or user.is_staff %}Administrador{% else %}Usuario{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-theme" aria-label="Preferencias">
+                <span class="sidebar-theme__icon" aria-hidden="true">☀</span>
+                <span class="sidebar-theme__label">Modo claro</span>
+                <label class="ui-switch" aria-label="Cambiar modo del sidebar">
+                    <input type="checkbox" class="ui-switch__input" id="sidebarThemeToggle">
+                    <span class="ui-switch__track" aria-hidden="true"></span>
+                    <span class="ui-switch__thumb" aria-hidden="true"></span>
+                </label>
+            </div>
+        </div>
+    </div>
+</aside>
+
+<script>
+    (function initPanelSidebarToggle(){
+        const toggle = document.getElementById('homeSidebarToggle');
+        if (!toggle) return;
+
+        const nav = document.querySelector('.dashboard-nav');
+        const storageKey = 'sideo_home_sidebar_collapsed';
+
+        function applyState(isCollapsed) {
+            document.body.classList.toggle('home-sidebar-collapsed', isCollapsed);
+            toggle.setAttribute('aria-expanded', String(!isCollapsed));
+            toggle.setAttribute('aria-label', isCollapsed ? 'Mostrar menú' : 'Ocultar menú');
+            toggle.textContent = isCollapsed ? '›' : '‹';
+        }
+
+        const initial = localStorage.getItem(storageKey) === '1';
+        applyState(initial);
+
+        toggle.addEventListener('click', function () {
+            const next = !document.body.classList.contains('home-sidebar-collapsed');
+            localStorage.setItem(storageKey, next ? '1' : '0');
+            applyState(next);
+        });
+
+    })();
+
+    (function initSidebarThemeToggle(){
+        const themeToggle = document.getElementById('sidebarThemeToggle');
+        if (!themeToggle) return;
+
+        const storageKey = 'sideo_sidebar_theme_light';
+
+        function applyTheme(isLight) {
+            document.body.classList.toggle('sidebar-theme-light', isLight);
+            themeToggle.checked = isLight;
+        }
+
+        const initial = localStorage.getItem(storageKey) === '1';
+        applyTheme(initial);
+
+        themeToggle.addEventListener('change', function () {
+            const isLight = !!themeToggle.checked;
+            localStorage.setItem(storageKey, isLight ? '1' : '0');
+            applyTheme(isLight);
+        });
+    })();
+</script>

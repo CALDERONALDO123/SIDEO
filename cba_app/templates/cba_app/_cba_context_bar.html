@@ -1,0 +1,35 @@
+{% if setup %}
+<div class="cba-contextbar">
+    <div class="cba-contextbar__items">
+        <div class="cba-contextbar__item">
+            <span class="cba-contextbar__label">Proyecto:</span>
+            <span class="cba-contextbar__value">{{ setup.project_name }}</span>
+        </div>
+
+        <div class="cba-contextbar__item">
+            <span class="cba-contextbar__label">Solicitante:</span>
+            <span class="cba-contextbar__value">
+                {% if setup.sector == 'PUBLICO' %}
+                    {{ setup.public_entity|default:'-' }}
+                {% else %}
+                    {{ setup.private_company|default:'-' }}
+                {% endif %}
+                {% if setup.requesting_area %}
+                    <span class="cba-contextbar__sep">·</span> {{ setup.requesting_area }}
+                {% endif %}
+            </span>
+        </div>
+
+        <div class="cba-contextbar__item">
+            <span class="cba-contextbar__label">Lugar:</span>
+            <span class="cba-contextbar__value">{{ setup.location }}</span>
+        </div>
+    </div>
+
+    {% if show_edit %}
+        <div class="cba-contextbar__actions">
+            <a class="cba-contextbar__edit" href="{% url 'cba_step1' %}?setup=1">Editar</a>
+        </div>
+    {% endif %}
+</div>
+{% endif %}

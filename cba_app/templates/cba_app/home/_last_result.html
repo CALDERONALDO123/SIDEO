@@ -1,0 +1,54 @@
+<div class="table-wrapper dashboard-lastresult" aria-label="Último resultado">
+    <div class="dashboard-lastresult__head">
+        <div>
+            <p class="dashboard-section-head__eyebrow">Analítica</p>
+            <h3 class="dashboard-lastresult__title">Último resultado guardado</h3>
+        </div>
+        {% if latest_result %}
+            <div class="dashboard-lastresult__meta text-muted" aria-label="Acciones del último resultado">
+                <span class="dashboard-lastresult__date">{{ latest_result.created_at|date:"d/m/Y H:i" }}</span>
+                <a class="button button--ghost dashboard-lastresult__action" href="{% url 'cba_saved_result_detail' latest_result.id %}">Ver dashboard</a>
+                <a class="button dashboard-lastresult__action" href="{% url 'cba_step1' %}">Continuar análisis</a>
+            </div>
+        {% endif %}
+    </div>
+
+    {% if latest_result and latest_items %}
+        <div class="dashboard-chart-card" aria-label="Gráfico Relación Costo/Ventaja">
+            <div class="dashboard-chart-card__head">
+                <div class="dashboard-chart-card__title">Relación Costo/Ventaja</div>
+                <div class="dashboard-chart-card__meta text-muted">S/ por punto (más bajo es mejor)</div>
+            </div>
+            <div class="cba-chartwrap">
+                <canvas id="homeRatioChart" width="820" height="260" class="cba-canvas"></canvas>
+            </div>
+            <p class="dashboard-chart-card__empty" data-chart="ratio" hidden>
+                Sin datos suficientes para graficar la relación Costo/Ventaja.
+            </p>
+        </div>
+
+        <div class="dashboard-chart-card" aria-label="Gráfico Costo vs Ventaja total">
+            <div class="dashboard-chart-card__head">
+                <div class="dashboard-chart-card__title">Costo vs. Ventaja total</div>
+                <div class="dashboard-chart-card__meta text-muted">Líneas desde (0,0) al punto final</div>
+            </div>
+            <div class="cba-chartwrap">
+                <canvas id="homeScatterChart" width="820" height="300" class="cba-canvas"></canvas>
+            </div>
+            <p class="dashboard-chart-card__empty" data-chart="scatter" hidden>
+                Sin datos suficientes para graficar Costo vs. Ventaja total.
+            </p>
+        </div>
+    {% else %}
+        <div class="dashboard-empty-state">
+            <p class="text-muted" style="margin:0;">
+                Aún no hay resultados guardados para mostrar.
+                Completa un análisis y guárdalo desde el Dashboard del Paso 10.
+            </p>
+            <div class="dashboard-empty-actions" aria-label="Acciones iniciales">
+                <a class="button" href="{% url 'cba_step1' %}">Crear primer análisis</a>
+                <a class="button button--ghost" href="{% url 'cba_guide' %}">Abrir guía</a>
+            </div>
+        </div>
+    {% endif %}
+</div>

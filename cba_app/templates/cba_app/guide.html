@@ -1,0 +1,277 @@
+{% extends "cba_app/base.html" %}
+
+{% block body_class %}page-guide{% endblock %}
+
+{% block content %}
+    <div class="guide-pagehead">
+        <h2>Guía</h2>
+        <p class="text-muted">Gestiona el PDF de referencia y compártelo como libro digital.</p>
+        <a href="{% url 'cba_home' %}" class="link-back" aria-label="Volver al panel principal">&larr; Panel</a>
+    </div>
+
+    <div class="guide-layout" aria-label="Guía">
+        <aside class="guide-sidebar" aria-label="Gestión de guía">
+            <div class="guide-admin-grid">
+                <div class="guide-upload table-wrapper">
+                    <h3 class="guide-upload__title">PDF</h3>
+
+            {% if pdf_url %}
+                <p class="guide-upload__hint text-muted">Hay un PDF cargado. Sube una nueva versión para actualizar la guía.</p>
+            {% else %}
+                <p class="guide-upload__hint text-muted">Sube un PDF para verlo como libro digital en el panel derecho.</p>
+            {% endif %}
+
+            {% if uploaded_ok %}
+                <div class="notice notice--success">PDF actualizado correctamente.</div>
+            {% endif %}
+
+            {% if error_message %}
+                <div class="notice notice--error">{{ error_message }}</div>
+            {% endif %}
+
+                    <form method="post" enctype="multipart/form-data" class="guide-upload__form">
+                        {% csrf_token %}
+                        <div class="guide-upload__row">
+                            <div class="guide-file" data-role="file">
+                                <input id="id_pdf_file" name="pdf_file" type="file" accept="application/pdf" class="guide-file__input" required>
+
+                                <button type="button" class="guide-viewer__icon" data-role="file-pick" aria-label="Elegir archivo" title="Elegir archivo">
+                                    <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false">
+                                        <path fill="currentColor" d="M4 4a2 2 0 0 1 2-2h3l2 2h5a2 2 0 0 1 2 2v9a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V4zm2 0v11a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1V6H12.2L10.2 4H6z"/>
+                                    </svg>
+                                </button>
+
+                                <span class="guide-file__name text-muted" data-role="file-name">Ningún archivo</span>
+                            </div>
+
+                            <button type="submit" class="guide-viewer__icon" data-role="upload-submit" aria-label="Cargar" title="Cargar">
+                                <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false">
+                                    <path fill="currentColor" d="M4 14a1 1 0 0 1 1-1h10a1 1 0 1 1 0 2H5a1 1 0 0 1-1-1zm5-1.4V4.9L6.7 7.2A1 1 0 1 1 5.3 5.8l4-4a1 1 0 0 1 1.4 0l4 4a1 1 0 1 1-1.4 1.4L11 4.9v7.7a1 1 0 1 1-2 0z"/>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div class="guide-upload__progress" data-role="upload-progress" style="display:none;" aria-label="Progreso de carga">
+                            <div class="guide-upload__progressbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                                <div class="guide-upload__progressfill" data-role="upload-fill" style="width: 0%;"></div>
+                            </div>
+                            <div class="guide-upload__progressmeta text-muted">
+                                <span data-role="upload-pct">0%</span>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="table-wrapper guide-share" aria-label="Compartir guía">
+                    <div class="guide-share__head">
+                        <h3>Compartir</h3>
+                        <button type="button" class="guide-viewer__icon" id="toggleShareForm" aria-label="Compartir" title="Compartir">
+                            <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false">
+                                <path fill="currentColor" d="M15 14a3 3 0 0 0-2.4 1.2l-5.2-3a3.2 3.2 0 0 0 0-2.4l5.2-3A3 3 0 1 0 12 5a3 3 0 0 0 .1.7L6.9 8.8a3 3 0 1 0 0 2.4l5.2 3.1A3 3 0 1 0 15 14z"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <p class="guide-share__hint text-muted">Crea un link de solo lectura para enviar la guía a otras personas.</p>
+
+            {% if share_error %}
+                <div class="notice notice--error">No se pudo crear el link para compartir. Verifica que exista un PDF y vuelve a intentar.</div>
+            {% endif %}
+
+                    {% if share_url %}
+                        <div class="notice notice--success">
+                            Link creado correctamente.
+                            {% if share_password_protected %}
+                                <strong>Requiere contraseña.</strong>
+                            {% else %}
+                                <strong>Sin contraseña.</strong>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-inline">
+                            <label for="shareLink" class="text-muted">Link</label>
+                            <input id="shareLink" type="text" class="cba-input" value="{{ share_url }}" readonly>
+                            <button type="button" class="button button--ghost" id="copyShareLink">Copiar</button>
+                        </div>
+                    {% endif %}
+
+                    <form method="post" action="{% url 'cba_guide_share_create' %}" id="shareForm" class="guide-share__form" style="display:none;">
+                        {% csrf_token %}
+                        <div class="guide-share__section">
+                            <p class="text-muted guide-share__section-title">Títulos (opcional)</p>
+                            <div class="guide-share__titlegrid">
+                                <div class="guide-share__field">
+                                    <label for="id_share_title" class="text-muted">Título</label>
+                                    <input id="id_share_title" name="title" type="text" class="cba-input" placeholder="Título (opcional)">
+                                </div>
+                                <div class="guide-share__field">
+                                    <label for="id_share_subtitle" class="text-muted">Subtítulo</label>
+                                    <input id="id_share_subtitle" name="subtitle" type="text" class="cba-input" placeholder="Subtítulo (opcional)">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="guide-share__section">
+                            <p class="text-muted guide-share__section-title">Contraseña (opcional)</p>
+                            <div class="guide-share__passwordrow">
+                                <input id="id_share_password" name="password" type="password" class="cba-input" placeholder="Contraseña (opcional)">
+                                <button type="submit" class="button">Crear link</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </aside>
+
+        <section class="guide-main" aria-label="Visor de guía">
+            {% if pdf_url %}
+                {% include "cba_app/_guide_viewer.html" with pdf_url=pdf_url page=page open_url=pdf_url download_url=download_url %}
+            {% else %}
+                <div class="table-wrapper">
+                    <h3 class="guide-text__title">Guía rápida (texto)</h3>
+                    <p class="text-muted">Sigue estos pasos si aún no tienes la guía en PDF cargada.</p>
+                    <ol class="guide-text">
+                <li><strong>Seleccionar con CBA</strong>: desde el panel principal entra en "Seleccionar con CBA" para comenzar un nuevo análisis.</li>
+                <li><strong>Paso 1</strong>: registra los postores o alternativas (PMO A, PMO B, etc.).</li>
+                <li><strong>Paso 2</strong>: registra los factores de decisión.</li>
+                <li><strong>Paso 3</strong>: marca cada factor como "Debe tener" o "Desea tener" y escribe la explicación.</li>
+                <li><strong>Paso 4</strong>: llena la matriz FACTORES x Postores con las valoraciones (Excelente, Bueno, Regular, Cumple).</li>
+                <li><strong>Paso 5</strong>: el sistema calcula automáticamente el atributo menos ventajoso por factor.</li>
+                <li><strong>Paso 6</strong>: el sistema calcula automáticamente la mayor ventaja por factor.</li>
+                <li><strong>Paso 7</strong>: se selecciona una única ventaja principal por cada postor.</li>
+                <li><strong>Paso 8</strong>: asigna importancias numéricas (100, 90, 70, etc.) solo en las celdas de ventaja.</li>
+                <li><strong>Paso 9</strong>: revisa el total de ventajas para cada postor.</li>
+                <li><strong>Paso 10</strong>: ingresa los costos, observa la relación costo/ventaja, grafica y pulsa "Guardar y cerrar" para registrar el resultado en "Archivos guardados".</li>
+                    </ol>
+                    <p class="text-muted guide-text__hint">Sube un PDF para verlo como libro digital.</p>
+                </div>
+            {% endif %}
+        </section>
+    </div>
+
+    <script>
+        (function () {
+            function onReady(fn) {
+                if (document.readyState === 'complete' || document.readyState === 'interactive') fn();
+                else document.addEventListener('DOMContentLoaded', fn);
+            }
+
+            onReady(function () {
+                // Ocultar avisos de éxito automáticamente
+                window.setTimeout(function () {
+                    document.querySelectorAll('.page-guide .notice--success').forEach(function (el) {
+                        el.style.display = 'none';
+                    });
+                }, 5000);
+
+                var toggle = document.getElementById('toggleShareForm');
+                var form = document.getElementById('shareForm');
+                var copyBtn = document.getElementById('copyShareLink');
+                var shareInput = document.getElementById('shareLink');
+
+                // Upload con progreso
+                var uploadForm = document.querySelector('.page-guide .guide-upload__form');
+                var fileInput = uploadForm ? uploadForm.querySelector('input[type="file"]') : null;
+                var fileNameEl = uploadForm ? uploadForm.querySelector('[data-role="file-name"]') : null;
+                var progressWrap = uploadForm ? uploadForm.querySelector('[data-role="upload-progress"]') : null;
+                var progressFill = uploadForm ? uploadForm.querySelector('[data-role="upload-fill"]') : null;
+                var progressPct = uploadForm ? uploadForm.querySelector('[data-role="upload-pct"]') : null;
+                var submitBtn = uploadForm ? uploadForm.querySelector('[data-role="upload-submit"]') : null;
+                var progressBar = uploadForm ? uploadForm.querySelector('.guide-upload__progressbar') : null;
+                var pickBtn = uploadForm ? uploadForm.querySelector('[data-role="file-pick"]') : null;
+
+                function setProgress(pct) {
+                    var n = Math.max(0, Math.min(100, Math.round(pct)));
+                    if (progressWrap) progressWrap.style.display = 'block';
+                    if (progressFill) progressFill.style.width = n + '%';
+                    if (progressPct) progressPct.textContent = n + '%';
+                    if (progressBar) progressBar.setAttribute('aria-valuenow', String(n));
+                }
+
+                if (fileInput && fileNameEl) {
+                    fileInput.addEventListener('change', function () {
+                        var f = fileInput.files && fileInput.files[0];
+                        fileNameEl.textContent = f ? f.name : 'Ningún archivo';
+                        if (progressWrap) progressWrap.style.display = 'none';
+                        setProgress(0);
+                    });
+                }
+
+                if (pickBtn && fileInput) {
+                    pickBtn.addEventListener('click', function () {
+                        fileInput.click();
+                    });
+                }
+
+                if (uploadForm && fileInput && submitBtn && window.XMLHttpRequest) {
+                    uploadForm.addEventListener('submit', function (ev) {
+                        var f = fileInput.files && fileInput.files[0];
+                        if (!f) return; // deja que el required/validación haga lo suyo
+
+                        ev.preventDefault();
+
+                        submitBtn.disabled = true;
+                        submitBtn.classList.add('is-loading');
+                        submitBtn.setAttribute('aria-busy', 'true');
+                        submitBtn.setAttribute('title', 'Cargando...');
+                        setProgress(0);
+
+                        var xhr = new XMLHttpRequest();
+                        xhr.open('POST', uploadForm.getAttribute('action') || window.location.href);
+
+                        // CSRF desde el input hidden
+                        var csrfInput = uploadForm.querySelector('input[name="csrfmiddlewaretoken"]');
+                        if (csrfInput && csrfInput.value) {
+                            xhr.setRequestHeader('X-CSRFToken', csrfInput.value);
+                        }
+
+                        xhr.upload.addEventListener('progress', function (e) {
+                            if (e.lengthComputable) {
+                                var pct = (e.loaded / e.total) * 100;
+                                setProgress(pct);
+                            }
+                        });
+
+                        xhr.addEventListener('load', function () {
+                            setProgress(100);
+                            // Django redirige; usar responseURL para ir al destino final
+                            window.setTimeout(function () {
+                                var target = xhr.responseURL || window.location.href;
+                                window.location.href = target;
+                            }, 250);
+                        });
+
+                        xhr.addEventListener('error', function () {
+                            submitBtn.disabled = false;
+                            submitBtn.classList.remove('is-loading');
+                            submitBtn.removeAttribute('aria-busy');
+                            submitBtn.setAttribute('title', 'Cargar');
+                        });
+
+                        var data = new FormData(uploadForm);
+                        xhr.send(data);
+                    });
+                }
+
+                if (toggle && form) {
+                    toggle.addEventListener('click', function () {
+                        var isOpen = form.style.display !== 'none';
+                        form.style.display = isOpen ? 'none' : 'block';
+                        if (!isOpen) {
+                            form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    });
+                }
+
+                if (copyBtn && shareInput && navigator.clipboard) {
+                    copyBtn.addEventListener('click', function () {
+                        navigator.clipboard.writeText(shareInput.value || '').then(function () {
+                            copyBtn.textContent = 'Copiado';
+                            setTimeout(function () { copyBtn.textContent = 'Copiar'; }, 900);
+                        });
+                    });
+                }
+            });
+        })();
+    </script>
+{% endblock %}

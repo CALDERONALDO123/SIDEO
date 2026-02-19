@@ -1,0 +1,61 @@
+{% extends "cba_app/base.html" %}
+
+{% block content %}
+
+    <div class="table-wrapper" style="max-width: 640px; margin: 0 auto;">
+        <h2 style="margin-top:0;">Perfil</h2>
+
+        {% if saved %}
+            <div class="notice notice--success">Perfil actualizado correctamente.</div>
+        {% endif %}
+
+        <div class="text-muted" style="margin: 0 0 10px;">
+            Usuario: <strong>{{ request.user.username }}</strong>
+        </div>
+
+        <form method="post" enctype="multipart/form-data" style="display:grid; gap: 10px;">
+            {% csrf_token %}
+
+            <div style="display:flex; gap: 12px; align-items:center; flex-wrap:wrap;">
+                <div style="width:84px; height:84px; border-radius: 12px; overflow:hidden; background: rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:center;">
+                    {% if profile.avatar %}
+                        <img src="{{ profile.avatar.url }}" alt="Foto de perfil" style="width:100%; height:100%; object-fit:cover;" />
+                    {% else %}
+                        <span class="text-muted" style="font-size: 13px;">Sin foto</span>
+                    {% endif %}
+                </div>
+
+                <div style="flex:1; min-width: 240px; display:grid; gap: 8px;">
+                    <div>
+                        <label for="{{ photo_form.avatar.id_for_label }}" class="text-muted">Cambiar foto</label>
+                        {{ photo_form.avatar }}
+                        {% if photo_form.avatar.errors %}
+                            <div class="text-muted">{{ photo_form.avatar.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    {% if profile.avatar %}
+                        <label class="text-muted" style="display:flex; gap: 8px; align-items:center;">
+                            {{ photo_form.delete_avatar }}
+                            <span>Eliminar foto actual</span>
+                        </label>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div>
+                <label for="id_first_name" class="text-muted">Nombre</label>
+                {{ form.first_name }}
+            </div>
+
+            <div>
+                <label for="id_last_name" class="text-muted">Apellido</label>
+                {{ form.last_name }}
+            </div>
+
+            <div style="display:flex; gap: 10px; align-items:center; margin-top: 6px;">
+                <button type="submit" class="button">Guardar</button>
+            </div>
+        </form>
+    </div>
+{% endblock %}

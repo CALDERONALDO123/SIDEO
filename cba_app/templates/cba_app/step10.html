@@ -1,0 +1,235 @@
+{% extends "cba_app/base.html" %}
+
+{% block body_class %}page-step page-step10{% endblock %}
+
+{% block content %}
+    <div class="dashboard-panel step-panel">
+        <div class="step-head">
+            <div class="step-head__main">
+                <p class="step-head__eyebrow">CBA · Paso 10</p>
+                <h2 class="step-head__title">Costo versus ventaja</h2>
+                <p class="step-head__lede">Compara alternativas por costo y total de ventajas para obtener un ganador.</p>
+                {% include "cba_app/_step_progress.html" with current=10 total=10 percent=100 %}
+            </div>
+            <div class="step-head__actions">
+                <a class="button" href="{% url 'cba_dashboard' %}">Resultado (Dashboard)</a>
+            </div>
+        </div>
+
+    {% include "cba_app/_cba_context_bar.html" %}
+
+    <p>En este paso se comparan las alternativas considerando el costo y el total de ventajas. La alternativa ganadora es la que logra el <strong>menor costo por cada punto de ventaja</strong>.</p>
+
+    <div style="margin-top:16px;">
+        <div class="cba-ai__actions">
+            <button type="button" class="button" id="aiCostAuditBtn">Revisar costos (IA)</button>
+        </div>
+        <div id="aiCostAuditStatus" class="cba-ai__status text-muted" style="margin-top:8px; display:none;"></div>
+        <pre id="aiCostAuditOutput" class="cba-ai__output" aria-label="Salida auditor IA costos"></pre>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="table-wrapper table-wrapper--step" style="margin-top:16px;">
+        <table>
+            <tr>
+                <th>Alternativa</th>
+                <th>Total de ventajas</th>
+                <th>Costo (S/)</th>
+                <th>Costo / Ventaja (S/ por punto)</th>
+            </tr>
+            {% for row in rows %}
+            <tr{% if best_row and row.alternative.id == best_row.alternative.id %} style="font-weight:bold; background-color:#e0ffe0;"{% endif %}>
+                <td>{{ row.alternative.name }}</td>
+                <td>{{ row.total_importance }}</td>
+                <td>
+                    <input type="number" step="0.01" name="cost_{{ row.alternative.id }}" value="{% if row.cost %}{{ row.cost }}{% endif %}">
+                </td>
+                <td>
+                    {% if row.ratio is not None %}
+                        S/ {{ row.ratio|floatformat:4 }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4">No hay datos suficientes aún.</td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <div style="margin-top:16px; display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap;">
+            <button type="submit" name="save_recalc" class="button">Guardar costos y recalcular</button>
+        </div>
+
+        <hr>
+
+        <h2>Gráfico costo vs. total de ventajas</h2>
+        <p>
+            Pulsa el botón "Graficar" para dibujar, desde el origen (0,0),
+            una recta hasta cada punto (Costo, Total de ventajas) de las alternativas.
+        </p>
+
+        <button type="button" class="button" onclick="drawChart()">Graficar</button>
+
+        <br><br>
+        <div style="display:flex; gap:16px; align-items:flex-start;">
+            <canvas id="cbaChart" width="640" height="400" style="border:1px solid #e5e7eb; background:#ffffff;"></canvas>
+            <div id="cbaLegend" style="font-size:13px; color:#374151;"></div>
+        </div>
+
+        <div style="margin-top:16px; display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap;">
+            <button type="submit" name="save_close" class="button">Guardar y cerrar</button>
+        </div>
+    </form>
+
+    <div class="step-nav">
+        <a href="{% url 'cba_step9' %}" class="link-back nav-prev">&larr; Paso anterior</a>
+    </div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function escapeHtml(str) {
+        return String(str)
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
+    }
+
+    function renderAIMarkup(text) {
+        let safe = escapeHtml(text || '');
+        safe = safe.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        return safe;
+    }
+
+    (function () {
+        const chartData = JSON.parse("{{ chart_data_json|escapejs }}");
+
+        function drawChart() {
+            const legendContainer = document.getElementById('cbaLegend');
+
+            if (window.SIDEO && SIDEO.charts) {
+                SIDEO.charts.renderCostBenefitScatter('cbaChart', chartData, {
+                    xLabel: 'Costo (S/)',
+                    yLabel: 'Total de ventajas',
+                    legendContainer: legendContainer,
+                });
+                return;
+            }
+        }
+
+        // Mantener el onclick existente
+        window.drawChart = drawChart;
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const STORAGE_KEY = 'cba_step10_ai_costos_v1';
+            const btn = document.getElementById('aiCostAuditBtn');
+            const out = document.getElementById('aiCostAuditOutput');
+            const status = document.getElementById('aiCostAuditStatus');
+            const formEl = document.querySelector('form[method="post"]');
+
+            if (!btn || !out) return;
+
+            // Restaurar último texto al volver a la página
+            try {
+                const cached = window.localStorage.getItem(STORAGE_KEY);
+                if (cached) {
+                    out.innerHTML = cached;
+                    if (status) {
+                        status.style.display = 'block';
+                        status.textContent = 'Última revisión cargada.';
+                    }
+                }
+            } catch (e) {
+                // no-op
+            }
+
+            function invalidateCache() {
+                try { window.localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+            }
+
+            if (formEl) {
+                formEl.addEventListener('submit', invalidateCache, { capture: true });
+            }
+
+            document.querySelectorAll('input[name^="cost_"]').forEach((inp) => {
+                inp.addEventListener('input', invalidateCache, { passive: true });
+            });
+
+            function buildPayload() {
+                const rows = Array.from(document.querySelectorAll('table tr')).slice(1);
+                const items = [];
+                rows.forEach(function (tr) {
+                    const tds = tr.querySelectorAll('td');
+                    if (tds.length < 3) return;
+                    const name = (tds[0].textContent || '').trim();
+                    const total = (tds[1].textContent || '').trim();
+                    const input = tds[2].querySelector('input[name^="cost_"]');
+                    const cost = input ? input.value : '';
+                    if (!name) return;
+                    items.push({ name: name, total: total, cost: cost });
+                });
+                return { items: items };
+            }
+
+            btn.addEventListener('click', async () => {
+                btn.disabled = true;
+                if (status) {
+                    status.style.display = 'block';
+                    status.textContent = 'Revisando costos...';
+                }
+                out.textContent = '';
+
+                try {
+                    const resp = await fetch("{% url 'cba_ai_costs_audit' %}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: JSON.stringify(buildPayload())
+                    });
+
+                    const data = await resp.json();
+                    if (!data.ok) {
+                        throw new Error(data.error || 'No se pudo auditar costos.');
+                    }
+
+                    out.innerHTML = renderAIMarkup(data.content || '');
+                    try { window.localStorage.setItem(STORAGE_KEY, out.innerHTML); } catch (e) {}
+                    if (status) status.textContent = 'Listo.';
+                } catch (e) {
+                    out.textContent = '';
+                    if (status) status.textContent = (e && e.message) ? e.message : 'Error auditando costos.';
+                } finally {
+                    btn.disabled = false;
+                }
+            });
+        });
+
+        window.addEventListener('resize', (window.SIDEO && SIDEO.utils) ? SIDEO.utils.debounce(drawChart, 150) : drawChart);
+    })();
+</script>
+{% endblock %}

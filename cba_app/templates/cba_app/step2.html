@@ -1,0 +1,214 @@
+{% extends "cba_app/base.html" %}
+
+{% block body_class %}page-step page-step2{% endblock %}
+
+{% block content %}
+    <div class="dashboard-panel step-panel">
+        <div class="step-head">
+            <div class="step-head__main">
+                <p class="step-head__eyebrow">CBA · Paso 2</p>
+                <h2 class="step-head__title">Factores de decisión</h2>
+                <p class="step-head__lede">En este paso defines los factores (criterios) que usarás para comparar a los postores.</p>
+                {% include "cba_app/_step_progress.html" with current=2 total=10 percent=20 %}
+            </div>
+        </div>
+
+        {% include "cba_app/_cba_context_bar.html" %}
+
+        <section class="assistant" aria-label="Asistente IA">
+            <div class="assistant__head">
+                <div class="assistant__meta">
+                    <div class="assistant__title">Asistente SIDEO IA</div>
+                    <div class="assistant__subtitle">Valida claridad, duplicados y coherencia de factores.</div>
+                </div>
+                <div class="assistant__actions">
+                    <button type="button" class="button" id="aiCritAuditBtn">Revisar factores</button>
+                    <button type="button" class="button button--ghost" id="aiCritAuditClearBtn">Limpiar</button>
+                </div>
+            </div>
+
+            <div id="aiCritAuditStatus" class="cba-ai__status text-muted" style="display:none;"></div>
+
+            <div class="assistant__body">
+                <div id="aiCritAuditPlaceholder" class="assistant__placeholder">Aquí aparecerá la respuesta del asistente.</div>
+                <pre id="aiCritAuditOutput" class="cba-ai__output" aria-label="Respuesta del asistente IA"></pre>
+            </div>
+        </section>
+
+        <div class="table-wrapper table-wrapper--step">
+            <div class="step-section-head">
+                <div class="step-section-title">Factores de decisión</div>
+            </div>
+
+            <form method="post" class="form-inline form-inline--step">
+                {% csrf_token %}
+                {{ form.name.label_tag }}
+                {{ form.name }}
+                <button type="submit" class="icon-button icon-button-add" title="Agregar factor">+</button>
+            </form>
+
+            <table>
+                <tr>
+                    <th>#</th>
+                    <th>Nombre del factor</th>
+                    <th style="width:80px; text-align:center;">Acciones</th>
+                </tr>
+                {% for c in criteria %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>
+                        {% if editing_crit and editing_crit.id == c.id %}
+                            <form method="post" class="form-inline form-inline--step" style="gap:6px;">
+                                {% csrf_token %}
+                                <input type="hidden" name="update_id" value="{{ c.id }}">
+                                <input type="text" name="name" value="{{ c.name }}" />
+                                <button type="submit" class="icon-button icon-button-edit" title="Guardar cambios">&#10003;</button>
+                                <a href="{% url 'cba_step2' %}" class="icon-button icon-button-delete" title="Cancelar">&times;</a>
+                            </form>
+                        {% else %}
+                            {{ c.name }}
+                        {% endif %}
+                    </td>
+                    <td style="text-align:center; white-space:nowrap;">
+                        {% if not editing_crit or editing_crit.id != c.id %}
+                            <a href="{% url 'cba_step2' %}?edit={{ c.id }}" class="icon-button icon-button-edit" title="Editar">&#9998;</a>
+                        {% endif %}
+                        <form method="post" style="display:inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="delete_id" value="{{ c.id }}">
+                            <button type="submit" class="icon-button icon-button-delete" title="Eliminar">&times;</button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3">No hay factores/criterios registrados aún.</td>
+                </tr>
+                {% endfor %}
+            </table>
+
+            <div class="step-nav">
+                <a href="{% url 'cba_step1' %}" class="link-back nav-prev">&larr; Paso anterior</a>
+                <a href="{% url 'cba_step3' %}" class="button nav-next">Siguiente &rsaquo;</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        function escapeHtml(str) {
+            return String(str)
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#39;');
+        }
+
+        function renderAIMarkup(text) {
+            let safe = escapeHtml(text || '');
+            safe = safe.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            return safe;
+        }
+
+        (function initCritAudit(){
+            const btn = document.getElementById('aiCritAuditBtn');
+            const clearBtn = document.getElementById('aiCritAuditClearBtn');
+            const out = document.getElementById('aiCritAuditOutput');
+            const status = document.getElementById('aiCritAuditStatus');
+            const placeholder = document.getElementById('aiCritAuditPlaceholder');
+            if (!btn || !out) return;
+
+            const STORAGE_KEY = 'cba_step2_ai_factores_v1';
+
+            out.textContent = '';
+            if (placeholder) placeholder.style.display = 'block';
+
+            function clearCache() {
+                out.textContent = '';
+                if (placeholder) placeholder.style.display = 'block';
+                if (status) {
+                    status.style.display = 'block';
+                    status.textContent = 'Limpio.';
+                }
+                try { window.localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+            }
+
+            // Restaurar último texto al volver a la página
+            try {
+                const cached = window.localStorage.getItem(STORAGE_KEY);
+                if (cached) {
+                    out.innerHTML = cached;
+                    if (placeholder) placeholder.style.display = 'none';
+                    if (status) {
+                        status.style.display = 'block';
+                        status.textContent = 'Última revisión cargada.';
+                    }
+                }
+            } catch (e) {
+                // no-op
+            }
+
+            // Si el usuario cambia factores (add/edit/delete), invalidar la respuesta guardada
+            document.querySelectorAll('form').forEach((f) => {
+                f.addEventListener('submit', () => {
+                    try { window.localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+                }, { capture: true });
+            });
+
+            if (clearBtn) {
+                clearBtn.addEventListener('click', clearCache);
+            }
+
+            // No pisar lo restaurado
+
+            btn.addEventListener('click', async () => {
+                btn.disabled = true;
+                if (status) {
+                    status.style.display = 'block';
+                    status.textContent = 'Revisando factores...';
+                }
+                if (placeholder) placeholder.style.display = 'none';
+                out.textContent = '';
+
+                try {
+                    const resp = await fetch("{% url 'cba_ai_criteria_audit' %}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: JSON.stringify({})
+                    });
+                    const data = await resp.json();
+                    if (!data.ok) {
+                        throw new Error(data.error || 'No se pudo auditar factores.');
+                    }
+                    out.innerHTML = renderAIMarkup(data.content || '');
+                    try { window.localStorage.setItem(STORAGE_KEY, out.innerHTML); } catch (e) {}
+                    if (status) status.textContent = 'Listo.';
+                } catch (e) {
+                    out.textContent = '';
+                    if (placeholder) placeholder.style.display = 'block';
+                    if (status) status.textContent = (e && e.message) ? e.message : 'Error auditando factores.';
+                } finally {
+                    btn.disabled = false;
+                }
+            });
+        })();
+    </script>
+{% endblock %}

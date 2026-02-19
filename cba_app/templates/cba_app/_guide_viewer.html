@@ -1,0 +1,761 @@
+{% if pdf_url %}
+    <div class="guide-viewer table-wrapper" data-pdf-url="{{ pdf_url|escape }}" data-page="{{ page }}" data-pdf-version="{{ pdf_version|default:''|escape }}">
+        <div class="guide-viewer__topbar">
+            <div class="guide-viewer__topbar-actions">
+                <button type="button" class="guide-viewer__icon" data-action="fullscreen" aria-label="Pantalla completa" title="Pantalla completa">
+                    <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false">
+                        <path fill="currentColor" d="M3 7a1 1 0 0 0 1-1V4h2a1 1 0 1 0 0-2H3a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1zm13-5h-3a1 1 0 1 0 0 2h2v2a1 1 0 1 0 2 0V3a1 1 0 0 0-1-1zM4 14v-2a1 1 0 1 0-2 0v3a1 1 0 0 0 1 1h3a1 1 0 1 0 0-2H4zm14-2a1 1 0 1 0-2 0v2h-2a1 1 0 1 0 0 2h3a1 1 0 0 0 1-1v-3z"/>
+                    </svg>
+                </button>
+                {% if download_url %}
+                    <a class="guide-viewer__icon" href="{{ download_url }}" aria-label="Descargar" title="Descargar">
+                        <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false">
+                            <path fill="currentColor" d="M10 2a1 1 0 0 1 1 1v7.6l2.3-2.3a1 1 0 1 1 1.4 1.4l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.4L9 10.6V3a1 1 0 0 1 1-1z"/>
+                            <path fill="currentColor" d="M4 14a1 1 0 0 1 1 1v1h10v-1a1 1 0 1 1 2 0v2a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1z"/>
+                        </svg>
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="notice notice--error" data-role="pdf-error" style="display:none;">
+            No se pudo cargar el visor del libro. Usa “Abrir PDF” o verifica tu conexión.
+        </div>
+
+        <div class="notice notice--info" data-role="pdf-loading" style="display:none;">
+            Cargando guía…
+        </div>
+
+        <div class="guide-flipbook" data-role="flipbook" aria-label="Libro digital"></div>
+
+        <div class="guide-viewer__bottombar" aria-label="Controles de lectura">
+            <button type="button" class="guide-viewer__icon" data-action="prev" aria-label="Páginas anteriores" title="Anterior">
+                <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false">
+                    <path fill="currentColor" d="M12.7 4.3a1 1 0 0 1 0 1.4L9.4 9H17a1 1 0 1 1 0 2H9.4l3.3 3.3a1 1 0 1 1-1.4 1.4l-5-5a1 1 0 0 1 0-1.4l5-5a1 1 0 0 1 1.4 0z"/>
+                </svg>
+            </button>
+
+            <div class="guide-viewer__page" aria-label="Estado de página">
+                <span class="text-muted" data-role="page-indicator">Cargando…</span>
+
+                <label for="guidePageInput" class="text-muted">Ir a</label>
+                <input id="guidePageInput" type="number" class="guide-viewer__page-input" inputmode="numeric" min="1" step="1" data-role="page-input" aria-label="Ir a página">
+                <span class="text-muted" data-role="page-count">/ —</span>
+            </div>
+
+            <button type="button" class="guide-viewer__icon" data-action="next" aria-label="Páginas siguientes" title="Siguiente">
+                <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false">
+                    <path fill="currentColor" d="M7.3 15.7a1 1 0 0 1 0-1.4L10.6 11H3a1 1 0 1 1 0-2h7.6L7.3 5.7a1 1 0 1 1 1.4-1.4l5 5a1 1 0 0 1 0 1.4l-5 5a1 1 0 0 1-1.4 0z"/>
+                </svg>
+            </button>
+        </div>
+
+        <p class="guide-viewer__hint text-muted">Tip: clic en página izquierda/derecha o usa ← →. Home/End para inicio/fin.</p>
+
+    </div>
+
+    <script src="https://unpkg.com/pdfjs-dist@3.11.174/legacy/build/pdf.min.js" defer></script>
+    <script src="https://unpkg.com/page-flip@2.0.7/dist/js/page-flip.browser.js" defer></script>
+    <script>
+        (function () {
+            function onReady(fn) {
+                if (document.readyState === 'complete' || document.readyState === 'interactive') fn();
+                else document.addEventListener('DOMContentLoaded', fn);
+            }
+
+            function waitFor(predicate, tries, delayMs) {
+                var remaining = typeof tries === 'number' ? tries : 30;
+                var delay = typeof delayMs === 'number' ? delayMs : 120;
+                return new Promise(function (resolve, reject) {
+                    (function check() {
+                        try {
+                            if (predicate()) return resolve();
+                        } catch (e) {
+                            // ignore
+                        }
+                        remaining -= 1;
+                        if (remaining <= 0) return reject(new Error('dependency not available'));
+                        setTimeout(check, delay);
+                    })();
+                });
+            }
+
+            onReady(function () {
+                var root = document.querySelector('.guide-viewer');
+                if (!root) return;
+
+                var pdfUrl = root.getAttribute('data-pdf-url') || '';
+                var pdfVersion = String(root.getAttribute('data-pdf-version') || '').trim();
+                var startPageFromServer = parseInt(root.getAttribute('data-page') || '1', 10);
+                if (!Number.isFinite(startPageFromServer) || startPageFromServer < 1) startPageFromServer = 1;
+
+                var fullscreenBtn = root.querySelector('[data-action="fullscreen"]');
+                var book = root.querySelector('[data-role="flipbook"]');
+                var errorBox = root.querySelector('[data-role="pdf-error"]');
+                var loadingBox = root.querySelector('[data-role="pdf-loading"]');
+
+                var prevBtn = root.querySelector('[data-action="prev"]');
+                var nextBtn = root.querySelector('[data-action="next"]');
+                var pageInputEl = root.querySelector('[data-role="page-input"]');
+                var pageCountEl = root.querySelector('[data-role="page-count"]');
+                var pageIndicatorEl = root.querySelector('[data-role="page-indicator"]');
+
+                if (!book) return;
+                if (!pdfUrl) {
+                    if (errorBox) errorBox.style.display = 'block';
+                    return;
+                }
+
+                var pdfDoc = null;
+                var numPages = 0; // páginas del libro (puede incluir una página en blanco)
+                var pdfPages = 0; // páginas reales del PDF
+                var indexToPdfPage = [];
+                var pageFlip = null;
+                var isAnimating = false;
+                var objectUrls = [];
+
+                // Sonido de pasar página (Web Audio, sin assets externos)
+                var audioCtx = null;
+                var lastFlipSoundAt = 0;
+
+                function ensureAudioCtx() {
+                    if (audioCtx) return audioCtx;
+                    var Ctx = window.AudioContext || window.webkitAudioContext;
+                    if (!Ctx) return null;
+                    try {
+                        audioCtx = new Ctx();
+                    } catch (e) {
+                        audioCtx = null;
+                    }
+                    return audioCtx;
+                }
+
+                function playPageFlipSound() {
+                    var now = Date.now();
+                    if (now - lastFlipSoundAt < 140) return;
+                    lastFlipSoundAt = now;
+
+                    var ctx = ensureAudioCtx();
+                    if (!ctx) return;
+
+                    try {
+                        // Algunos navegadores requieren reanudar el contexto tras interacción.
+                        if (ctx.state === 'suspended') {
+                            ctx.resume().catch(function () {});
+                        }
+
+                        var duration = 0.11;
+                        var sampleRate = ctx.sampleRate;
+                        var frameCount = Math.max(1, Math.floor(sampleRate * duration));
+                        var buffer = ctx.createBuffer(1, frameCount, sampleRate);
+                        var data = buffer.getChannelData(0);
+
+                        // Ruido + envolvente rápida (simula "papel")
+                        for (var i = 0; i < frameCount; i++) {
+                            var t = i / frameCount;
+                            var env = Math.exp(-10 * t);
+                            data[i] = (Math.random() * 2 - 1) * env;
+                        }
+
+                        var src = ctx.createBufferSource();
+                        src.buffer = buffer;
+
+                        var bp = ctx.createBiquadFilter();
+                        bp.type = 'bandpass';
+                        bp.frequency.value = 1800;
+                        bp.Q.value = 0.8;
+
+                        var hp = ctx.createBiquadFilter();
+                        hp.type = 'highpass';
+                        hp.frequency.value = 650;
+                        hp.Q.value = 0.7;
+
+                        var gain = ctx.createGain();
+                        var t0 = ctx.currentTime;
+                        gain.gain.setValueAtTime(0.0001, t0);
+                        gain.gain.exponentialRampToValueAtTime(0.18, t0 + 0.012);
+                        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+
+                        src.connect(bp);
+                        bp.connect(hp);
+                        hp.connect(gain);
+                        gain.connect(ctx.destination);
+
+                        src.start(t0);
+                        src.stop(t0 + duration);
+                    } catch (e) {
+                        // ignore
+                    }
+                }
+
+                function showError() {
+                    if (errorBox) errorBox.style.display = 'block';
+                }
+
+                function showLoading() {
+                    if (loadingBox) loadingBox.style.display = 'block';
+                    root.setAttribute('aria-busy', 'true');
+                }
+
+                function hideLoading() {
+                    if (loadingBox) loadingBox.style.display = 'none';
+                    root.removeAttribute('aria-busy');
+                }
+
+                function cleanupObjectUrls() {
+                    for (var i = 0; i < objectUrls.length; i++) {
+                        try { URL.revokeObjectURL(objectUrls[i]); } catch (e) {}
+                    }
+                    objectUrls = [];
+                }
+
+                window.addEventListener('beforeunload', cleanupObjectUrls);
+
+                // Cache persistente (cliente) para evitar re-render en cada recarga.
+                // Se invalida cuando cambia `pdfVersion` (calculado en backend al subir nuevo PDF).
+                var cacheEnabled = !!(pdfVersion && window.indexedDB);
+                var cacheId = cacheEnabled ? ('guide:' + pdfVersion) : null;
+
+                function pad4(n) {
+                    var s = String(n);
+                    while (s.length < 4) s = '0' + s;
+                    return s;
+                }
+
+                function openCacheDb() {
+                    return new Promise(function (resolve, reject) {
+                        if (!cacheEnabled) return resolve(null);
+                        var req = window.indexedDB.open('cbaGuidePdfCache', 1);
+                        req.onupgradeneeded = function () {
+                            var db = req.result;
+                            if (!db.objectStoreNames.contains('meta')) db.createObjectStore('meta', { keyPath: 'id' });
+                            if (!db.objectStoreNames.contains('pages')) db.createObjectStore('pages', { keyPath: 'id' });
+                        };
+                        req.onsuccess = function () { resolve(req.result); };
+                        req.onerror = function () { resolve(null); };
+                    });
+                }
+
+                function cacheMetaGet(db) {
+                    return new Promise(function (resolve) {
+                        if (!db || !cacheId) return resolve(null);
+                        try {
+                            var tx = db.transaction('meta', 'readonly');
+                            var req = tx.objectStore('meta').get(cacheId);
+                            req.onsuccess = function () { resolve(req.result || null); };
+                            req.onerror = function () { resolve(null); };
+                        } catch (e) {
+                            resolve(null);
+                        }
+                    });
+                }
+
+                function cacheMetaPut(db, meta) {
+                    return new Promise(function (resolve) {
+                        if (!db || !cacheId) return resolve();
+                        try {
+                            var tx = db.transaction('meta', 'readwrite');
+                            tx.objectStore('meta').put(meta);
+                            tx.oncomplete = function () { resolve(); };
+                            tx.onerror = function () { resolve(); };
+                        } catch (e) {
+                            resolve();
+                        }
+                    });
+                }
+
+                function cachePagesGetAll(db) {
+                    return new Promise(function (resolve) {
+                        if (!db || !cacheId) return resolve([]);
+                        try {
+                            var tx = db.transaction('pages', 'readonly');
+                            var store = tx.objectStore('pages');
+                            var range = window.IDBKeyRange.bound(cacheId + ':p', cacheId + ':p\uffff');
+                            var req = store.getAll(range);
+                            req.onsuccess = function () { resolve(req.result || []); };
+                            req.onerror = function () { resolve([]); };
+                        } catch (e) {
+                            resolve([]);
+                        }
+                    });
+                }
+
+                function cachePagePut(db, pageNumber, blob) {
+                    return new Promise(function (resolve) {
+                        if (!db || !cacheId || !blob) return resolve();
+                        try {
+                            var tx = db.transaction('pages', 'readwrite');
+                            var id = cacheId + ':p' + pad4(pageNumber);
+                            tx.objectStore('pages').put({ id: id, blob: blob });
+                            tx.oncomplete = function () { resolve(); };
+                            tx.onerror = function () { resolve(); };
+                        } catch (e) {
+                            resolve();
+                        }
+                    });
+                }
+
+                function setupPdfWorker() {
+                    window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@3.11.174/legacy/build/pdf.worker.min.js';
+                }
+
+                function clampPage(p) {
+                    var x = parseInt(String(p), 10);
+                    if (!Number.isFinite(x) || x < 1) x = 1;
+                    if (numPages && x > numPages) x = numPages;
+                    return x;
+                }
+
+                function setButtonDisabled(btn, disabled) {
+                    if (!btn) return;
+                    btn.disabled = !!disabled;
+                    btn.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+                }
+
+                function currentPageNumber() {
+                    if (!pageFlip) return clampPage(startPageFromServer);
+                    return pageFlip.getCurrentPageIndex() + 1;
+                }
+
+                function updateControls() {
+                    var n = currentPageNumber();
+                    var pdfN = (indexToPdfPage && indexToPdfPage.length) ? indexToPdfPage[n - 1] : n;
+                    setButtonDisabled(prevBtn, !pageFlip || isAnimating || n <= 1);
+                    setButtonDisabled(nextBtn, !pageFlip || isAnimating || (numPages ? n >= numPages : false));
+
+                    if (pageCountEl) pageCountEl.textContent = pdfPages ? '/ ' + String(pdfPages) : (numPages ? '/ ' + String(numPages) : '/ —');
+                    if (pageInputEl) {
+                        if (pdfPages) pageInputEl.max = String(pdfPages);
+                        else if (numPages) pageInputEl.max = String(numPages);
+                        pageInputEl.value = String(pdfN || 1);
+                    }
+                    if (pageIndicatorEl) {
+                        if (!numPages) pageIndicatorEl.textContent = 'Cargando…';
+                        else if (!pdfPages) pageIndicatorEl.textContent = 'Página ' + n + ' de ' + numPages;
+                        else if (!pdfN) pageIndicatorEl.textContent = 'Página en blanco';
+                        else pageIndicatorEl.textContent = 'Página ' + pdfN + ' de ' + pdfPages;
+                    }
+
+                    updateCoverClasses();
+                }
+
+                function updateCoverClasses() {
+                    var isLandscape = false;
+                    try { isLandscape = getFlipOrientation() === 'landscape'; } catch (e) { isLandscape = false; }
+
+                    var idx = 0;
+                    if (pageFlip) {
+                        try { idx = pageFlip.getCurrentPageIndex(); } catch (e) { idx = 0; }
+                    }
+
+                    var isFront = !!(pageFlip && isLandscape && idx === 0);
+                    var isBack = !!(pageFlip && isLandscape && numPages && idx === (numPages - 1));
+
+                    root.classList.toggle('is-cover-front', isFront);
+                    root.classList.toggle('is-cover-back', isBack);
+
+                    // "Shift" solo cuando no está animando, para evitar el efecto de corte.
+                    root.classList.toggle('is-cover-shift-front', isFront && !isAnimating);
+                    root.classList.toggle('is-cover-shift-back', isBack && !isAnimating);
+
+                }
+
+                function clampPdfPage(p) {
+                    var x = parseInt(String(p), 10);
+                    if (!Number.isFinite(x) || x < 1) x = 1;
+                    if (pdfPages && x > pdfPages) x = pdfPages;
+                    return x;
+                }
+
+                function findBookPageForPdf(pdfPage) {
+                    var n = clampPdfPage(pdfPage);
+                    if (!indexToPdfPage || !indexToPdfPage.length) return clampPage(n);
+                    var idx = indexToPdfPage.indexOf(n);
+                    if (idx < 0) return clampPage(n);
+                    return idx + 1;
+                }
+
+                function flipToPdfPage(pdfPage) {
+                    var bookPage = findBookPageForPdf(pdfPage);
+                    flipTo(bookPage);
+                }
+
+                function renderPdfPageToImage(pageNumber, targetW, maxH) {
+                    if (!pdfDoc) return Promise.resolve({ url: '', blob: null });
+                    return pdfDoc.getPage(pageNumber).then(function (page) {
+                        var viewport = page.getViewport({ scale: 1 });
+                        var scale = targetW / viewport.width;
+                        var scaled = page.getViewport({ scale: scale });
+                        if (typeof maxH === 'number' && maxH > 0 && scaled.height > maxH) {
+                            scale = maxH / viewport.height;
+                            scaled = page.getViewport({ scale: scale });
+                        }
+
+                        var outputScale = Math.min(2, window.devicePixelRatio || 1);
+                        var canvas = document.createElement('canvas');
+                        canvas.width = Math.floor(scaled.width * outputScale);
+                        canvas.height = Math.floor(scaled.height * outputScale);
+
+                        var ctx = canvas.getContext('2d');
+                        ctx.setTransform(outputScale, 0, 0, outputScale, 0, 0);
+                        ctx.clearRect(0, 0, scaled.width, scaled.height);
+
+                        return page.render({ canvasContext: ctx, viewport: scaled }).promise.then(function () {
+                            return new Promise(function (resolve) {
+                                if (!canvas.toBlob) {
+                                    resolve({ url: canvas.toDataURL('image/jpeg', 0.92), blob: null });
+                                    return;
+                                }
+
+                                canvas.toBlob(function (blob) {
+                                    if (!blob) {
+                                        resolve({ url: canvas.toDataURL('image/jpeg', 0.92), blob: null });
+                                        return;
+                                    }
+                                    var url = URL.createObjectURL(blob);
+                                    objectUrls.push(url);
+                                    resolve({ url: url, blob: blob });
+                                }, 'image/jpeg', 0.92);
+                            });
+                        });
+                    });
+                }
+
+                function initFlipbookFromPdfImageUrls(pdfImageUrls, ratio) {
+                    // pdfImageUrls: 1..pdfPages (solo páginas reales, sin blancos)
+                    pdfPages = Array.isArray(pdfImageUrls) ? pdfImageUrls.length : 0;
+                    numPages = pdfPages;
+                    startPageFromServer = clampPdfPage(startPageFromServer);
+                    updateControls();
+
+                    var rect = book.getBoundingClientRect();
+                    var baseW = Math.min(1000, Math.max(360, Math.floor(rect.width || 900)));
+                    var baseH = Math.min(1200, Math.max(460, Math.floor(baseW * ratio)));
+
+                    var images = (pdfImageUrls || []).slice();
+
+                    // Si el PDF tiene páginas impares, insertamos una página en blanco antes de la última
+                    // para que la contratapa (última página real) quede como página única con showCover.
+                    var insertAt = -1;
+                    if (pdfPages > 1 && (pdfPages % 2 === 1)) {
+                        insertAt = pdfPages - 1;
+                        var blankSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="' + String(Math.round(1000 * ratio)) + '"><rect width="100%" height="100%" fill="white"/></svg>';
+                        var blankUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(blankSvg);
+                        images.splice(images.length - 1, 0, blankUrl);
+                    }
+
+                    indexToPdfPage = [];
+                    numPages = images.length;
+
+                    for (var i = 0; i < images.length; i++) {
+                        var pdfNum = null;
+                        if (insertAt >= 0) {
+                            if (i < insertAt) pdfNum = i + 1;
+                            else if (i === insertAt) pdfNum = null;
+                            else pdfNum = i;
+                        } else {
+                            pdfNum = i + 1;
+                        }
+                        indexToPdfPage.push(pdfNum);
+                    }
+
+                    // En modo canvas la librería no usa nodos HTML por página.
+                    book.innerHTML = '';
+
+                    pageFlip = new window.St.PageFlip(book, {
+                        width: baseW,
+                        height: baseH,
+                        size: 'stretch',
+                        minWidth: 320,
+                        maxWidth: 1400,
+                        minHeight: 420,
+                        maxHeight: 1200,
+                        drawShadow: true,
+                        maxShadowOpacity: 0.45,
+                        showCover: true,
+                        useMouseEvents: true,
+                        mobileScrollSupport: true,
+                        flippingTime: 780,
+                        autoSize: true
+                    });
+
+                    pageFlip.on('flip', function () {
+                        playPageFlipSound();
+                        updateControls();
+                    });
+
+                    pageFlip.on('changeState', function (e) {
+                        var s = String(e && e.data ? e.data : '');
+                        isAnimating = (s === 'flipping');
+                        updateControls();
+                    });
+
+                    pageFlip.on('changeOrientation', function () {
+                        updateControls();
+                    });
+
+                    pageFlip.loadFromImages(images);
+                    bindControls();
+                    flipToPdfPage(startPageFromServer);
+                    updateControls();
+                }
+
+                function flipTo(pageNumber) {
+                    if (!pageFlip) return;
+                    var idx = clampPage(pageNumber) - 1;
+                    try {
+                        pageFlip.flip(idx, 'top');
+                    } catch (e) {
+                        try { pageFlip.turnToPage(idx); } catch (e2) {}
+                    }
+                }
+
+                function getFlipOrientation() {
+                    if (!pageFlip || !pageFlip.getOrientation) return 'portrait';
+                    try {
+                        return String(pageFlip.getOrientation() || 'portrait');
+                    } catch (e) {
+                        return 'portrait';
+                    }
+                }
+
+                function computeNextIndex() {
+                    if (!pageFlip) return 0;
+                    var idx = pageFlip.getCurrentPageIndex ? pageFlip.getCurrentPageIndex() : 0;
+                    var orientation = getFlipOrientation();
+                    var step = orientation === 'landscape' ? 2 : 1;
+
+                    // Con showCover=true, la tapa (idx 0) y la contratapa (última) se tratan como página simple.
+                    if (orientation === 'landscape') {
+                        if (idx <= 0) return 1;
+                        if (numPages && idx >= numPages - 2) return Math.max(0, numPages - 1);
+                    }
+
+                    var next = idx + step;
+                    if (numPages) next = Math.min(numPages - 1, next);
+                    return Math.max(0, next);
+                }
+
+                function computePrevIndex() {
+                    if (!pageFlip) return 0;
+                    var idx = pageFlip.getCurrentPageIndex ? pageFlip.getCurrentPageIndex() : 0;
+                    var orientation = getFlipOrientation();
+                    var step = orientation === 'landscape' ? 2 : 1;
+
+                    if (orientation === 'landscape') {
+                        if (idx <= 0) return 0;
+                        if (idx === 1) return 0;
+                    }
+
+                    var prev = idx - step;
+                    return Math.max(0, prev);
+                }
+
+                function flipPrev() {
+                    if (!pageFlip) return;
+                    var target = computePrevIndex();
+                    try { pageFlip.flip(target, 'top'); } catch (e) {
+                        try { pageFlip.turnToPage(target); } catch (e2) {}
+                    }
+                }
+
+                function flipNext() {
+                    if (!pageFlip) return;
+                    var target = computeNextIndex();
+                    try { pageFlip.flip(target, 'top'); } catch (e) {
+                        try { pageFlip.turnToPage(target); } catch (e2) {}
+                    }
+                }
+
+                function bindControls() {
+                    if (prevBtn) prevBtn.addEventListener('click', flipPrev);
+                    if (nextBtn) nextBtn.addEventListener('click', flipNext);
+
+                    if (pageInputEl) {
+                        pageInputEl.addEventListener('keydown', function (ev) {
+                            if (ev.key !== 'Enter') return;
+                            ev.preventDefault();
+                            flipToPdfPage(parseInt(pageInputEl.value || '1', 10) || 1);
+                        });
+
+                        pageInputEl.addEventListener('change', function () {
+                            flipToPdfPage(parseInt(pageInputEl.value || '1', 10) || 1);
+                        });
+                    }
+
+                    function isFullscreen() {
+                        return !!document.fullscreenElement;
+                    }
+
+                    function updateFullscreenButton() {
+                        if (!fullscreenBtn) return;
+                        var active = isFullscreen();
+                        fullscreenBtn.setAttribute('aria-label', active ? 'Salir de pantalla completa' : 'Pantalla completa');
+                        fullscreenBtn.setAttribute('title', active ? 'Salir' : 'Pantalla completa');
+                    }
+
+                    if (fullscreenBtn) {
+                        fullscreenBtn.addEventListener('click', function () {
+                            try {
+                                if (!isFullscreen()) {
+                                    var host = root.closest('.guide-main') || root;
+                                    if (host.requestFullscreen) host.requestFullscreen();
+                                } else {
+                                    if (document.exitFullscreen) document.exitFullscreen();
+                                }
+                            } catch (e) {
+                                // no-op
+                            }
+                        });
+                    }
+
+                    document.addEventListener('fullscreenchange', function () {
+                        updateFullscreenButton();
+                        setTimeout(function () {
+                            if (!pageFlip) return;
+                            try { pageFlip.update(); } catch (e) {}
+                            updateControls();
+                        }, 80);
+                    });
+                    updateFullscreenButton();
+
+                    var resizeTimer = null;
+                    window.addEventListener('resize', function () {
+                        if (!pageFlip) return;
+                        if (resizeTimer) window.clearTimeout(resizeTimer);
+                        resizeTimer = window.setTimeout(function () {
+                            try { pageFlip.update(); } catch (e) {}
+                            updateControls();
+                        }, 180);
+                    });
+
+                    document.addEventListener('keydown', function (ev) {
+                        if (!pageFlip) return;
+                        if (isAnimating) return;
+
+                        var active = document.activeElement;
+                        var tag = active && active.tagName ? active.tagName.toLowerCase() : '';
+                        var isTyping = tag === 'input' || tag === 'textarea' || tag === 'select' || (active && active.isContentEditable);
+                        if (isTyping) return;
+
+                        if (ev.key === 'ArrowLeft') {
+                            ev.preventDefault();
+                            flipPrev();
+                            return;
+                        }
+                        if (ev.key === 'ArrowRight') {
+                            ev.preventDefault();
+                            flipNext();
+                            return;
+                        }
+                        if (ev.key === 'Home') {
+                            ev.preventDefault();
+                            flipToPdfPage(1);
+                            return;
+                        }
+                        if (ev.key === 'End') {
+                            ev.preventDefault();
+                            flipToPdfPage(pdfPages || (numPages || 1));
+                        }
+                    });
+                }
+
+                showLoading();
+
+                Promise.all([
+                    waitFor(function () { return !!window.pdfjsLib; }, 35, 120),
+                    waitFor(function () { return !!(window.St && window.St.PageFlip); }, 35, 120)
+                ]).then(function () {
+                    try { setupPdfWorker(); } catch (e) {}
+
+                    // 1) Intentar cargar desde cache (IndexedDB)
+                    return openCacheDb().then(function (db) {
+                        return cacheMetaGet(db).then(function (meta) {
+                            if (!db || !meta || !meta.pdfPages || !meta.ratio) return null;
+                            return cachePagesGetAll(db).then(function (records) {
+                                var expected = parseInt(meta.pdfPages, 10) || 0;
+                                if (!expected || !Array.isArray(records) || records.length < expected) return null;
+
+                                cleanupObjectUrls();
+
+                                var urls = [];
+                                for (var i = 0; i < expected; i++) {
+                                    var rec = records[i];
+                                    if (!rec || !rec.blob) return null;
+                                    var u = URL.createObjectURL(rec.blob);
+                                    objectUrls.push(u);
+                                    urls.push(u);
+                                }
+
+                                return { urls: urls, pdfPages: expected, ratio: meta.ratio };
+                            });
+                        }).then(function (cached) {
+                            if (cached) {
+                                pdfPages = cached.pdfPages;
+                                initFlipbookFromPdfImageUrls(cached.urls, cached.ratio);
+                                return true;
+                            }
+                            return false;
+                        }).then(function (usedCache) {
+                            if (usedCache) return;
+
+                            // 2) Si no hay cache, renderizar con PDF.js y guardar blobs
+                            return window.pdfjsLib.getDocument({ url: pdfUrl }).promise.then(function (doc) {
+                                pdfDoc = doc;
+                                pdfPages = doc.numPages || 0;
+                                startPageFromServer = clampPdfPage(startPageFromServer);
+                                updateControls();
+
+                                return pdfDoc.getPage(1).then(function (firstPage) {
+                                    var v = firstPage.getViewport({ scale: 1 });
+                                    var ratio = v.height / v.width;
+
+                                    if (pageIndicatorEl && pdfPages) pageIndicatorEl.textContent = 'Preparando…';
+
+                                    cleanupObjectUrls();
+
+                                    return openCacheDb().then(function (db2) {
+                                        var meta = { id: cacheId, pdfPages: pdfPages, ratio: ratio, savedAt: Date.now() };
+                                        return cacheMetaPut(db2, meta).then(function () {
+                                            var imgW = 1400;
+                                            var maxH = 2200;
+                                            var urls = [];
+
+                                            var seq = Promise.resolve();
+                                            for (var p = 1; p <= pdfPages; p++) {
+                                                (function (pageNumber) {
+                                                    seq = seq.then(function () {
+                                                        if (pageIndicatorEl && pdfPages) {
+                                                            pageIndicatorEl.textContent = 'Renderizando ' + pageNumber + ' de ' + pdfPages + '…';
+                                                        }
+                                                        return renderPdfPageToImage(pageNumber, imgW, maxH).then(function (imgRes) {
+                                                            if (imgRes && imgRes.blob) {
+                                                                return cachePagePut(db2, pageNumber, imgRes.blob).then(function () {
+                                                                    urls.push(imgRes.url);
+                                                                });
+                                                            }
+                                                            urls.push(imgRes && imgRes.url ? imgRes.url : '');
+                                                        });
+                                                    });
+                                                })(p);
+                                            }
+
+                                            return seq.then(function () {
+                                                initFlipbookFromPdfImageUrls(urls, ratio);
+                                            });
+                                        });
+                                    });
+                                });
+                            });
+                        });
+                    });
+                }).catch(function () {
+                    showError();
+                }).finally(function () {
+                    hideLoading();
+                    updateControls();
+                });
+            });
+        })();
+    </script>
+{% endif %}

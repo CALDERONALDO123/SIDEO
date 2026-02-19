@@ -1,0 +1,58 @@
+{% extends "cba_app/base.html" %}
+
+{% block body_class %}layout--panel page-step page-step4{% endblock %}
+
+{% block content %}
+    <div class="dashboard-panel step-panel">
+        <div class="step-head">
+            <div class="step-head__main">
+                <p class="step-head__eyebrow">CBA · Paso 4</p>
+                <h2 class="step-head__title">Atributos por factor</h2>
+                <p class="step-head__lede">Completa la matriz FACTORES × Postores seleccionando el atributo (Excelente, Bueno, Regular, Cumple) para cada celda.</p>
+                {% include "cba_app/_step_progress.html" with current=4 total=10 percent=40 %}
+            </div>
+        </div>
+
+        {% include "cba_app/_cba_context_bar.html" %}
+
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="table-wrapper table-wrapper--step" style="margin-top:16px;">
+            <table>
+                <tr>
+                    <th>FACTORES</th>
+                    {% for alt in alternatives %}
+                        <th>{{ alt.name }}</th>
+                    {% endfor %}
+                </tr>
+
+                {% for row in rows %}
+                <tr>
+                    <td>{{ row.criterion.name }}</td>
+                    {% for cell in row.cells %}
+                    <td>
+                        <select name="{{ cell.name }}">
+                            <option value="">--</option>
+                            {% for opt in options %}
+                                <option value="{{ opt }}" {% if cell.value == opt %}selected{% endif %}>{{ opt }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="{{ alternatives|length|add:'1' }}">No hay factores o postores registrados aún.</td>
+                </tr>
+                {% endfor %}
+            </table>
+            </div>
+
+            <div class="step-nav">
+                <a href="{% url 'cba_step3' %}" class="link-back nav-prev">&larr; Paso anterior</a>
+                <button type="submit" class="button nav-next">Guardar y continuar &rsaquo;</button>
+            </div>
+        </form>
+    </div>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "cba_app/base.html" %}
+
+{% block body_class %}page-guide{% endblock %}
+
+{% block content %}
+    <div class="guide-pagehead">
+        <div>
+            <h2>{{ link.title|default:"Guía" }}</h2>
+            {% if link.subtitle %}
+                <p class="text-muted guide-shared__subtitle">{{ link.subtitle }}</p>
+            {% endif %}
+        </div>
+        <a href="{% url 'cba_home' %}" class="link-back" aria-label="Volver al panel principal">&larr; Panel</a>
+    </div>
+
+    {% if requires_password %}
+        <div class="table-wrapper">
+            <div class="notice notice--error" {% if not password_error %}style="display:none;"{% endif %}>
+                {{ password_error }}
+            </div>
+
+            <p class="text-muted" style="margin: 0 0 10px;">Este link está protegido con contraseña.</p>
+
+            <form method="post" class="guide-upload__form">
+                {% csrf_token %}
+                <div class="form-inline" style="flex-wrap: wrap; gap: 10px;">
+                    <label for="id_shared_password">Contraseña</label>
+                    <input id="id_shared_password" name="password" type="password" class="cba-input" placeholder="Ingresa la contraseña">
+                    <button type="submit" class="button">Entrar</button>
+                </div>
+            </form>
+        </div>
+    {% else %}
+        {% include "cba_app/_guide_viewer.html" with pdf_url=pdf_url page=page open_url=pdf_url download_url=download_url %}
+    {% endif %}
+{% endblock %}

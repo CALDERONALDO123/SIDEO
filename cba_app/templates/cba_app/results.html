@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CBA - Pasos 9 y 10</title>
+</head>
+<body>
+    <h1>Choosing By Advantages - Pasos 9 y 10</h1>
+
+    <ol>
+        <li><strong>Paso 9:</strong> Calcular la importancia total de las ventajas.</li>
+        <li><strong>Paso 10:</strong> Evaluar costo versus ventaja.</li>
+    </ol>
+    <table border="1">
+        <tr>
+            <th>Alternativa</th>
+            <th>Total importancia de ventajas</th>
+            <th>Costo</th>
+            <th>Relación costo / ventaja</th>
+        </tr>
+        {% for row in totals %}
+        <tr>
+            <td>{{ row.alternative.name }}</td>
+            <td>{{ row.total_importance }}</td>
+            <td>
+                {% if row.cost %}
+                    {{ row.cost }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>
+                {% if row.ratio is not None %}
+                    {{ row.ratio|floatformat:2 }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

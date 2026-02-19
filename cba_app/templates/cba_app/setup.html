@@ -1,0 +1,167 @@
+{% extends "cba_app/base.html" %}
+
+{% block content %}
+    <h2>Configuración inicial</h2>
+    <p class="text-muted">Antes de iniciar el CBA, registra el contexto del proyecto. Esto define el tipo (público/privado) y ayuda a documentar el objetivo.</p>
+
+    <div class="table-wrapper" style="margin-top:16px;">
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="form_name" value="cba_setup">
+
+            <div class="setup-layout">
+                <div class="setup-block">
+                    <div class="setup-block__title">1) Tipo de proyecto</div>
+                    <div class="text-muted setup-block__subtitle">Selecciona una opción para mostrar el campo correspondiente.</div>
+
+                    <div class="setup-tiles" role="radiogroup" aria-label="Tipo de proyecto">
+                        {% for radio in form.sector %}
+                            {% if radio.data.value == 'PUBLICO' %}
+                                <label class="setup-tile" for="{{ radio.id_for_label }}" data-sector="PUBLICO">
+                                    {{ radio.tag }}
+                                    <span class="setup-tile__content">
+                                        <span class="setup-tile__icon" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M4 10h16" />
+                                                <path d="M6 10V20" />
+                                                <path d="M10 10V20" />
+                                                <path d="M14 10V20" />
+                                                <path d="M18 10V20" />
+                                                <path d="M4 20h16" />
+                                                <path d="M12 4l8 6H4l8-6z" />
+                                            </svg>
+                                        </span>
+                                        <span class="setup-tile__text">
+                                            <span class="setup-tile__label">Público</span>
+                                            <span class="setup-tile__desc">Entidad pública, procesos y proyectos del sector público.</span>
+                                        </span>
+                                    </span>
+                                </label>
+                            {% else %}
+                                <label class="setup-tile" for="{{ radio.id_for_label }}" data-sector="PRIVADO">
+                                    {{ radio.tag }}
+                                    <span class="setup-tile__content">
+                                        <span class="setup-tile__icon" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M8 7V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1" />
+                                                <path d="M4 9h16v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9z" />
+                                                <path d="M9 13h6" />
+                                                <path d="M12 12v2" />
+                                            </svg>
+                                        </span>
+                                        <span class="setup-tile__text">
+                                            <span class="setup-tile__label">Privado</span>
+                                            <span class="setup-tile__desc">Empresa/área, procesos y proyectos del sector privado.</span>
+                                        </span>
+                                    </span>
+                                </label>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+
+                    {% if form.sector.errors %}
+                        <div class="setup-error">{{ form.sector.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="setup-block">
+                    <div class="setup-block__title">2) Datos del proyecto</div>
+
+                    <div class="setup-fields">
+                        <div id="public-entity-field" class="setup-field">
+                            <label for="id_public_entity" class="setup-label">{{ form.public_entity.label }} <span class="setup-required">*</span></label>
+                            {{ form.public_entity }}
+                            {% if form.public_entity.errors %}
+                                <div class="setup-error">{{ form.public_entity.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div id="private-company-field" class="setup-field">
+                            <label for="id_private_company" class="setup-label">{{ form.private_company.label }} <span class="setup-required">*</span></label>
+                            {{ form.private_company }}
+                            {% if form.private_company.errors %}
+                                <div class="setup-error">{{ form.private_company.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="setup-field">
+                            <label for="id_project_name" class="setup-label">{{ form.project_name.label }}</label>
+                            {{ form.project_name }}
+                            {% if form.project_name.errors %}
+                                <div class="setup-error">{{ form.project_name.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="setup-field">
+                            <label for="id_location" class="setup-label">{{ form.location.label }}</label>
+                            {{ form.location }}
+                            {% if form.location.errors %}
+                                <div class="setup-error">{{ form.location.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="setup-field">
+                            <label for="id_requesting_area" class="setup-label">{{ form.requesting_area.label }}</label>
+                            {{ form.requesting_area }}
+                            {% if form.requesting_area.errors %}
+                                <div class="setup-error">{{ form.requesting_area.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="setup-field">
+                            <label for="id_reference_budget" class="setup-label">{{ form.reference_budget.label }}</label>
+                            {{ form.reference_budget }}
+                            {% if form.reference_budget.errors %}
+                                <div class="setup-error">{{ form.reference_budget.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="setup-field">
+                            <label for="id_objective" class="setup-label">{{ form.objective.label }}</label>
+                            {{ form.objective }}
+                            {% if form.objective.errors %}
+                                <div class="setup-error">{{ form.objective.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setup-actions">
+                    <button type="submit" class="button">Continuar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        (function () {
+            var sectorInputs = document.querySelectorAll('input[name="sector"]');
+            var publicField = document.getElementById('public-entity-field');
+            var privateField = document.getElementById('private-company-field');
+            var publicInput = document.getElementById('id_public_entity');
+            var privateInput = document.getElementById('id_private_company');
+
+            function getSector() {
+                for (var i = 0; i < sectorInputs.length; i++) {
+                    if (sectorInputs[i].checked) return sectorInputs[i].value;
+                }
+                return '';
+            }
+
+            function sync() {
+                var v = getSector();
+                var isPublic = (v === 'PUBLICO');
+                var isPrivate = (v === 'PRIVADO');
+                if (publicField) publicField.style.display = isPublic ? 'block' : 'none';
+                if (privateField) privateField.style.display = isPrivate ? 'block' : 'none';
+                if (publicInput) publicInput.disabled = !isPublic;
+                if (privateInput) privateInput.disabled = !isPrivate;
+            }
+
+            for (var j = 0; j < sectorInputs.length; j++) {
+                sectorInputs[j].addEventListener('change', sync);
+            }
+            sync();
+        })();
+    </script>
+{% endblock %}

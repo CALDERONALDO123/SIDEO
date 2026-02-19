@@ -1,0 +1,38 @@
+{% extends "cba_app/base.html" %}
+{% load static %}
+
+{% block body_class %}layout--home{% endblock %}
+
+{% block content %}
+    <div class="dashboard-layout">
+        {% include "cba_app/_panel_sidebar.html" with active="home" about_anchor=1 %}
+
+        <section class="dashboard-content" aria-label="Contenido del panel">
+            <header class="dashboard-welcome" aria-label="Bienvenida">
+                <div class="dashboard-welcome__main">
+                    <p class="dashboard-section-head__eyebrow">Panel principal</p>
+                    <h2 class="dashboard-welcome__title">
+                        Hola,
+                        {% if user.first_name or user.last_name %}
+                            {{ user.first_name }} {{ user.last_name }}
+                        {% else %}
+                            {{ user.username }}
+                        {% endif %}
+                    </h2>
+                    <p class="dashboard-welcome__text">
+                        Revisa el estado de tus análisis CBA, retoma el último resultado guardado o inicia un nuevo proyecto.
+                    </p>
+                </div>
+            </header>
+
+            {% include "cba_app/home/_metrics.html" %}
+            {% include "cba_app/home/_last_result.html" %}
+            {% include "cba_app/home/_about.html" %}
+        </section>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    {{ latest_items|json_script:"homeDashboardPayload" }}
+    <script src="{% static 'cba_app/home.js' %}?v={% now 'U' %}" defer></script>
+{% endblock %}
