@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 import os
+import importlib.util
 
 try:
     import dj_database_url  # type: ignore
@@ -37,6 +38,13 @@ def _env_list(name: str, default: list[str] | None = None) -> list[str]:
     if not val:
         return default or []
     return [x.strip() for x in val.split(",") if x.strip()]
+
+
+def _module_available(module_name: str) -> bool:
+    try:
+        return importlib.util.find_spec(module_name) is not None
+    except Exception:
+        return False
 
 
 # SECURITY WARNING: keep the secret key used in production secret!
@@ -69,7 +77,7 @@ INSTALLED_APPS = [
 ]
 
 # Cloudinary (media) opcional: se activa solo si CLOUDINARY_URL está configurado.
-if os.environ.get("CLOUDINARY_URL"):
+if os.environ.get("CLOUDINARY_URL") and _module_available("cloudinary") and _module_available("cloudinary_storage"):
     INSTALLED_APPS = [
         "cloudinary",
         "cloudinary_storage",
@@ -78,7 +86,12 @@ if os.environ.get("CLOUDINARY_URL"):
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
+]
+
+if _module_available("whitenoise"):
+    MIDDLEWARE.append('whitenoise.middleware.WhiteNoiseMiddleware')
+
+MIDDLEWARE += [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -172,13 +185,14 @@ STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 if not DEBUG:
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+    if _module_available("whitenoise"):
+        STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Media files (uploads)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-if os.environ.get("CLOUDINARY_URL"):
+if os.environ.get("CLOUDINARY_URL") and _module_available("cloudinary_storage"):
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 # Seguridad básica para producción detrás de proxy (Render)
