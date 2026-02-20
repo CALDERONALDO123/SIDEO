@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from pathlib import Path
 import os
 import importlib.util
+import logging
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -185,6 +186,31 @@ TIME_ZONE = 'America/Lima'
 USE_I18N = True
 
 USE_TZ = True
+
+# Logging
+# En producción (DEBUG=False) Django no imprime automáticamente tracebacks a consola.
+# Esto hace difícil depurar en Render. Forzamos logging de errores HTTP 500 a stdout/stderr.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "loggers": {
+        "django.request": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+        "django.security": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+    },
+}
 
 # Auth
 LOGIN_URL = "/cuentas/ingresar/"
