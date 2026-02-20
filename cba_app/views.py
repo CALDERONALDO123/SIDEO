@@ -924,6 +924,7 @@ def cba_step10(request):
             "name": row["alternative"].name,
             "cost": float(row["cost"]) if row["cost"] is not None else None,
             "total": row["total_importance"],
+            "ratio": row.get("ratio"),
         }
         for row in rows
     ]
@@ -935,14 +936,61 @@ def cba_step10(request):
         winner_cost = best_row["cost"] if best_row else None
         winner_ratio = best_row["ratio"] if best_row else None
 
-        CBAResult.objects.create(
-            name=f"Análisis CBA {timezone.now().strftime('%Y-%m-%d %H:%M')}",
+        base_name = "Análisis CBA"
+        if setup and isinstance(setup, dict) and setup.get("project_name"):
+            base_name = f"CBA - {setup.get('project_name')}"
+
+        saved = CBAResult.objects.create(
+            name=f"{base_name} {timezone.now().strftime('%Y-%m-%d %H:%M')}",
             winner_name=winner_name,
             winner_total=winner_total,
             winner_cost=winner_cost,
             winner_ratio=winner_ratio,
-            data_json=json.dumps(chart_data),
+            data_json=json.dumps({"setup": setup, "dashboard": chart_data}, ensure_ascii=False),
         )
+
+        # Insertar tabla plana para Power BI
+        proyecto = None
+        puesto = None
+        if setup and isinstance(setup, dict):
+            proyecto = (setup.get("project_name") or "").strip() or None
+            puesto = (setup.get("requesting_area") or "").strip() or None
+
+        proyecto = (proyecto or saved.name or "").strip()[:255]
+        if puesto:
+            puesto = puesto[:150]
+
+        from decimal import Decimal, InvalidOperation
+
+        def _to_decimal(value):
+            if value is None:
+                return None
+            try:
+                return Decimal(str(value))
+            except (InvalidOperation, ValueError, TypeError):
+                return None
+
+        flat_rows = []
+        for item in chart_data or []:
+            if not isinstance(item, dict):
+                continue
+            candidato = (item.get("name") or "").strip()[:150]
+            flat_rows.append(
+                ResultadoCBA(
+                    proyecto=proyecto,
+                    puesto=puesto,
+                    candidato=candidato,
+                    costo=_to_decimal(item.get("cost")),
+                    ventaja=_to_decimal(item.get("total")),
+                    costo_ventaja=_to_decimal(item.get("ratio")),
+                    recomendado=bool(winner_name and candidato == winner_name),
+                    fecha=saved.created_at or timezone.now(),
+                )
+            )
+
+        if flat_rows:
+            ResultadoCBA.objects.bulk_create(flat_rows, batch_size=200)
+
         return redirect("cba_home")
 
     chart_data_json = json.dumps(chart_data)
