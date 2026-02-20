@@ -1578,7 +1578,9 @@ def cba_guide(request):
     storage_name = "guides/guia.pdf"
     pdf_url = None
     if _safe_storage_exists(storage_name):
-        pdf_url = settings.MEDIA_URL.rstrip("/") + "/" + storage_name
+        # En producción (Cloudinary u otro storage remoto) MEDIA_URL puede no servir el archivo.
+        # PDF.js necesita una URL same-origin que entregue bytes del PDF.
+        pdf_url = reverse("cba_guide_pdf")
     download_url = reverse("cba_guide_download") if pdf_url else None
     pdf_version = None
     if pdf_url:
@@ -1647,6 +1649,30 @@ def cba_guide(request):
         "share_error": share_error,
     }
     return render(request, "cba_app/guide.html", context)
+
+
+@login_required
+def cba_guide_pdf(request):
+    """Entrega el PDF para el visor (PDF.js) desde default_storage.
+
+    Usar esta ruta evita problemas de CORS y de MEDIA_URL en storages remotos.
+    """
+
+    storage_name = "guides/guia.pdf"
+    if not _safe_storage_exists(storage_name):
+        raise Http404("No hay guía disponible.")
+
+    try:
+        fh = default_storage.open(storage_name, "rb")
+    except Exception:
+        raise Http404("No hay guía disponible.")
+
+    return FileResponse(
+        fh,
+        content_type="application/pdf",
+        as_attachment=False,
+        filename="guia.pdf",
+    )
 
 
 @login_required

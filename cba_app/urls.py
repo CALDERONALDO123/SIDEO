@@ -101,6 +101,7 @@ urlpatterns = [
         name="cba_saved_result_delete",
     ),
     path("guia/", views.cba_guide, name="cba_guide"),
+    path("guia/pdf/", views.cba_guide_pdf, name="cba_guide_pdf"),
     path("guia/descargar/", views.cba_guide_download, name="cba_guide_download"),
     path("guia/compartir/", views.cba_guide_share_create, name="cba_guide_share_create"),
     path(
