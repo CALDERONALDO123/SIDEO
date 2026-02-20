@@ -3,15 +3,21 @@
 {% block body_class %}page-step page-step2{% endblock %}
 
 {% block content %}
-    <div class="dashboard-panel step-panel">
-        <div class="step-head">
-            <div class="step-head__main">
-                <p class="step-head__eyebrow">CBA · Paso 2</p>
-                <h2 class="step-head__title">Factores de decisión</h2>
-                <p class="step-head__lede">En este paso defines los factores (criterios) que usarás para comparar a los postores.</p>
-                {% include "cba_app/_step_progress.html" with current=2 total=10 percent=20 %}
-            </div>
-        </div>
+    <section class="content pt-3">
+        <div class="container-fluid">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex flex-column">
+                        <div class="text-muted text-uppercase text-sm">CBA · Paso 2</div>
+                        <h3 class="m-0">Factores de decisión</h3>
+                        <div class="text-muted text-sm mt-2">En este paso defines los factores (criterios) que usarás para comparar a los postores.</div>
+                    </div>
+                    <div class="mt-2">
+                        {% include "cba_app/_step_progress.html" with current=2 total=10 percent=20 %}
+                    </div>
+                </div>
+
+                <div class="card-body">
 
         {% include "cba_app/_cba_context_bar.html" %}
 
@@ -22,8 +28,8 @@
                     <div class="assistant__subtitle">Valida claridad, duplicados y coherencia de factores.</div>
                 </div>
                 <div class="assistant__actions">
-                    <button type="button" class="button" id="aiCritAuditBtn">Revisar factores</button>
-                    <button type="button" class="button button--ghost" id="aiCritAuditClearBtn">Limpiar</button>
+                    <button type="button" class="btn btn-primary btn-sm" id="aiCritAuditBtn">Revisar factores</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="aiCritAuditClearBtn">Limpiar</button>
                 </div>
             </div>
 
@@ -47,7 +53,8 @@
                 <button type="submit" class="icon-button icon-button-add" title="Agregar factor">+</button>
             </form>
 
-            <table>
+            <div class="table-responsive">
+            <table class="table table-bordered table-striped table-sm mb-0">
                 <tr>
                     <th>#</th>
                     <th>Nombre del factor</th>
@@ -61,7 +68,7 @@
                             <form method="post" class="form-inline form-inline--step" style="gap:6px;">
                                 {% csrf_token %}
                                 <input type="hidden" name="update_id" value="{{ c.id }}">
-                                <input type="text" name="name" value="{{ c.name }}" />
+                                <input type="text" name="name" value="{{ c.name }}" class="form-control form-control-sm" autocomplete="off" />
                                 <button type="submit" class="icon-button icon-button-edit" title="Guardar cambios">&#10003;</button>
                                 <a href="{% url 'cba_step2' %}" class="icon-button icon-button-delete" title="Cancelar">&times;</a>
                             </form>
@@ -86,13 +93,17 @@
                 </tr>
                 {% endfor %}
             </table>
+            </div>
 
             <div class="step-nav">
-                <a href="{% url 'cba_step1' %}" class="link-back nav-prev">&larr; Paso anterior</a>
-                <a href="{% url 'cba_step3' %}" class="button nav-next">Siguiente &rsaquo;</a>
+                <a href="{% url 'cba_step1' %}" class="btn btn-outline-secondary nav-prev">&larr; Paso anterior</a>
+                <a href="{% url 'cba_step3' %}" class="btn btn-primary nav-next">Siguiente &rsaquo;</a>
             </div>
         </div>
-    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
     <script>
         function getCookie(name) {

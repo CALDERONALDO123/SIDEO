@@ -1,154 +1,166 @@
 {% extends "cba_app/base.html" %}
 
-{% block content %}
-    <h2>Archivos guardados (resultados CBA)</h2>
+{% block extra_head %}
+    {{ block.super }}
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap4.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap4.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap4.min.css">
+{% endblock %}
 
-    <div class="table-wrapper">
-        <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; margin-bottom:12px;">
-            <div style="min-width:220px;">
-                <div style="font-size:12px; color:#4b5563; margin-bottom:4px;">Buscar (nombre)</div>
-                <input type="text" id="filterName" placeholder="Ej. CBA - Proyecto X" style="width:100%;" />
-            </div>
-            <div>
-                <div style="font-size:12px; color:#4b5563; margin-bottom:4px;">Desde (fecha)</div>
-                <input type="date" id="filterDateFrom" />
-            </div>
-            <div>
-                <div style="font-size:12px; color:#4b5563; margin-bottom:4px;">Hasta (fecha)</div>
-                <input type="date" id="filterDateTo" />
-            </div>
-            <div>
-                <div style="font-size:12px; color:#4b5563; margin-bottom:4px;">Costo mín.</div>
-                <input type="number" id="filterCostMin" step="0.01" placeholder="0" style="width:120px;" />
-            </div>
-            <div>
-                <div style="font-size:12px; color:#4b5563; margin-bottom:4px;">Costo máx.</div>
-                <input type="number" id="filterCostMax" step="0.01" placeholder="" style="width:120px;" />
-            </div>
-            <div>
-                <button type="button" class="button" id="filterResetBtn">Limpiar</button>
+{% block content %}
+    <section class="content pt-3">
+        <div class="container-fluid">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex flex-column">
+                        <h3 class="m-0">Archivos guardados (resultados CBA)</h3>
+                        <div class="text-muted text-sm mt-2">Búsqueda, filtros, orden y exportación.</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table id="savedResultsTable" class="table table-bordered table-striped table-sm dt-responsive nowrap" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Fecha</th>
+                                    <th>Ganador</th>
+                                    <th>Total de ventajas</th>
+                                    <th>Costo</th>
+                                    <th>Costo / Ventaja (S/ por punto)</th>
+                                    <th>Acciones</th>
+                                </tr>
+                                <tr>
+                                    <th><input type="text" class="form-control form-control-sm" placeholder="Filtrar" /></th>
+                                    <th><input type="text" class="form-control form-control-sm" placeholder="Filtrar" /></th>
+                                    <th><input type="text" class="form-control form-control-sm" placeholder="Filtrar" /></th>
+                                    <th><input type="text" class="form-control form-control-sm" placeholder="Filtrar" /></th>
+                                    <th><input type="text" class="form-control form-control-sm" placeholder="Filtrar" /></th>
+                                    <th><input type="text" class="form-control form-control-sm" placeholder="Filtrar" /></th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for r in results %}
+                                    <tr>
+                                        <td>{{ r.name }}</td>
+                                        <td data-order="{{ r.created_at|date:'Y-m-d H:i:s' }}">{{ r.created_at|date:"Y-m-d H:i" }}</td>
+                                        <td>{{ r.winner_name }}</td>
+                                        <td data-order="{{ r.winner_total|default_if_none:'' }}">{{ r.winner_total }}</td>
+                                        <td data-order="{% if r.winner_cost %}{{ r.winner_cost }}{% endif %}">{% if r.winner_cost %}{{ r.winner_cost }}{% else %}-{% endif %}</td>
+                                        <td data-order="{% if r.winner_ratio is not None %}{{ r.winner_ratio }}{% endif %}">{% if r.winner_ratio is not None %}S/ {{ r.winner_ratio|floatformat:4 }}{% else %}-{% endif %}</td>
+                                        <td class="text-center" style="white-space:nowrap;">
+                                            <a class="btn btn-outline-primary btn-sm" href="{% url 'cba_saved_result_detail' r.id %}" title="Ver">Ver</a>
+                                            <form method="post" action="{% url 'cba_saved_result_delete' r.id %}" style="display:inline; margin:0;">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-outline-danger btn-sm" title="Eliminar">Eliminar</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
+    </section>
+{% endblock %}
 
-            <table>
-            <tr>
-                <th>Nombre</th>
-                <th>Fecha</th>
-                <th>Ganador</th>
-                <th>Total de ventajas</th>
-                <th>Costo</th>
-                <th>Costo / Ventaja (S/ por punto)</th>
-                <th style="width:110px; text-align:center;">Acciones</th>
-            </tr>
-            {% for r in results %}
-            <tr data-row="result"
-                data-name="{{ r.name|default_if_none:'' }}"
-                data-date="{{ r.created_at|date:'Y-m-d' }}"
-                data-cost="{% if r.winner_cost %}{{ r.winner_cost }}{% endif %}">
-                <td>{{ r.name }}</td>
-                <td>{{ r.created_at|date:"Y-m-d H:i" }}</td>
-                <td>{{ r.winner_name }}</td>
-                <td>{{ r.winner_total }}</td>
-                <td>{% if r.winner_cost %}{{ r.winner_cost }}{% else %}-{% endif %}</td>
-                <td>{% if r.winner_ratio is not None %}S/ {{ r.winner_ratio|floatformat:4 }}{% else %}-{% endif %}</td>
-                <td style="text-align:center;">
-                    <div class="table-actions" aria-label="Acciones">
-                        <a class="table-action table-action--view" href="{% url 'cba_saved_result_detail' r.id %}" title="Ver" aria-label="Ver">
-                            <span class="table-action__icon" aria-hidden="true">👁</span>
-                            <span class="table-action__text">Ver</span>
-                        </a>
-                        <form method="post" action="{% url 'cba_saved_result_delete' r.id %}" style="display:inline; margin:0;">
-                            {% csrf_token %}
-                            <button type="submit" class="table-action table-action--delete" title="Eliminar" aria-label="Eliminar">
-                                <span class="table-action__icon" aria-hidden="true">&times;</span>
-                                <span class="table-action__text">Eliminar</span>
-                            </button>
-                        </form>
-                    </div>
-                </td>
-            </tr>
-            {% empty %}
-            <tr id="serverEmptyRow">
-                <td colspan="7">No hay resultados guardados todavía.</td>
-            </tr>
-            {% endfor %}
-            <tr id="noMatchesRow" style="display:none;">
-                <td colspan="7">No hay coincidencias con los filtros.</td>
-            </tr>
-                </table>
-            </div>
+{% block extra_js %}
+    {{ block.super }}
+    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap4.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap4.min.js"></script>
 
-            <script>
-        (function initSavedResultsFilters(){
-            const nameEl = document.getElementById('filterName');
-            const dateFromEl = document.getElementById('filterDateFrom');
-            const dateToEl = document.getElementById('filterDateTo');
-            const costMinEl = document.getElementById('filterCostMin');
-            const costMaxEl = document.getElementById('filterCostMax');
-            const resetBtn = document.getElementById('filterResetBtn');
-            const noMatchesRow = document.getElementById('noMatchesRow');
-            const serverEmptyRow = document.getElementById('serverEmptyRow');
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap4.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.colVis.min.js"></script>
 
-            const rows = Array.from(document.querySelectorAll('tr[data-row="result"]'));
-            if (rows.length === 0) return;
+    <script>
+        (function initSavedResultsDataTable() {
+            if (!window.jQuery) return;
+            const $ = window.jQuery;
 
-            function toNum(v) {
-                if (v === null || v === undefined) return null;
-                const s = String(v).trim();
-                if (!s) return null;
-                const n = Number(s);
-                return Number.isFinite(n) ? n : null;
-            }
+            $(function () {
+                const $table = $('#savedResultsTable');
+                if ($table.length === 0 || !$.fn.DataTable) return;
 
-            function applyFilters() {
-                const q = (nameEl?.value || '').trim().toLowerCase();
-                const df = (dateFromEl?.value || '').trim();
-                const dt = (dateToEl?.value || '').trim();
-                const cmin = toNum(costMinEl?.value);
-                const cmax = toNum(costMaxEl?.value);
-
-                let visibleCount = 0;
-                rows.forEach(tr => {
-                    const n = String(tr.dataset.name || '').toLowerCase();
-                    const d = String(tr.dataset.date || '');
-                    const c = toNum(tr.dataset.cost);
-
-                    let ok = true;
-                    if (q && !n.includes(q)) ok = false;
-                    if (ok && df && d && d < df) ok = false;
-                    if (ok && dt && d && d > dt) ok = false;
-                    if (ok && cmin !== null) {
-                        if (c === null || c < cmin) ok = false;
-                    }
-                    if (ok && cmax !== null) {
-                        if (c === null || c > cmax) ok = false;
-                    }
-
-                    tr.style.display = ok ? '' : 'none';
-                    if (ok) visibleCount += 1;
+                const dt = $table.DataTable({
+                    responsive: true,
+                    autoWidth: false,
+                    pageLength: 10,
+                    lengthMenu: [10, 25, 50, 100],
+                    orderCellsTop: true,
+                    order: [[1, 'desc']],
+                    dom:
+                        "<'row align-items-center mb-2'<'col-sm-12 col-md-6'f><'col-sm-12 col-md-6 text-md-right'B>>" +
+                        "<'row'<'col-sm-12'tr>>" +
+                        "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+                    buttons: [
+                        {
+                            extend: 'excelHtml5',
+                            text: 'Excel',
+                            className: 'btn btn-outline-success btn-sm',
+                            exportOptions: { columns: [0, 1, 2, 3, 4, 5] }
+                        },
+                        {
+                            extend: 'pdfHtml5',
+                            text: 'PDF',
+                            className: 'btn btn-outline-danger btn-sm',
+                            orientation: 'landscape',
+                            pageSize: 'A4',
+                            exportOptions: { columns: [0, 1, 2, 3, 4, 5] }
+                        },
+                        {
+                            extend: 'print',
+                            text: 'Imprimir',
+                            className: 'btn btn-outline-dark btn-sm',
+                            exportOptions: { columns: [0, 1, 2, 3, 4, 5] }
+                        },
+                        { extend: 'colvis', text: 'Columnas', className: 'btn btn-outline-dark btn-sm' },
+                    ],
+                    columnDefs: [
+                        { targets: [6], orderable: false, searchable: false },
+                    ],
+                    language: {
+                        search: 'Buscar:',
+                        lengthMenu: 'Mostrar _MENU_',
+                        info: 'Mostrando _START_ a _END_ de _TOTAL_',
+                        infoEmpty: 'Sin resultados',
+                        emptyTable: 'No hay resultados guardados todavía.',
+                        zeroRecords: 'No hay coincidencias',
+                        paginate: { first: 'Primero', last: 'Último', next: 'Siguiente', previous: 'Anterior' },
+                    },
                 });
 
-                if (serverEmptyRow) serverEmptyRow.style.display = 'none';
-                if (noMatchesRow) noMatchesRow.style.display = (visibleCount === 0) ? '' : 'none';
-            }
+                // Estilo tipo toolbar (evita bloque raro)
+                try {
+                    $(dt.buttons().container())
+                        .addClass('d-inline-flex flex-wrap align-items-center')
+                        .css({ gap: '6px' });
+                } catch (e) {
+                    // no-op
+                }
 
-            function reset() {
-                if (nameEl) nameEl.value = '';
-                if (dateFromEl) dateFromEl.value = '';
-                if (dateToEl) dateToEl.value = '';
-                if (costMinEl) costMinEl.value = '';
-                if (costMaxEl) costMaxEl.value = '';
-                applyFilters();
-            }
-
-            [nameEl, dateFromEl, dateToEl, costMinEl, costMaxEl].forEach(el => {
-                if (!el) return;
-                el.addEventListener('input', applyFilters);
-                el.addEventListener('change', applyFilters);
+                // Filtros por columna (segunda fila del thead)
+                $('#savedResultsTable thead tr:eq(1) th').each(function (i) {
+                    const input = $(this).find('input');
+                    if (input.length === 0) return;
+                    input.on('keyup change clear', function () {
+                        const val = this.value || '';
+                        if (dt.column(i).search() !== val) {
+                            dt.column(i).search(val).draw();
+                        }
+                    });
+                });
             });
-            if (resetBtn) resetBtn.addEventListener('click', reset);
-
-            applyFilters();
         })();
     </script>
 {% endblock %}

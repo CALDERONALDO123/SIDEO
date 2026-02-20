@@ -3,22 +3,29 @@
 {% block body_class %}page-step page-step9{% endblock %}
 
 {% block content %}
-    <div class="dashboard-panel step-panel">
-        <div class="step-head">
-            <div class="step-head__main">
-                <p class="step-head__eyebrow">CBA · Paso 9</p>
-                <h2 class="step-head__title">Total de ventajas por alternativa</h2>
-                <p class="step-head__lede">Se suma la importancia del Paso 8 para cada postor.</p>
-                {% include "cba_app/_step_progress.html" with current=9 total=10 percent=90 %}
-            </div>
-        </div>
+    <section class="content pt-3">
+        <div class="container-fluid">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex flex-column">
+                        <div class="text-muted text-uppercase text-sm">CBA · Paso 9</div>
+                        <h3 class="m-0">Total de ventajas por alternativa</h3>
+                        <div class="text-muted text-sm mt-2">Se suma la importancia del Paso 8 para cada postor.</div>
+                    </div>
+                    <div class="mt-2">
+                        {% include "cba_app/_step_progress.html" with current=9 total=10 percent=90 %}
+                    </div>
+                </div>
+
+                <div class="card-body">
 
     {% include "cba_app/_cba_context_bar.html" %}
 
-    <p>En este paso solo se suma la importancia de las ventajas del Paso 8 para cada alternativa.</p>
+    <p class="text-muted">En este paso solo se suma la importancia de las ventajas del Paso 8 para cada alternativa.</p>
 
     <div class="table-wrapper table-wrapper--step" style="margin-top:16px;">
-        <table>
+        <div class="table-responsive">
+        <table class="table table-bordered table-striped table-sm mb-0">
             <tr>
                 <th>Alternativa</th>
                 <th>Total de ventajas</th>
@@ -34,15 +41,19 @@
             </tr>
             {% endfor %}
         </table>
+        </div>
     </div>
 
     <form method="post" style="margin-top:16px;">
         {% csrf_token %}
         <div class="step-nav">
-            <a href="{% url 'cba_step8' %}" class="link-back nav-prev">&larr; Paso anterior</a>
-            <button type="submit" class="button nav-next">Siguiente &rsaquo;</button>
+            <a href="{% url 'cba_step8' %}" class="btn btn-outline-secondary nav-prev">&larr; Paso anterior</a>
+            <button type="submit" class="btn btn-primary nav-next">Siguiente &rsaquo;</button>
         </div>
     </form>
 
-    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 {% endblock %}

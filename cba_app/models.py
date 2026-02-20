@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
 
 
 def _user_avatar_upload_to(instance, filename: str) -> str:
@@ -108,6 +109,35 @@ class CBAResult(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.winner_name}"
+
+
+class ResultadoCBA(models.Model):
+    """Tabla plana para Power BI (1 fila por alternativa por resultado guardado)."""
+
+    id = models.AutoField(primary_key=True)
+
+    proyecto = models.CharField(max_length=255)
+    puesto = models.CharField(max_length=150, null=True, blank=True)
+    candidato = models.CharField(max_length=150)
+
+    costo = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    ventaja = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    costo_ventaja = models.DecimalField(max_digits=14, decimal_places=6, null=True, blank=True)
+
+    recomendado = models.BooleanField(default=False)
+    fecha = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "resultados_cba"
+        verbose_name = "Resultado CBA (Power BI)"
+        verbose_name_plural = "Resultados CBA (Power BI)"
+        indexes = [
+            models.Index(fields=["proyecto"]),
+            models.Index(fields=["puesto"]),
+            models.Index(fields=["candidato"]),
+            models.Index(fields=["fecha"]),
+            models.Index(fields=["recomendado"]),
+        ]
 
 
 class AIProviderSetting(models.Model):

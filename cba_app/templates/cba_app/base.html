@@ -11,82 +11,112 @@
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'cba_app/style.css' %}">
 
-    {# Tailwind + Flowbite (solo para UI del panel/dashboard). Preflight OFF para no resetear CSS existente. #}
-    {% if user.is_authenticated %}
-        <script>
-            window.tailwind = window.tailwind || {};
-            window.tailwind.config = {
-                corePlugins: {
-                    preflight: false
-                }
-            };
-        </script>
-        <script src="https://cdn.tailwindcss.com" defer></script>
+    {# AdminLTE (solo vistas autenticadas internas) #}
+    {% if user.is_authenticated and url_name and url_name != 'cba_login' and url_name != 'cba_signup' and url_name != 'powerbi_feed_results' and url_name != 'powerbi_feed_dashboard_rows' and url_name != 'cba_saved_result_public' and url_name != 'cba_saved_result_public_json' and url_name != 'cba_saved_result_powerbi' and url_name != 'cba_saved_result_powerbi_config' and url_name != 'cba_guide_shared' and url_name != 'cba_guide_shared_pdf' and url_name != 'cba_guide_shared_download' %}
+        <link rel="stylesheet" href="{% static 'admin-lte/plugins/fontawesome-free/css/all.min.css' %}">
+        <link rel="stylesheet" href="{% static 'admin-lte/dist/css/adminlte.min.css' %}">
     {% endif %}
+
+    {% block extra_head %}{% endblock %}
 </head>
-<body class="{% if user.is_authenticated and url_name and url_name != 'cba_home' and url_name != 'cba_dashboard' and url_name != 'cba_login' and url_name != 'cba_signup' and url_name != 'powerbi_feed_results' and url_name != 'powerbi_feed_dashboard_rows' and url_name != 'cba_saved_result_public' and url_name != 'cba_saved_result_public_json' and url_name != 'cba_saved_result_powerbi' and url_name != 'cba_saved_result_powerbi_config' and url_name != 'cba_guide_shared' and url_name != 'cba_guide_shared_pdf' and url_name != 'cba_guide_shared_download' %}layout--panel {% endif %}{% block body_class %}{% endblock %}">
-    <header class="sideo-header">
-        <div class="sideo-logo">
-            <a href="{% url 'cba_home' %}" class="sideo-logo__link" aria-label="Ir al panel principal">
-                <!-- Reemplaza la ruta de la imagen por el archivo real en static/cba_app -->
-                <img src="{% static 'cba_app/sideo-logo.png' %}" alt="SIDEO logo">
-            </a>
-        </div>
-        <div class="sideo-title">
-            <h1>SIDEO</h1>
-            <p>Sistema Inteligente de Decisión basado en la Evaluación de Opciones</p>
-        </div>
+<body class="{% if user.is_authenticated and url_name and url_name != 'cba_login' and url_name != 'cba_signup' and url_name != 'powerbi_feed_results' and url_name != 'powerbi_feed_dashboard_rows' and url_name != 'cba_saved_result_public' and url_name != 'cba_saved_result_public_json' and url_name != 'cba_saved_result_powerbi' and url_name != 'cba_saved_result_powerbi_config' and url_name != 'cba_guide_shared' and url_name != 'cba_guide_shared_pdf' and url_name != 'cba_guide_shared_download' %}hold-transition sidebar-mini layout-fixed{% endif %} {% block body_class %}{% endblock %}">
 
-        <div class="sideo-header__actions">
-            {% if user.is_authenticated %}
-                <a class="sideo-header__user-link" href="{% url 'cba_profile' %}">
-                    {% if user.first_name or user.last_name %}{{ user.first_name }} {{ user.last_name }}{% else %}{{ user.username }}{% endif %}
+    {% if user.is_authenticated and url_name and url_name != 'cba_login' and url_name != 'cba_signup' and url_name != 'powerbi_feed_results' and url_name != 'powerbi_feed_dashboard_rows' and url_name != 'cba_saved_result_public' and url_name != 'cba_saved_result_public_json' and url_name != 'cba_saved_result_powerbi' and url_name != 'cba_saved_result_powerbi_config' and url_name != 'cba_guide_shared' and url_name != 'cba_guide_shared_pdf' and url_name != 'cba_guide_shared_download' %}
+        <div class="wrapper">
+            <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" data-widget="pushmenu" href="#" role="button" aria-label="Alternar menú">
+                            <i class="fas fa-bars"></i>
+                        </a>
+                    </li>
+                </ul>
+
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'cba_profile' %}">
+                            <i class="far fa-user mr-1"></i>
+                            {% if user.first_name or user.last_name %}{{ user.first_name }} {{ user.last_name }}{% else %}{{ user.username }}{% endif %}
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <form method="post" action="{% url 'cba_logout' %}" class="m-0">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-link nav-link" style="padding: .5rem 1rem;">Cerrar sesión</button>
+                        </form>
+                    </li>
+                </ul>
+            </nav>
+
+            {% with active='home' %}
+                {% if url_name|slice:':8' == 'cba_step' or url_name == 'cba_dashboard' %}
+                    {% with active='step' %}{% include 'cba_app/_panel_sidebar.html' with active=active about_anchor=0 %}{% endwith %}
+                {% elif url_name == 'cba_saved_results' or url_name|slice:':15' == 'cba_saved_result' %}
+                    {% with active='saved' %}{% include 'cba_app/_panel_sidebar.html' with active=active about_anchor=0 %}{% endwith %}
+                {% elif url_name|slice:':8' == 'cba_guide' %}
+                    {% with active='guide' %}{% include 'cba_app/_panel_sidebar.html' with active=active about_anchor=0 %}{% endwith %}
+                {% else %}
+                    {% include 'cba_app/_panel_sidebar.html' with active=active about_anchor=1 %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="content-wrapper">
+    {% else %}
+        <header class="sideo-header">
+            <div class="sideo-logo">
+                <a href="{% url 'cba_home' %}" class="sideo-logo__link" aria-label="Ir al panel principal">
+                    <img src="{% static 'cba_app/sideo-logo.png' %}" alt="SIDEO logo">
                 </a>
-                <form method="post" action="{% url 'cba_logout' %}" class="sideo-header__logout-form">
-                    {% csrf_token %}
-                    <button type="submit" class="sideo-header__link sideo-header__logout">Cerrar sesión</button>
-                </form>
-            {% else %}
-                <a class="sideo-header__link" href="{% url 'cba_login' %}">Ingresar</a>
-            {% endif %}
-        </div>
-    </header>
+            </div>
+            <div class="sideo-title">
+                <h1>SIDEO</h1>
+                <p>Sistema Inteligente de Decisión basado en la Evaluación de Opciones</p>
+            </div>
 
-    <main class="sideo-main">
-        {% if user.is_authenticated and url_name and url_name != 'cba_home' and url_name != 'cba_dashboard' and url_name != 'cba_login' and url_name != 'cba_signup' and url_name != 'powerbi_feed_results' and url_name != 'powerbi_feed_dashboard_rows' and url_name != 'cba_saved_result_public' and url_name != 'cba_saved_result_public_json' and url_name != 'cba_saved_result_powerbi' and url_name != 'cba_saved_result_powerbi_config' and url_name != 'cba_guide_shared' and url_name != 'cba_guide_shared_pdf' and url_name != 'cba_guide_shared_download' %}
-            <div class="dashboard-layout">
-                {% with active='home' %}
-                    {% if url_name|slice:':8' == 'cba_step' %}
-                        {% with active='step' %}{% include 'cba_app/_panel_sidebar.html' with active=active about_anchor=0 %}{% endwith %}
-                    {% elif url_name == 'cba_saved_results' or url_name|slice:':15' == 'cba_saved_result' %}
-                        {% with active='saved' %}{% include 'cba_app/_panel_sidebar.html' with active=active about_anchor=0 %}{% endwith %}
-                    {% elif url_name|slice:':8' == 'cba_guide' %}
-                        {% with active='guide' %}{% include 'cba_app/_panel_sidebar.html' with active=active about_anchor=0 %}{% endwith %}
-                    {% else %}
-                        {% include 'cba_app/_panel_sidebar.html' with active=active about_anchor=0 %}
-                    {% endif %}
-                {% endwith %}
+            <div class="sideo-header__actions">
+                {% if user.is_authenticated %}
+                    <a class="sideo-header__user-link" href="{% url 'cba_profile' %}">
+                        {% if user.first_name or user.last_name %}{{ user.first_name }} {{ user.last_name }}{% else %}{{ user.username }}{% endif %}
+                    </a>
+                    <form method="post" action="{% url 'cba_logout' %}" class="sideo-header__logout-form">
+                        {% csrf_token %}
+                        <button type="submit" class="sideo-header__link sideo-header__logout">Cerrar sesión</button>
+                    </form>
+                {% else %}
+                    <a class="sideo-header__link" href="{% url 'cba_login' %}">Ingresar</a>
+                {% endif %}
+            </div>
+        </header>
 
-                <section class="dashboard-content" aria-label="Contenido">
-        {% endif %}
+        <main class="sideo-main">
+    {% endif %}
 
         {% block content %}{% endblock %}
 
-        {% if user.is_authenticated and url_name and url_name != 'cba_home' and url_name != 'cba_dashboard' and url_name != 'cba_login' and url_name != 'cba_signup' and url_name != 'powerbi_feed_results' and url_name != 'powerbi_feed_dashboard_rows' and url_name != 'cba_saved_result_public' and url_name != 'cba_saved_result_public_json' and url_name != 'cba_saved_result_powerbi' and url_name != 'cba_saved_result_powerbi_config' and url_name != 'cba_guide_shared' and url_name != 'cba_guide_shared_pdf' and url_name != 'cba_guide_shared_download' %}
-                </section>
+    {% if user.is_authenticated and url_name and url_name != 'cba_login' and url_name != 'cba_signup' and url_name != 'powerbi_feed_results' and url_name != 'powerbi_feed_dashboard_rows' and url_name != 'cba_saved_result_public' and url_name != 'cba_saved_result_public_json' and url_name != 'cba_saved_result_powerbi' and url_name != 'cba_saved_result_powerbi_config' and url_name != 'cba_guide_shared' and url_name != 'cba_guide_shared_pdf' and url_name != 'cba_guide_shared_download' %}
             </div>
-        {% endif %}
-    </main>
 
-    <footer class="sideo-footer">
-        <span>&copy; {% now "Y" %} SIDEO</span>
-    </footer>
+            <footer class="main-footer text-sm">
+                <strong>&copy; {% now "Y" %} SIDEO</strong>
+            </footer>
+        </div>
+    {% else %}
+        </main>
+
+        <footer class="sideo-footer">
+            <span>&copy; {% now "Y" %} SIDEO</span>
+        </footer>
+    {% endif %}
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="{% static 'cba_app/sideo.js' %}"></script>
-    {% if user.is_authenticated %}
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.js" defer></script>
+
+    {% if user.is_authenticated and url_name and url_name != 'cba_login' and url_name != 'cba_signup' and url_name != 'powerbi_feed_results' and url_name != 'powerbi_feed_dashboard_rows' and url_name != 'cba_saved_result_public' and url_name != 'cba_saved_result_public_json' and url_name != 'cba_saved_result_powerbi' and url_name != 'cba_saved_result_powerbi_config' and url_name != 'cba_guide_shared' and url_name != 'cba_guide_shared_pdf' and url_name != 'cba_guide_shared_download' %}
+        <script src="{% static 'admin-lte/plugins/jquery/jquery.min.js' %}"></script>
+        <script src="{% static 'admin-lte/plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+        <script src="{% static 'admin-lte/dist/js/adminlte.min.js' %}"></script>
     {% endif %}
+
     {% block extra_js %}{% endblock %}
 </body>
 </html>

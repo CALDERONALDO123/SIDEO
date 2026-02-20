@@ -1,5 +1,5 @@
 {% if setup %}
-<div class="cba-contextbar">
+<div class="callout callout-info cba-contextbar">
     <div class="cba-contextbar__items">
         <div class="cba-contextbar__item">
             <span class="cba-contextbar__label">Proyecto:</span>
@@ -28,7 +28,7 @@
 
     {% if show_edit %}
         <div class="cba-contextbar__actions">
-            <a class="cba-contextbar__edit" href="{% url 'cba_step1' %}?setup=1">Editar</a>
+            <a class="btn btn-outline-secondary btn-sm" href="{% url 'cba_step1' %}?setup=1">Editar</a>
         </div>
     {% endif %}
 </div>

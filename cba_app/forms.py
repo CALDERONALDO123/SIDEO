@@ -16,7 +16,7 @@ class AlternativeForm(forms.ModelForm):
         }
         widgets = {
             "name": forms.TextInput(attrs={
-                "class": "cba-input",
+                "class": "form-control form-control-sm",
                 "autocomplete": "off",
             }),
         }
@@ -32,7 +32,7 @@ class CriterionForm(forms.ModelForm):
         }
         widgets = {
             "name": forms.TextInput(attrs={
-                "class": "cba-input",
+                "class": "form-control form-control-sm",
                 "autocomplete": "off",
             }),
         }
@@ -58,7 +58,7 @@ class CBASetupForm(forms.Form):
         max_length=200,
         widget=forms.TextInput(attrs={
             "placeholder": "Ej.: Mejoramiento de infraestructura / Servicio / Implementación...",
-            "class": "cba-input",
+            "class": "form-control",
             "autocomplete": "off",
         }),
     )
@@ -68,7 +68,7 @@ class CBASetupForm(forms.Form):
         max_length=200,
         widget=forms.TextInput(attrs={
             "placeholder": "Ej.: Cusco / Cusco / Santiago",
-            "class": "cba-input",
+            "class": "form-control",
             "autocomplete": "off",
         }),
     )
@@ -78,7 +78,7 @@ class CBASetupForm(forms.Form):
         max_length=200,
         widget=forms.TextInput(attrs={
             "placeholder": "Ej.: Oficina de Logística / TI / Operaciones...",
-            "class": "cba-input",
+            "class": "form-control",
             "autocomplete": "off",
         }),
     )
@@ -89,7 +89,7 @@ class CBASetupForm(forms.Form):
         required=False,
         widget=forms.TextInput(attrs={
             "placeholder": "Ej.: S/ 250,000",
-            "class": "cba-input",
+            "class": "form-control",
             "autocomplete": "off",
         }),
     )
@@ -99,7 +99,7 @@ class CBASetupForm(forms.Form):
         widget=forms.Textarea(attrs={
             "rows": 3,
             "placeholder": "Describe qué se busca lograr con esta selección (alcance, necesidad, resultado esperado).",
-            "class": "cba-textarea",
+            "class": "form-control",
         }),
     )
 
@@ -109,7 +109,7 @@ class CBASetupForm(forms.Form):
         required=False,
         widget=forms.TextInput(attrs={
             "placeholder": "Ej.: Gobierno Regional / Municipalidad / Ministerio...",
-            "class": "cba-input",
+            "class": "form-control",
             "autocomplete": "off",
         }),
     )
@@ -120,7 +120,7 @@ class CBASetupForm(forms.Form):
         required=False,
         widget=forms.TextInput(attrs={
             "placeholder": "Ej.: Empresa ABC / Gerencia de Operaciones...",
-            "class": "cba-input",
+            "class": "form-control",
             "autocomplete": "off",
         }),
     )

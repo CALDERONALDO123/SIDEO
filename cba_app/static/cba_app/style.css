@@ -15,6 +15,9 @@
     --shadow-soft: 0 12px 28px rgba(15, 23, 42, 0.08);
     --shadow-card: 0 20px 45px rgba(15, 23, 42, 0.12);
     --transition-snap: cubic-bezier(0.2, 0.8, 0.2, 1);
+    --layout-header-offset: 132px;
+    --layout-sidebar-offset: 140px;
+    --layout-sidebar-height: calc(100dvh - var(--layout-sidebar-offset, var(--layout-header-offset)));
 }
 
 body {
@@ -615,7 +618,7 @@ body {
 .layout--home .dashboard-layout {
     display: flex;
     gap: 10px;
-    min-height: 100vh;
+    min-height: 0;
 }
 
 /* Panel shell (sidebar persistente en otras pantallas) */
@@ -1302,16 +1305,23 @@ body {
 
 .layout--home .dashboard-sidebar,
 .layout--panel .dashboard-sidebar {
-    top: 0;
+    top: 8px;
     background: transparent;
     border: 0;
     border-radius: 0;
     padding: 0;
     box-shadow: none;
     flex: 0 0 240px;
-    height: 100vh;
-    align-self: stretch;
+    height: var(--layout-sidebar-height, calc(100dvh - var(--layout-sidebar-offset, var(--layout-header-offset))));
+    max-height: var(--layout-sidebar-height, calc(100dvh - var(--layout-sidebar-offset, var(--layout-header-offset))));
+    align-self: flex-start;
     transition: flex-basis 220ms var(--transition-snap), padding 220ms var(--transition-snap);
+}
+
+@media (min-width: 901px) and (max-width: 1366px) {
+    :root {
+        --layout-header-offset: 124px;
+    }
 }
 
 /* Sidebar minimalista (Home + pantallas internas) */
@@ -1379,6 +1389,7 @@ body {
     padding-top: 12px;
     flex: 1 1 auto;
     overflow: auto;
+    min-height: 0;
 }
 
 .layout--home .dashboard-sidebar--tw .sidebar-nav-group,
@@ -1443,6 +1454,9 @@ body {
 
     .layout--home .dashboard-sidebar {
         flex: initial;
+        height: auto;
+        max-height: none;
+        top: 0;
         transition: none;
     }
 }
@@ -1455,6 +1469,9 @@ body {
 
     .layout--panel .dashboard-sidebar {
         flex: initial;
+        height: auto;
+        max-height: none;
+        top: 0;
         transition: none;
     }
 }
@@ -1824,6 +1841,26 @@ body {
     min-width: 0;
 }
 
+.layout--home .dashboard-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
+    gap: 24px;
+    align-items: start;
+}
+
+.layout--home .dashboard-grid__main,
+.layout--home .dashboard-grid__side {
+    min-width: 0;
+}
+
+.dashboard-section {
+    margin-bottom: 32px;
+}
+
+.layout--home .dashboard-section:last-child {
+    margin-bottom: 0;
+}
+
 @media (max-width: 900px) {
     .dashboard-layout {
         grid-template-columns: 1fr;
@@ -1831,6 +1868,10 @@ body {
 
     .dashboard-sidebar {
         position: static;
+    }
+
+    .layout--home .dashboard-grid {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -1929,6 +1970,50 @@ body {
     box-shadow: none;
 }
 
+.layout--home .dashboard-hero {
+    padding: 28px;
+    border-radius: 22px;
+    background:
+        radial-gradient(circle at 6% 16%, rgba(59, 130, 246, 0.16) 0%, rgba(59, 130, 246, 0) 45%),
+        radial-gradient(circle at 92% 10%, rgba(14, 165, 233, 0.20) 0%, rgba(14, 165, 233, 0) 48%),
+        linear-gradient(135deg, #dbeafe, #e0f2fe);
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-soft);
+}
+
+.layout--home .dashboard-hero__main {
+    display: grid;
+    gap: 6px;
+}
+
+.layout--home .dashboard-hero__icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.layout--home .dashboard-welcome__title {
+    margin: 0;
+    font-size: 26px;
+}
+
+.layout--home .dashboard-welcome__text {
+    margin-top: 6px;
+    color: var(--color-muted);
+    font-size: 14px;
+}
+
+.layout--home .dashboard-hero__actions {
+    align-items: center;
+}
+
 .dashboard-empty-state {
     display: grid;
     gap: 10px;
@@ -1955,6 +2040,20 @@ body {
     font-size: 13px;
 }
 
+.dashboard-activity {
+    border-radius: 18px;
+    border: 1px solid var(--color-stroke);
+    box-shadow: var(--shadow-soft);
+}
+
+.dashboard-activity__list {
+    margin: 10px 0 0;
+    padding-left: 18px;
+    display: grid;
+    gap: 6px;
+    font-size: 14px;
+}
+
 /* Tarjetas de charts (Home) */
 
 .dashboard-lastresult {
@@ -1970,13 +2069,21 @@ body {
 }
 
 .dashboard-chart-card {
-    padding: 12px 0 0;
+    background: #ffffff;
+    padding: 24px;
+    border-radius: 20px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    box-shadow: var(--shadow-soft);
+    transition: transform 180ms var(--transition-snap), box-shadow 180ms var(--transition-snap);
 }
 
 .dashboard-chart-card + .dashboard-chart-card {
-    margin-top: 14px;
-    padding-top: 14px;
-    border-top: 1px solid rgba(15, 23, 42, 0.06);
+    margin-top: 16px;
+}
+
+.dashboard-chart-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-card);
 }
 
 .dashboard-chart-card__head {
@@ -2037,6 +2144,89 @@ body {
     color: #4b5563;
 }
 
+.kpi-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    color: var(--color-muted);
+}
+
+.kpi-value {
+    font-size: 30px;
+    font-weight: 700;
+    margin: 8px 0;
+}
+
+.dashboard-metrics__item.kpi-card {
+    background: #ffffff;
+    padding: 22px;
+    border-radius: 18px;
+    border: 1px solid var(--color-stroke);
+    transition: transform 200ms var(--transition-snap), box-shadow 200ms var(--transition-snap);
+}
+
+.dashboard-metrics__item.kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-card);
+}
+
+.layout--home .button {
+    border-radius: 999px;
+    padding: 12px 20px;
+    font-weight: 600;
+    transition: transform 180ms var(--transition-snap), box-shadow 180ms var(--transition-snap), filter 180ms var(--transition-snap);
+}
+
+.layout--home .button:hover {
+    transform: translateY(-2px);
+}
+
+.layout--home .button--primary {
+    background: var(--color-accent);
+    color: #ffffff;
+}
+
+.layout--home .button--primary:hover {
+    filter: brightness(0.97);
+}
+
+.layout--home .dashboard-lastresult,
+.layout--home .dashboard-about,
+.layout--home .dashboard-activity,
+.layout--home .dashboard-metrics__item,
+.layout--home .dashboard-chart-card {
+    transition: transform 180ms var(--transition-snap), box-shadow 180ms var(--transition-snap);
+}
+
+.layout--home .dashboard-lastresult:hover,
+.layout--home .dashboard-about:hover,
+.layout--home .dashboard-activity:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-card);
+}
+
+.layout--home .dashboard-sidebar.dashboard-sidebar--tw {
+    background: linear-gradient(180deg, #0f172a, #1e293b);
+}
+
+.layout--home .dashboard-sidebar--tw .dashboard-nav__item--tw,
+.layout--panel .dashboard-sidebar--tw .dashboard-nav__item--tw {
+    border-radius: 12px;
+    padding: 14px;
+}
+
+.layout--home .dashboard-sidebar--tw .dashboard-nav__item--tw.is-active,
+.layout--panel .dashboard-sidebar--tw .dashboard-nav__item--tw.is-active {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.18);
+}
+
+.dashboard-footer {
+    margin-top: 18px;
+    text-align: center;
+    font-size: 12px;
+    color: #64748b;
+}
+
 .dashboard-nav__icon {
     margin-right: 8px;
     font-size: 16px;
@@ -2053,12 +2243,8 @@ body {
 /* Contexto CBA (compacto para Step1-Step10) */
 
 .cba-contextbar {
-    margin-top: 10px;
-    padding: 10px 12px;
-    border-radius: 10px;
-    border: 1px solid #e5e7eb;
-    background: #ffffff;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+    margin-top: 0;
+    margin-bottom: 12px;
     display: flex;
     gap: 12px;
     justify-content: space-between;
@@ -3792,7 +3978,34 @@ body.page-step .button:hover {
 }
 
 body.page-step .cba-contextbar {
-    margin-top: 12px;
+    margin-top: 0;
+}
+
+/* DataTables (AdminLTE/Bootstrap) */
+
+.dataTables_wrapper .dt-buttons {
+    background: transparent;
+}
+
+.dataTables_wrapper .dt-buttons .dt-button {
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.dataTables_wrapper .dt-buttons .dt-button:hover {
+    background: transparent !important;
+}
+
+.dataTables_wrapper .dt-buttons .btn {
+    margin: 0;
+}
+
+.dataTables_wrapper .dataTables_filter {
+    margin-bottom: 0;
+}
+
+.dataTables_wrapper .dataTables_filter input {
+    margin-left: 8px;
 }
 
 .table-wrapper--step {

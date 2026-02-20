@@ -3,234 +3,204 @@
 {% block body_class %}layout--dashboard{% endblock %}
 
 {% block content %}
-<div class="dashboard-panel">
-    <div class="dashboard-panel__nav">
-        {% if saved_result and not public_view %}
-            <a href="{% url 'cba_saved_results' %}" class="link-back">&larr; Volver a Archivos guardados</a>
-        {% elif not saved_result %}
-            <a href="{% url 'cba_step10' %}" class="link-back">&larr; Volver al Paso 10</a>
-        {% elif public_view %}
-            <span class="chip" style="margin-left:0;">Vista pública</span>
-        {% endif %}
-    </div>
+{% if user.is_authenticated and not public_view %}
+    <section class="content pt-3">
+        <div class="container-fluid">
 
-    <div class="cba-dashboard-print">
-        <section class="dashboard-hero">
-            <button
-                type="button"
-                class="dashboard-hero__print button button--ghost"
-                onclick="window.print()"
-                aria-label="Imprimir"
-                title="Imprimir"
-            >
-                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
-                    <path fill="currentColor" d="M6 7V3h12v4h-2V5H8v2H6zm14 2H4a2 2 0 0 0-2 2v6h4v4h12v-4h4v-6a2 2 0 0 0-2-2zm-4 10H8v-4h8v4zm2-6a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
-                </svg>
-            </button>
-            <div class="dashboard-hero__main">
-                <p class="dashboard-hero__eyebrow">Análisis costo-beneficio</p>
-                <h2>
-                    {% if setup and setup.project_name %}
-                        {{ setup.project_name }}
-                    {% elif saved_result and saved_result.name %}
-                        {{ saved_result.name }}
-                    {% else %}
-                        Dashboard de Análisis CBA
-                    {% endif %}
-                </h2>
-                <div class="dashboard-hero__chips">
-                    {% if setup %}
-                        <span class="chip">Sector: {% if setup.sector == 'PUBLICO' %}Público{% else %}Privado{% endif %}</span>
-                        {% if setup.requesting_area %}
-                            <span class="chip">Área: {{ setup.requesting_area }}</span>
+            <div class="d-flex flex-wrap align-items-center justify-content-between" style="gap:10px; margin-bottom:12px;">
+                <div>
+                    <div class="text-muted text-uppercase text-sm">Análisis costo-beneficio</div>
+                    <h1 class="h4 m-0">
+                        {% if setup and setup.project_name %}
+                            {{ setup.project_name }}
+                        {% elif saved_result and saved_result.name %}
+                            {{ saved_result.name }}
+                        {% else %}
+                            Dashboard de Análisis CBA
                         {% endif %}
+                    </h1>
+                    <div class="text-muted text-sm mt-1">Alternativas: {{ table_rows|length }}</div>
+                </div>
+
+                <div class="d-flex flex-wrap" style="gap:8px;">
+                    {% if saved_result and not public_view %}
+                        <a href="{% url 'cba_saved_results' %}" class="btn btn-outline-secondary btn-sm">&larr; Volver a Archivos guardados</a>
+                    {% elif not saved_result %}
+                        <a href="{% url 'cba_step10' %}" class="btn btn-outline-secondary btn-sm">&larr; Volver al Paso 10</a>
                     {% endif %}
-                    <span class="chip">Alternativas: {{ table_rows|length }}</span>
+
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.print()" title="Imprimir">
+                        <i class="fas fa-print mr-1"></i> Imprimir
+                    </button>
+
+                    {% if not saved_result %}
+                        <form method="post" class="m-0">
+                            {% csrf_token %}
+                            <button type="submit" name="save_result" class="btn btn-primary btn-sm">
+                                <i class="fas fa-save mr-1"></i> Guardar resultado
+                            </button>
+                        </form>
+                    {% endif %}
                 </div>
             </div>
-        </section>
 
-        <div class="dashboard-hero__meta">
-            <div>
-                <span class="dashboard-hero__meta-label">Solicitante</span>
-                <span class="dashboard-hero__meta-value">
-                    {% if setup %}
-                        {% if setup.sector == 'PUBLICO' %}
-                            {{ setup.public_entity|default:'-' }}
-                        {% else %}
-                            {{ setup.private_company|default:'-' }}
-                        {% endif %}
-                    {% else %}
-                        -
-                    {% endif %}
-                </span>
-            </div>
-            <div>
-                <span class="dashboard-hero__meta-label">Ubicación</span>
-                <span class="dashboard-hero__meta-value">
-                    {% if setup and setup.location %}
-                        {{ setup.location }}
-                    {% else %}
-                        -
-                    {% endif %}
-                </span>
-            </div>
-            <div>
-                <span class="dashboard-hero__meta-label">Presupuesto referencial</span>
-                <span class="dashboard-hero__meta-value">
-                    {% if setup and setup.reference_budget %}
-                        {{ setup.reference_budget }}
-                    {% else %}
-                        -
-                    {% endif %}
-                </span>
-            </div>
-            <div>
-                <span class="dashboard-hero__meta-label">Objetivo del proyecto</span>
-                <span class="dashboard-hero__meta-value dashboard-hero__meta-value--objective">
-                    {% if setup and setup.objective %}
-                        {{ setup.objective }}
-                    {% else %}
-                        -
-                    {% endif %}
-                </span>
-            </div>
-        </div>
+            {% include "cba_app/_cba_context_bar.html" %}
 
-        <div class="cba-kpi-grid">
-            <article class="kpi-card kpi-card--primary">
-                <p class="kpi-card__label">Alternativa recomendada</p>
-                <p class="kpi-card__value">{% if best_row %}{{ best_row.alternative.name }}{% else %}Sin determinar{% endif %}</p>
-                <p class="kpi-card__hint">
-                    {% if best_row %}
-                        {{ best_row.total_importance }} pts · {% if best_row.cost %}S/ {{ best_row.cost }}{% else %}Costo no registrado{% endif %}
-                    {% else %}
-                        Completa costos y ventajas para obtener una recomendación.
-                    {% endif %}
-                </p>
-            </article>
-            <article class="kpi-card kpi-card--primary">
-                <p class="kpi-card__label">Costo por punto de ventaja</p>
-                <p class="kpi-card__value">{% if best_row and best_row.ratio != None %}S/ {{ best_row.ratio|floatformat:4 }}{% else %}-{% endif %}</p>
-                <p class="kpi-card__hint">
-                    {% if second_item and delta_ratio != None %}
-                        Ahorro vs {{ second_item.name }}: S/ {{ delta_ratio|floatformat:4 }}{% if delta_pct != None %} ({{ delta_pct|floatformat:2 }}% menos){% endif %}
-                    {% else %}
-                        Requiere al menos dos alternativas con costo registrado.
-                    {% endif %}
-                </p>
-            </article>
-            <article class="kpi-card kpi-card--primary">
-                <p class="kpi-card__label">Alternativas evaluadas</p>
-                <p class="kpi-card__value">{{ table_rows|length }}</p>
-                <p class="kpi-card__hint">Última actualización: {% now "d/m/Y" %}</p>
-            </article>
-            <article class="kpi-card kpi-card--text">
-                <p class="kpi-card__label">Ventaja principal del ganador</p>
-                {% if winner_main_advantage %}
-                    <p class="kpi-card__value kpi-card__value--text">{{ winner_main_advantage.description|default:'-' }}</p>
-                    <p class="kpi-card__hint">
-                        {% if winner_main_advantage.criterion %}{{ winner_main_advantage.criterion }}{% else %}Criterio no indicado{% endif %}
-                        {% if winner_main_advantage.importance %} · {{ winner_main_advantage.importance }} pts{% endif %}
-                    </p>
-                {% else %}
-                    <p class="kpi-card__value kpi-card__value--text">Sin registro específico</p>
-                    <p class="kpi-card__hint">Marca una ventaja principal en los pasos 8 y 9 para exponerla aquí.</p>
-                {% endif %}
-            </article>
-            <article class="kpi-card kpi-card--text">
-                <p class="kpi-card__label">Desventaja del ganador (Paso 5)</p>
-                {% if winner_least_attributes %}
-                    {% with first=winner_least_attributes.0 %}
-                        <p class="kpi-card__value kpi-card__value--text">{{ first.criterion|default:'Factor no identificado' }}</p>
-                        <p class="kpi-card__hint">Atributo menos preferido: {{ first.description|default:'-' }}</p>
-                        {% if winner_least_attributes|length > 1 %}
-                            <p class="kpi-card__note">También figura como menos preferido en {{ winner_least_attributes|length|add:'-1' }} factor(es) adicionales.</p>
-                        {% endif %}
-                    {% endwith %}
-                {% else %}
-                    <p class="kpi-card__value kpi-card__value--text">Sin desventaja registrada</p>
-                    <p class="kpi-card__hint">El ganador no está marcado como "menos preferido" en ningún factor del Paso 5.</p>
-                {% endif %}
-            </article>
-        </div>
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title m-0">Detalle del proyecto</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="text-muted text-sm">Sector</div>
+                            <div class="mb-3">{% if setup %}{% if setup.sector == 'PUBLICO' %}Público{% else %}Privado{% endif %}{% else %}-{% endif %}</div>
 
-        {% if saved_result and allow_powerbi_form %}
-            <div class="panel-inline-form">
-                <form method="post" action="{% url 'cba_saved_result_powerbi_config' saved_result.id %}">
-                    {% csrf_token %}
-                    <label for="id_power_bi_url" class="panel-inline-form__label">Link Power BI (por proyecto)</label>
-                    <div class="panel-inline-form__controls">
-                        <input id="id_power_bi_url" name="power_bi_url" type="url" placeholder="Pega aquí el link de Power BI" value="{{ saved_result.power_bi_url }}" />
-                        <button type="submit" class="button">Guardar link</button>
-                    </div>
-                </form>
-            </div>
-        {% elif saved_result and public_view %}
-            <div class="panel-inline-form">
-                <p class="panel-inline-form__label">Vista solo lectura</p>
-                <p class="text-muted" style="margin:6px 0 0;">Estás consultando un archivo guardado publicado para uso externo. Para editarlo, ingresa al sistema y abre este resultado desde Archivos guardados.</p>
-                <p class="text-muted" style="margin:6px 0 0;">Para cargarlo en Power BI u otros sistemas, consume el JSON estructurado disponible en <a href="{% url 'cba_saved_result_public_json' saved_result.id %}" target="_blank" rel="noopener">este enlace</a>.</p>
-            </div>
-        {% endif %}
-
-        <section class="panel-section panel-section--grid">
-            <div class="panel-section__head">
-                <p class="panel-section__eyebrow">Resultados</p>
-                <h3 class="panel-section__title">Comparativa de alternativas</h3>
-            </div>
-            <div class="cba-dashboard">
-                <div class="cba-dashboard__grid">
-                    <div class="cba-card cba-card--wide cba-card--highlight">
-                        <span class="cba-card__badge">Decisión recomendada</span>
-                        <div class="cba-card__title">Análisis de la alternativa recomendada</div>
-
-                        {% if best_row %}
-                            <div class="cba-kpi">
-                                <div class="cba-kpi__name">Alternativa ganadora</div>
-                                <div class="cba-kpi__value">{{ best_row.alternative.name }}</div>
-                            </div>
-
-                            <div class="cba-card__text">
-                                Se recomienda <strong>{{ best_row.alternative.name }}</strong> porque logra el menor
-                                <strong>costo por punto de ventaja</strong> entre las alternativas evaluadas.
-                                Con un total de <strong>{{ best_row.total_importance }}</strong> puntos y un costo de
-                                <strong>{% if best_row.cost %}S/ {{ best_row.cost }}{% else %}-{% endif %}</strong>, su costo unitario es
-                                <strong>{% if best_row.ratio != None %}S/ {{ best_row.ratio|floatformat:6 }}{% else %}-{% endif %}</strong> por punto.
-                                {% if second_item and delta_ratio != None %}
-                                    Frente a <strong>{{ second_item.name }}</strong> implica un ahorro de
-                                    <strong>S/ {{ delta_ratio|floatformat:6 }}</strong>
-                                    {% if delta_pct != None %}({{ delta_pct|floatformat:2 }}% menos){% endif %} por punto.
+                            <div class="text-muted text-sm">Solicitante</div>
+                            <div class="mb-3">
+                                {% if setup %}
+                                    {% if setup.sector == 'PUBLICO' %}
+                                        {{ setup.public_entity|default:'-' }}
+                                    {% else %}
+                                        {{ setup.private_company|default:'-' }}
+                                    {% endif %}
+                                    {% if setup.requesting_area %}
+                                        <span class="text-muted"> · </span>{{ setup.requesting_area }}
+                                    {% endif %}
+                                {% else %}
+                                    -
                                 {% endif %}
                             </div>
-                        {% else %}
-                            <div class="notice notice--error" style="margin:0;">No hay datos suficientes para recomendar una alternativa (revisa costos y ventajas).</div>
-                        {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-muted text-sm">Ubicación</div>
+                            <div class="mb-3">{% if setup and setup.location %}{{ setup.location }}{% else %}-{% endif %}</div>
 
-                        <div class="cba-card__actions">
-                            {% if not saved_result %}
-                                <form method="post" class="form-inline" style="justify-content:flex-end;">
-                                    {% csrf_token %}
-                                    <button type="submit" name="save_result" class="button">Guardar resultado</button>
-                                </form>
-                            {% endif %}
+                            <div class="text-muted text-sm">Presupuesto referencial</div>
+                            <div class="mb-3">{% if setup and setup.reference_budget %}{{ setup.reference_budget }}{% else %}-{% endif %}</div>
+                        </div>
+                        <div class="col-12">
+                            <div class="text-muted text-sm">Objetivo del proyecto</div>
+                            <div>{% if setup and setup.objective %}{{ setup.objective }}{% else %}-{% endif %}</div>
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    {% if saved_result %}
-                        <div class="cba-card cba-card--wide cba-card--split cba-card--disabled">
-                            <article class="cba-card__segment">
-                                <div class="cba-card__segment-head">
-                                    <div>
-                                        <div class="cba-card__title">Asistente Sideo IA (histórico)</div>
-                                        <p class="cba-card__text text-muted">
-                                            Este resultado proviene de un análisis guardado. Para volver a generar el resumen IA debes abrir el Paso 10 y recalcular el proyecto.
-                                        </p>
-                                    </div>
+            {% if saved_result and allow_powerbi_form %}
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title m-0">Power BI</h3>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" action="{% url 'cba_saved_result_powerbi_config' saved_result.id %}">
+                            {% csrf_token %}
+                            <label for="id_power_bi_url" class="text-muted text-sm">Link Power BI (por proyecto)</label>
+                            <div class="input-group">
+                                <input id="id_power_bi_url" name="power_bi_url" type="url" class="form-control" placeholder="Pega aquí el link de Power BI" value="{{ saved_result.power_bi_url }}" />
+                                <div class="input-group-append">
+                                    <button type="submit" class="btn btn-outline-secondary">Guardar link</button>
                                 </div>
-                                <div class="cba-ai__status text-muted" style="margin-top:8px;">
-                                    Las salidas se congelan al guardar; no se puede volver a ejecutar aquí.
-                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="row">
+                <div class="col-lg-3 col-md-6">
+                    <div class="small-box bg-success">
+                        <div class="inner">
+                            <h4 class="mb-0">{% if best_row %}{{ best_row.alternative.name }}{% else %}Sin determinar{% endif %}</h4>
+                            <p class="mb-0">Ganador</p>
+                        </div>
+                        <div class="icon"><i class="fas fa-trophy"></i></div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="small-box bg-info">
+                        <div class="inner">
+                            <h4 class="mb-0">{% if best_row and best_row.cost %}S/ {{ best_row.cost }}{% else %}-{% endif %}</h4>
+                            <p class="mb-0">Costo ganador</p>
+                        </div>
+                        <div class="icon"><i class="fas fa-coins"></i></div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="small-box bg-warning">
+                        <div class="inner">
+                            <h4 class="mb-0">{% if best_row %}{{ best_row.total_importance }}{% else %}-{% endif %}</h4>
+                            <p class="mb-0">Ventaja total</p>
+                        </div>
+                        <div class="icon"><i class="fas fa-chart-line"></i></div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="small-box bg-danger">
+                        <div class="inner">
+                            <h4 class="mb-0">
+                                {% if second_item and delta_pct != None %}
+                                    {{ delta_pct|floatformat:2 }}%
+                                {% elif second_item and delta_ratio != None %}
+                                    S/ {{ delta_ratio|floatformat:4 }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </h4>
+                            <p class="mb-0">Ahorro vs 2do</p>
+                        </div>
+                        <div class="icon"><i class="fas fa-percentage"></i></div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="small-box bg-secondary">
+                        <div class="inner">
+                            <h4 class="mb-0">{{ table_rows|length }}</h4>
+                            <p class="mb-0">Alternativas</p>
+                        </div>
+                        <div class="icon"><i class="fas fa-layer-group"></i></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title m-0">Costo/Ventaja por alternativa</h3>
+                            <div class="text-muted text-sm mt-2">Barras normalizadas: menor altura = menor costo por punto.</div>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="ratioChart" width="520" height="280" class="w-100"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title m-0">Costo vs. Ventaja total</h3>
+                            <div class="text-muted text-sm mt-2">Cada línea sale del origen (0,0) hacia el punto (Costo, Ventaja).</div>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="scatterChart" width="520" height="280" class="w-100"></canvas>
+                            <div id="scatterTooltip" class="cba-tooltip" role="status" aria-live="polite"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header d-flex align-items-center justify-content-between">
+                            <h3 class="card-title m-0">Resumen IA</h3>
+                            {% if not saved_result %}
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="aiDecisionBtn">Generar análisis IA</button>
+                            {% endif %}
+                        </div>
+                        <div class="card-body">
+                            {% if saved_result %}
+                                <div class="text-muted text-sm mb-2">Este reporte es histórico (solo lectura).</div>
                                 <div id="aiDecisionFrozen" class="cba-ai__output" aria-label="Resumen IA congelado">
                                     {% if saved_result.summary_text %}
                                         <span class="text-muted">Cargando resumen IA guardado...</span>
@@ -238,19 +208,24 @@
                                         <span class="text-muted">No hay resumen IA guardado para este resultado.</span>
                                     {% endif %}
                                 </div>
-                            </article>
-                            <article class="cba-card__segment">
-                                <div class="cba-card__segment-head">
-                                    <div>
-                                        <div class="cba-card__title">Auditor IA de inconsistencias</div>
-                                        <p class="cba-card__text text-muted">
-                                            Para revisar nuevamente, ejecuta el flujo CBA hasta el Paso 10 y lanza la auditoría antes de guardar.
-                                        </p>
-                                    </div>
-                                </div>
-                                <div class="cba-ai__status text-muted" style="margin-top:8px;">
-                                    Este reporte es solo lectura y refleja el último guardado.
-                                </div>
+                            {% else %}
+                                <div id="aiDecisionStatus" class="cba-ai__status text-muted" style="display:none;"></div>
+                                <pre id="aiDecisionOutput" class="cba-ai__output" aria-label="Salida del asistente IA"></pre>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header d-flex align-items-center justify-content-between">
+                            <h3 class="card-title m-0">Auditor IA</h3>
+                            {% if not saved_result %}
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="aiAuditBtn">Detectar inconsistencias</button>
+                            {% endif %}
+                        </div>
+                        <div class="card-body">
+                            {% if saved_result %}
+                                <div class="text-muted text-sm mb-2">Este reporte es histórico (solo lectura).</div>
                                 <div id="aiAuditFrozen" class="cba-ai__output" aria-label="Auditoría IA congelada">
                                     {% if saved_result.inconsistency_text %}
                                         <span class="text-muted">Cargando auditoría IA guardada...</span>
@@ -258,83 +233,381 @@
                                         <span class="text-muted">No se guardó ninguna auditoría IA para este resultado.</span>
                                     {% endif %}
                                 </div>
-                            </article>
-                        </div>
-                    {% else %}
-                        <div class="cba-card cba-card--wide cba-card--split">
-                            <article class="cba-card__segment">
-                                <div class="cba-card__segment-head">
-                                    <div>
-                                        <div class="cba-card__title">Asistente Sideo IA</div>
-                                    </div>
-                                    <div class="cba-card__segment-actions">
-                                        <button type="button" class="button button--ghost" id="aiDecisionBtn">Generar análisis IA</button>
-                                    </div>
-                                </div>
-                                <div id="aiDecisionStatus" class="cba-ai__status text-muted" style="margin-top:8px; display:none;"></div>
-                                <pre id="aiDecisionOutput" class="cba-ai__output" aria-label="Salida del asistente IA"></pre>
-                            </article>
-                            <article class="cba-card__segment">
-                                <div class="cba-card__segment-head">
-                                    <div>
-                                        <div class="cba-card__title">Auditor IA de inconsistencias</div>
-                                        <p class="cba-card__text text-muted">Revisa duplicados de factores, puntajes incoherentes y costos desproporcionados (sin imponer cambios).</p>
-                                    </div>
-                                    <div class="cba-card__segment-actions">
-                                        <button type="button" class="button button--ghost" id="aiAuditBtn">Detectar inconsistencias</button>
-                                    </div>
-                                </div>
-                                <div id="aiAuditStatus" class="cba-ai__status text-muted" style="margin-top:8px; display:none;"></div>
+                            {% else %}
+                                <div id="aiAuditStatus" class="cba-ai__status text-muted" style="display:none;"></div>
                                 <pre id="aiAuditOutput" class="cba-ai__output" aria-label="Salida del auditor IA"></pre>
-                            </article>
-                        </div>
-                    {% endif %}
-
-                    <div class="cba-card">
-                        <div class="cba-card__title">Costo/Ventaja por alternativa</div>
-                        <div class="cba-card__hint text-muted">Barras normalizadas: menor altura = menor costo por punto (mejor desempeño).</div>
-                        <div class="cba-chartwrap">
-                            <canvas id="ratioChart" width="520" height="280" class="cba-canvas"></canvas>
+                            {% endif %}
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    <div class="cba-card cba-card--wide">
-                        <div class="cba-card__title">Costo vs. Ventaja total</div>
-                        <div class="cba-card__hint text-muted">Cada línea sale del origen (0,0) hacia el punto (Costo, Ventaja).</div>
-                        <div class="cba-chartwrap">
-                            <canvas id="scatterChart" width="980" height="380" class="cba-canvas"></canvas>
-                            <div id="scatterTooltip" class="cba-tooltip" role="status" aria-live="polite"></div>
-                        </div>
-                    </div>
-
-                    <div class="cba-card cba-card--wide">
-                        <div class="cba-card__title">Tabla de resultados finales</div>
-                        <div class="table-wrapper table-wrapper--flat">
-                            <table>
-                                <tr>
-                                    <th>Alternativa</th>
-                                    <th>Ventaja total</th>
-                                    <th>Costo (S/)</th>
-                                    <th>Costo / Ventaja (S/ por punto)</th>
-                                    <th>Recomendación</th>
-                                </tr>
-                                {% for r in table_rows %}
-                                <tr{% if best_row and r.name == best_row.alternative.name %} class="row--highlight"{% endif %}>
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title m-0">Tabla de resultados finales</h3>
+                </div>
+                <div class="card-body table-responsive">
+                    <table class="table table-bordered table-striped table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th>Alternativa</th>
+                                <th>Ventaja total</th>
+                                <th>Costo (S/)</th>
+                                <th>Costo / Ventaja (S/ por punto)</th>
+                                <th>Recomendación</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in table_rows %}
+                                <tr{% if best_row and r.name == best_row.alternative.name %} class="table-success font-weight-bold"{% endif %}>
                                     <td>{{ r.name }}</td>
                                     <td>{{ r.total }}</td>
                                     <td>{% if r.cost != None %}{{ r.cost }}{% else %}-{% endif %}</td>
                                     <td>{% if r.ratio != None %}S/ {{ r.ratio|floatformat:6 }}{% else %}-{% endif %}</td>
                                     <td>{% if best_row and r.name == best_row.alternative.name %}Recomendada{% else %}-{% endif %}</td>
                                 </tr>
-                                {% endfor %}
-                            </table>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </section>
+{% else %}
+    <div class="dashboard-panel">
+        <div class="dashboard-panel__nav">
+            {% if saved_result and not public_view %}
+                <a href="{% url 'cba_saved_results' %}" class="link-back">&larr; Volver a Archivos guardados</a>
+            {% elif not saved_result %}
+                <a href="{% url 'cba_step10' %}" class="link-back">&larr; Volver al Paso 10</a>
+            {% elif public_view %}
+                <span class="chip" style="margin-left:0;">Vista pública</span>
+            {% endif %}
+        </div>
+
+        <div class="cba-dashboard-print">
+            <section class="dashboard-hero">
+                <button
+                    type="button"
+                    class="dashboard-hero__print button button--ghost"
+                    onclick="window.print()"
+                    aria-label="Imprimir"
+                    title="Imprimir"
+                >
+                    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+                        <path fill="currentColor" d="M6 7V3h12v4h-2V5H8v2H6zm14 2H4a2 2 0 0 0-2 2v6h4v4h12v-4h4v-6a2 2 0 0 0-2-2zm-4 10H8v-4h8v4zm2-6a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
+                    </svg>
+                </button>
+                <div class="dashboard-hero__main">
+                    <p class="dashboard-hero__eyebrow">Análisis costo-beneficio</p>
+                    <h2>
+                        {% if setup and setup.project_name %}
+                            {{ setup.project_name }}
+                        {% elif saved_result and saved_result.name %}
+                            {{ saved_result.name }}
+                        {% else %}
+                            Dashboard de Análisis CBA
+                        {% endif %}
+                    </h2>
+                    <div class="dashboard-hero__chips">
+                        {% if setup %}
+                            <span class="chip">Sector: {% if setup.sector == 'PUBLICO' %}Público{% else %}Privado{% endif %}</span>
+                            {% if setup.requesting_area %}
+                                <span class="chip">Área: {{ setup.requesting_area }}</span>
+                            {% endif %}
+                        {% endif %}
+                        <span class="chip">Alternativas: {{ table_rows|length }}</span>
+                    </div>
+                </div>
+            </section>
+
+            <div class="dashboard-hero__meta">
+                <div>
+                    <span class="dashboard-hero__meta-label">Solicitante</span>
+                    <span class="dashboard-hero__meta-value">
+                        {% if setup %}
+                            {% if setup.sector == 'PUBLICO' %}
+                                {{ setup.public_entity|default:'-' }}
+                            {% else %}
+                                {{ setup.private_company|default:'-' }}
+                            {% endif %}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </span>
+                </div>
+                <div>
+                    <span class="dashboard-hero__meta-label">Ubicación</span>
+                    <span class="dashboard-hero__meta-value">
+                        {% if setup and setup.location %}
+                            {{ setup.location }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </span>
+                </div>
+                <div>
+                    <span class="dashboard-hero__meta-label">Presupuesto referencial</span>
+                    <span class="dashboard-hero__meta-value">
+                        {% if setup and setup.reference_budget %}
+                            {{ setup.reference_budget }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </span>
+                </div>
+                <div>
+                    <span class="dashboard-hero__meta-label">Objetivo del proyecto</span>
+                    <span class="dashboard-hero__meta-value dashboard-hero__meta-value--objective">
+                        {% if setup and setup.objective %}
+                            {{ setup.objective }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+
+            <div class="cba-kpi-grid">
+                <article class="kpi-card kpi-card--primary">
+                    <p class="kpi-card__label">Alternativa recomendada</p>
+                    <p class="kpi-card__value">{% if best_row %}{{ best_row.alternative.name }}{% else %}Sin determinar{% endif %}</p>
+                    <p class="kpi-card__hint">
+                        {% if best_row %}
+                            {{ best_row.total_importance }} pts · {% if best_row.cost %}S/ {{ best_row.cost }}{% else %}Costo no registrado{% endif %}
+                        {% else %}
+                            Completa costos y ventajas para obtener una recomendación.
+                        {% endif %}
+                    </p>
+                </article>
+                <article class="kpi-card kpi-card--primary">
+                    <p class="kpi-card__label">Costo por punto de ventaja</p>
+                    <p class="kpi-card__value">{% if best_row and best_row.ratio != None %}S/ {{ best_row.ratio|floatformat:4 }}{% else %}-{% endif %}</p>
+                    <p class="kpi-card__hint">
+                        {% if second_item and delta_ratio != None %}
+                            Ahorro vs {{ second_item.name }}: S/ {{ delta_ratio|floatformat:4 }}{% if delta_pct != None %} ({{ delta_pct|floatformat:2 }}% menos){% endif %}
+                        {% else %}
+                            Requiere al menos dos alternativas con costo registrado.
+                        {% endif %}
+                    </p>
+                </article>
+                <article class="kpi-card kpi-card--primary">
+                    <p class="kpi-card__label">Alternativas evaluadas</p>
+                    <p class="kpi-card__value">{{ table_rows|length }}</p>
+                    <p class="kpi-card__hint">Última actualización: {% now "d/m/Y" %}</p>
+                </article>
+                <article class="kpi-card kpi-card--text">
+                    <p class="kpi-card__label">Ventaja principal del ganador</p>
+                    {% if winner_main_advantage %}
+                        <p class="kpi-card__value kpi-card__value--text">{{ winner_main_advantage.description|default:'-' }}</p>
+                        <p class="kpi-card__hint">
+                            {% if winner_main_advantage.criterion %}{{ winner_main_advantage.criterion }}{% else %}Criterio no indicado{% endif %}
+                            {% if winner_main_advantage.importance %} · {{ winner_main_advantage.importance }} pts{% endif %}
+                        </p>
+                    {% else %}
+                        <p class="kpi-card__value kpi-card__value--text">Sin registro específico</p>
+                        <p class="kpi-card__hint">Marca una ventaja principal en los pasos 8 y 9 para exponerla aquí.</p>
+                    {% endif %}
+                </article>
+                <article class="kpi-card kpi-card--text">
+                    <p class="kpi-card__label">Desventaja del ganador (Paso 5)</p>
+                    {% if winner_least_attributes %}
+                        {% with first=winner_least_attributes.0 %}
+                            <p class="kpi-card__value kpi-card__value--text">{{ first.criterion|default:'Factor no identificado' }}</p>
+                            <p class="kpi-card__hint">Atributo menos preferido: {{ first.description|default:'-' }}</p>
+                            {% if winner_least_attributes|length > 1 %}
+                                <p class="kpi-card__note">También figura como menos preferido en {{ winner_least_attributes|length|add:'-1' }} factor(es) adicionales.</p>
+                            {% endif %}
+                        {% endwith %}
+                    {% else %}
+                        <p class="kpi-card__value kpi-card__value--text">Sin desventaja registrada</p>
+                        <p class="kpi-card__hint">El ganador no está marcado como "menos preferido" en ningún factor del Paso 5.</p>
+                    {% endif %}
+                </article>
+            </div>
+
+            {% if saved_result and allow_powerbi_form %}
+                <div class="panel-inline-form">
+                    <form method="post" action="{% url 'cba_saved_result_powerbi_config' saved_result.id %}">
+                        {% csrf_token %}
+                        <label for="id_power_bi_url" class="panel-inline-form__label">Link Power BI (por proyecto)</label>
+                        <div class="panel-inline-form__controls">
+                            <input id="id_power_bi_url" name="power_bi_url" type="url" placeholder="Pega aquí el link de Power BI" value="{{ saved_result.power_bi_url }}" />
+                            <button type="submit" class="button">Guardar link</button>
+                        </div>
+                    </form>
+                </div>
+            {% elif saved_result and public_view %}
+                <div class="panel-inline-form">
+                    <p class="panel-inline-form__label">Vista solo lectura</p>
+                    <p class="text-muted" style="margin:6px 0 0;">Estás consultando un archivo guardado publicado para uso externo. Para editarlo, ingresa al sistema y abre este resultado desde Archivos guardados.</p>
+                    <p class="text-muted" style="margin:6px 0 0;">Para cargarlo en Power BI u otros sistemas, consume el JSON estructurado disponible en <a href="{% url 'cba_saved_result_public_json' saved_result.id %}" target="_blank" rel="noopener">este enlace</a>.</p>
+                </div>
+            {% endif %}
+
+            <section class="panel-section panel-section--grid">
+                <div class="panel-section__head">
+                    <p class="panel-section__eyebrow">Resultados</p>
+                    <h3 class="panel-section__title">Comparativa de alternativas</h3>
+                </div>
+                <div class="cba-dashboard">
+                    <div class="cba-dashboard__grid">
+                        <div class="cba-card cba-card--wide cba-card--highlight">
+                            <span class="cba-card__badge">Decisión recomendada</span>
+                            <div class="cba-card__title">Análisis de la alternativa recomendada</div>
+
+                            {% if best_row %}
+                                <div class="cba-kpi">
+                                    <div class="cba-kpi__name">Alternativa ganadora</div>
+                                    <div class="cba-kpi__value">{{ best_row.alternative.name }}</div>
+                                </div>
+
+                                <div class="cba-card__text">
+                                    Se recomienda <strong>{{ best_row.alternative.name }}</strong> porque logra el menor
+                                    <strong>costo por punto de ventaja</strong> entre las alternativas evaluadas.
+                                    Con un total de <strong>{{ best_row.total_importance }}</strong> puntos y un costo de
+                                    <strong>{% if best_row.cost %}S/ {{ best_row.cost }}{% else %}-{% endif %}</strong>, su costo unitario es
+                                    <strong>{% if best_row.ratio != None %}S/ {{ best_row.ratio|floatformat:6 }}{% else %}-{% endif %}</strong> por punto.
+                                    {% if second_item and delta_ratio != None %}
+                                        Frente a <strong>{{ second_item.name }}</strong> implica un ahorro de
+                                        <strong>S/ {{ delta_ratio|floatformat:6 }}</strong>
+                                        {% if delta_pct != None %}({{ delta_pct|floatformat:2 }}% menos){% endif %} por punto.
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <div class="notice notice--error" style="margin:0;">No hay datos suficientes para recomendar una alternativa (revisa costos y ventajas).</div>
+                            {% endif %}
+
+                            <div class="cba-card__actions">
+                                {% if not saved_result %}
+                                    <form method="post" class="form-inline" style="justify-content:flex-end;">
+                                        {% csrf_token %}
+                                        <button type="submit" name="save_result" class="button">Guardar resultado</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {% if saved_result %}
+                            <div class="cba-card cba-card--wide cba-card--split cba-card--disabled">
+                                <article class="cba-card__segment">
+                                    <div class="cba-card__segment-head">
+                                        <div>
+                                            <div class="cba-card__title">Asistente Sideo IA (histórico)</div>
+                                            <p class="cba-card__text text-muted">
+                                                Este resultado proviene de un análisis guardado. Para volver a generar el resumen IA debes abrir el Paso 10 y recalcular el proyecto.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="cba-ai__status text-muted" style="margin-top:8px;">
+                                        Las salidas se congelan al guardar; no se puede volver a ejecutar aquí.
+                                    </div>
+                                    <div id="aiDecisionFrozen" class="cba-ai__output" aria-label="Resumen IA congelado">
+                                        {% if saved_result.summary_text %}
+                                            <span class="text-muted">Cargando resumen IA guardado...</span>
+                                        {% else %}
+                                            <span class="text-muted">No hay resumen IA guardado para este resultado.</span>
+                                        {% endif %}
+                                    </div>
+                                </article>
+                                <article class="cba-card__segment">
+                                    <div class="cba-card__segment-head">
+                                        <div>
+                                            <div class="cba-card__title">Auditor IA de inconsistencias</div>
+                                            <p class="cba-card__text text-muted">
+                                                Para revisar nuevamente, ejecuta el flujo CBA hasta el Paso 10 y lanza la auditoría antes de guardar.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="cba-ai__status text-muted" style="margin-top:8px;">
+                                        Este reporte es solo lectura y refleja el último guardado.
+                                    </div>
+                                    <div id="aiAuditFrozen" class="cba-ai__output" aria-label="Auditoría IA congelada">
+                                        {% if saved_result.inconsistency_text %}
+                                            <span class="text-muted">Cargando auditoría IA guardada...</span>
+                                        {% else %}
+                                            <span class="text-muted">No se guardó ninguna auditoría IA para este resultado.</span>
+                                        {% endif %}
+                                    </div>
+                                </article>
+                            </div>
+                        {% else %}
+                            <div class="cba-card cba-card--wide cba-card--split">
+                                <article class="cba-card__segment">
+                                    <div class="cba-card__segment-head">
+                                        <div>
+                                            <div class="cba-card__title">Asistente Sideo IA</div>
+                                        </div>
+                                        <div class="cba-card__segment-actions">
+                                            <button type="button" class="button button--ghost" id="aiDecisionBtn">Generar análisis IA</button>
+                                        </div>
+                                    </div>
+                                    <div id="aiDecisionStatus" class="cba-ai__status text-muted" style="margin-top:8px; display:none;"></div>
+                                    <pre id="aiDecisionOutput" class="cba-ai__output" aria-label="Salida del asistente IA"></pre>
+                                </article>
+                                <article class="cba-card__segment">
+                                    <div class="cba-card__segment-head">
+                                        <div>
+                                            <div class="cba-card__title">Auditor IA de inconsistencias</div>
+                                            <p class="cba-card__text text-muted">Revisa duplicados de factores, puntajes incoherentes y costos desproporcionados (sin imponer cambios).</p>
+                                        </div>
+                                        <div class="cba-card__segment-actions">
+                                            <button type="button" class="button button--ghost" id="aiAuditBtn">Detectar inconsistencias</button>
+                                        </div>
+                                    </div>
+                                    <div id="aiAuditStatus" class="cba-ai__status text-muted" style="margin-top:8px; display:none;"></div>
+                                    <pre id="aiAuditOutput" class="cba-ai__output" aria-label="Salida del auditor IA"></pre>
+                                </article>
+                            </div>
+                        {% endif %}
+
+                        <div class="cba-card">
+                            <div class="cba-card__title">Costo/Ventaja por alternativa</div>
+                            <div class="cba-card__hint text-muted">Barras normalizadas: menor altura = menor costo por punto (mejor desempeño).</div>
+                            <div class="cba-chartwrap">
+                                <canvas id="ratioChart" width="520" height="280" class="cba-canvas"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="cba-card cba-card--wide">
+                            <div class="cba-card__title">Costo vs. Ventaja total</div>
+                            <div class="cba-card__hint text-muted">Cada línea sale del origen (0,0) hacia el punto (Costo, Ventaja).</div>
+                            <div class="cba-chartwrap">
+                                <canvas id="scatterChart" width="980" height="380" class="cba-canvas"></canvas>
+                                <div id="scatterTooltip" class="cba-tooltip" role="status" aria-live="polite"></div>
+                            </div>
+                        </div>
+
+                        <div class="cba-card cba-card--wide">
+                            <div class="cba-card__title">Tabla de resultados finales</div>
+                            <div class="table-wrapper table-wrapper--flat">
+                                <table>
+                                    <tr>
+                                        <th>Alternativa</th>
+                                        <th>Ventaja total</th>
+                                        <th>Costo (S/)</th>
+                                        <th>Costo / Ventaja (S/ por punto)</th>
+                                        <th>Recomendación</th>
+                                    </tr>
+                                    {% for r in table_rows %}
+                                    <tr{% if best_row and r.name == best_row.alternative.name %} class="row--highlight"{% endif %}>
+                                        <td>{{ r.name }}</td>
+                                        <td>{{ r.total }}</td>
+                                        <td>{% if r.cost != None %}{{ r.cost }}{% else %}-{% endif %}</td>
+                                        <td>{% if r.ratio != None %}S/ {{ r.ratio|floatformat:6 }}{% else %}-{% endif %}</td>
+                                        <td>{% if best_row and r.name == best_row.alternative.name %}Recomendada{% else %}-{% endif %}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </section>
+            </section>
+        </div>
     </div>
-</div>
+{% endif %}
 
 {{ setup|json_script:"cbaSetupJson" }}
 {% endblock %}

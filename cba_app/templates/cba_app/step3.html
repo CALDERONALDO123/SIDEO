@@ -3,15 +3,21 @@
 {% block body_class %}page-step page-step3{% endblock %}
 
 {% block content %}
-    <div class="dashboard-panel step-panel">
-        <div class="step-head">
-            <div class="step-head__main">
-                <p class="step-head__eyebrow">CBA · Paso 3</p>
-                <h2 class="step-head__title">MUST / WANT</h2>
-                <p class="step-head__lede">Marca cada factor como indispensable o deseable, y agrega un comentario breve si aplica.</p>
-                {% include "cba_app/_step_progress.html" with current=3 total=10 percent=30 %}
-            </div>
-        </div>
+    <section class="content pt-3">
+        <div class="container-fluid">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex flex-column">
+                        <div class="text-muted text-uppercase text-sm">CBA · Paso 3</div>
+                        <h3 class="m-0">MUST / WANT</h3>
+                        <div class="text-muted text-sm mt-2">Marca cada factor como indispensable o deseable, y agrega un comentario breve si aplica.</div>
+                    </div>
+                    <div class="mt-2">
+                        {% include "cba_app/_step_progress.html" with current=3 total=10 percent=30 %}
+                    </div>
+                </div>
+
+                <div class="card-body">
 
         {% include "cba_app/_cba_context_bar.html" %}
 
@@ -22,8 +28,8 @@
                     <div class="assistant__subtitle">Revisa si tu distribución MUST/WANT tiene sentido y si faltan comentarios.</div>
                 </div>
                 <div class="assistant__actions">
-                    <button type="button" class="button" id="aiTypeAuditBtn">Revisar MUST/WANT</button>
-                    <button type="button" class="button button--ghost" id="aiTypeAuditClearBtn">Limpiar</button>
+                    <button type="button" class="btn btn-primary btn-sm" id="aiTypeAuditBtn">Revisar MUST/WANT</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="aiTypeAuditClearBtn">Limpiar</button>
                 </div>
             </div>
 
@@ -39,7 +45,8 @@
             {% csrf_token %}
 
             <div class="table-wrapper table-wrapper--step" style="margin-top:16px;">
-            <table>
+            <div class="table-responsive">
+            <table class="table table-bordered table-striped table-sm mb-0">
                 <tr>
                     <th>Factor</th>
                     <th>Indispensable</th>
@@ -50,13 +57,13 @@
                 <tr>
                     <td>{{ c.name }}</td>
                     <td style="text-align: center;">
-                        <input type="radio" name="type_{{ c.id }}" value="{{ c.TYPE_MUST }}" {% if c.criterion_type == c.TYPE_MUST %}checked{% endif %}>
+                        <input class="form-check-input" type="radio" name="type_{{ c.id }}" value="{{ c.TYPE_MUST }}" {% if c.criterion_type == c.TYPE_MUST %}checked{% endif %}>
                     </td>
                     <td style="text-align: center;">
-                        <input type="radio" name="type_{{ c.id }}" value="{{ c.TYPE_WANT }}" {% if c.criterion_type == c.TYPE_WANT %}checked{% endif %}>
+                        <input class="form-check-input" type="radio" name="type_{{ c.id }}" value="{{ c.TYPE_WANT }}" {% if c.criterion_type == c.TYPE_WANT %}checked{% endif %}>
                     </td>
                     <td>
-                        <textarea name="desc_{{ c.id }}" rows="2" cols="40">{{ c.description }}</textarea>
+                        <textarea class="form-control form-control-sm" name="desc_{{ c.id }}" rows="2">{{ c.description }}</textarea>
                     </td>
                 </tr>
                 {% empty %}
@@ -66,13 +73,17 @@
                 {% endfor %}
             </table>
             </div>
+            </div>
 
             <div class="step-nav">
-                <a href="{% url 'cba_step2' %}" class="link-back nav-prev">&larr; Paso anterior</a>
-                <button type="submit" class="button nav-next">Guardar y continuar &rsaquo;</button>
+                <a href="{% url 'cba_step2' %}" class="btn btn-outline-secondary nav-prev">&larr; Paso anterior</a>
+                <button type="submit" class="btn btn-primary nav-next">Guardar y continuar &rsaquo;</button>
             </div>
         </form>
-    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
     <script>
         function getCookie(name) {

@@ -987,4 +987,92 @@
             }
         });
     };
+
+    utils.syncLayoutHeaderOffset = function syncLayoutHeaderOffset() {
+        const root = document.documentElement;
+        if (!root) return;
+
+        const header = document.querySelector('.sideo-header');
+        if (!header) return;
+
+        const rect = header.getBoundingClientRect();
+        const height = Math.max(0, Math.round(rect.height || 0));
+        if (!height) return;
+
+        // Mantener un pequeño margen visual para que el sidebar no quede pegado.
+        root.style.setProperty('--layout-header-offset', String(height + 8) + 'px');
+
+        const sidebar = document.querySelector('.layout--home .dashboard-sidebar, .layout--panel .dashboard-sidebar, .dashboard-sidebar');
+        if (sidebar) {
+            const sidebarRect = sidebar.getBoundingClientRect();
+            const sidebarTop = Math.max(0, Math.round(sidebarRect.top || 0));
+
+            // Reservar un espacio abajo para evitar cortes por redondeo / barras del navegador.
+            const bottomGutter = 16;
+            root.style.setProperty('--layout-sidebar-offset', String(sidebarTop + bottomGutter) + 'px');
+
+            const viewportH = Math.max(
+                0,
+                Math.round(
+                    (document.documentElement && document.documentElement.clientHeight) ||
+                    (global.innerHeight || 0)
+                )
+            );
+
+            if (viewportH > 0) {
+                const available = Math.max(260, viewportH - sidebarTop - bottomGutter);
+                root.style.setProperty('--layout-sidebar-height', String(available) + 'px');
+            }
+        }
+    };
+
+    (function initLayoutHeaderOffsetWatcher() {
+        if (typeof document === 'undefined') return;
+
+        const update = (utils.debounce)
+            ? utils.debounce(utils.syncLayoutHeaderOffset, 80)
+            : utils.syncLayoutHeaderOffset;
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function () {
+                update();
+            });
+        } else {
+            update();
+        }
+
+        // Asegurar cálculo con layout ya asentado (fuentes, wrap, etc.).
+        global.requestAnimationFrame(function () {
+            update();
+            global.requestAnimationFrame(function () {
+                update();
+            });
+        });
+
+        global.addEventListener('load', update);
+
+        global.addEventListener('resize', update);
+
+        // Cuando el sidebar entra/sale de sticky al hacer scroll, su `top` cambia.
+        // Recalcular para que el alto disponible sea correcto (con o sin header visible).
+        try {
+            global.addEventListener('scroll', update, { passive: true });
+        } catch (e) {
+            global.addEventListener('scroll', update);
+        }
+
+        // Si el header cambia de alto (wrap del texto, usuario largo, etc.), recalcular.
+        if (global.ResizeObserver) {
+            try {
+                const header = document.querySelector('.sideo-header');
+                if (!header) return;
+                const ro = new global.ResizeObserver(function () {
+                    update();
+                });
+                ro.observe(header);
+            } catch (e) {
+                // ignore
+            }
+        }
+    })();
 })(window);

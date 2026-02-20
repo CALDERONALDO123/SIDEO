@@ -3,26 +3,29 @@
 {% block body_class %}page-step page-step10{% endblock %}
 
 {% block content %}
-    <div class="dashboard-panel step-panel">
-        <div class="step-head">
-            <div class="step-head__main">
-                <p class="step-head__eyebrow">CBA · Paso 10</p>
-                <h2 class="step-head__title">Costo versus ventaja</h2>
-                <p class="step-head__lede">Compara alternativas por costo y total de ventajas para obtener un ganador.</p>
-                {% include "cba_app/_step_progress.html" with current=10 total=10 percent=100 %}
-            </div>
-            <div class="step-head__actions">
-                <a class="button" href="{% url 'cba_dashboard' %}">Resultado (Dashboard)</a>
-            </div>
-        </div>
+    <section class="content pt-3">
+        <div class="container-fluid">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex flex-column">
+                        <div class="text-muted text-uppercase text-sm">CBA · Paso 10</div>
+                        <h3 class="m-0">Costo versus ventaja</h3>
+                        <div class="text-muted text-sm mt-2">Compara alternativas por costo y total de ventajas para obtener un ganador.</div>
+                    </div>
+                    <div class="mt-2">
+                        {% include "cba_app/_step_progress.html" with current=10 total=10 percent=100 %}
+                    </div>
+                </div>
+
+                <div class="card-body">
 
     {% include "cba_app/_cba_context_bar.html" %}
 
-    <p>En este paso se comparan las alternativas considerando el costo y el total de ventajas. La alternativa ganadora es la que logra el <strong>menor costo por cada punto de ventaja</strong>.</p>
+    <p class="text-muted">En este paso se comparan las alternativas considerando el costo y el total de ventajas. La alternativa ganadora es la que logra el <strong>menor costo por cada punto de ventaja</strong>.</p>
 
     <div style="margin-top:16px;">
         <div class="cba-ai__actions">
-            <button type="button" class="button" id="aiCostAuditBtn">Revisar costos (IA)</button>
+            <button type="button" class="btn btn-primary btn-sm" id="aiCostAuditBtn">Revisar costos (IA)</button>
         </div>
         <div id="aiCostAuditStatus" class="cba-ai__status text-muted" style="margin-top:8px; display:none;"></div>
         <pre id="aiCostAuditOutput" class="cba-ai__output" aria-label="Salida auditor IA costos"></pre>
@@ -32,7 +35,8 @@
         {% csrf_token %}
 
         <div class="table-wrapper table-wrapper--step" style="margin-top:16px;">
-        <table>
+        <div class="table-responsive">
+        <table class="table table-bordered table-striped table-sm mb-0">
             <tr>
                 <th>Alternativa</th>
                 <th>Total de ventajas</th>
@@ -40,11 +44,11 @@
                 <th>Costo / Ventaja (S/ por punto)</th>
             </tr>
             {% for row in rows %}
-            <tr{% if best_row and row.alternative.id == best_row.alternative.id %} style="font-weight:bold; background-color:#e0ffe0;"{% endif %}>
+            <tr class="{% if best_row and row.alternative.id == best_row.alternative.id %}table-success font-weight-bold{% endif %}">
                 <td>{{ row.alternative.name }}</td>
                 <td>{{ row.total_importance }}</td>
                 <td>
-                    <input type="number" step="0.01" name="cost_{{ row.alternative.id }}" value="{% if row.cost %}{{ row.cost }}{% endif %}">
+                    <input type="number" step="0.01" class="form-control form-control-sm" name="cost_{{ row.alternative.id }}" value="{% if row.cost %}{{ row.cost }}{% endif %}">
                 </td>
                 <td>
                     {% if row.ratio is not None %}
@@ -60,9 +64,10 @@
             </tr>
             {% endfor %}
         </table>
+        </div>
 
         <div style="margin-top:16px; display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap;">
-            <button type="submit" name="save_recalc" class="button">Guardar costos y recalcular</button>
+            <button type="submit" name="save_recalc" class="btn btn-primary">Guardar costos y recalcular</button>
         </div>
 
         <hr>
@@ -73,7 +78,7 @@
             una recta hasta cada punto (Costo, Total de ventajas) de las alternativas.
         </p>
 
-        <button type="button" class="button" onclick="drawChart()">Graficar</button>
+        <button type="button" class="btn btn-outline-secondary" onclick="drawChart()">Graficar</button>
 
         <br><br>
         <div style="display:flex; gap:16px; align-items:flex-start;">
@@ -82,13 +87,19 @@
         </div>
 
         <div style="margin-top:16px; display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap;">
-            <button type="submit" name="save_close" class="button">Guardar y cerrar</button>
+            <button type="submit" name="save_close" class="btn btn-primary">Guardar y cerrar</button>
         </div>
     </form>
 
-    <div class="step-nav">
-        <a href="{% url 'cba_step9' %}" class="link-back nav-prev">&larr; Paso anterior</a>
+    <div class="step-nav d-flex justify-content-between flex-wrap">
+        <a href="{% url 'cba_step9' %}" class="btn btn-outline-secondary nav-prev">&larr; Paso anterior</a>
+        <a class="btn btn-info nav-next" href="{% url 'cba_dashboard' %}">Resultado (Dashboard)</a>
     </div>
+
+                </div>
+            </div>
+        </div>
+    </section>
 
 {% endblock %}
 

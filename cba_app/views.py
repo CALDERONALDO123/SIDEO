@@ -24,6 +24,7 @@ from .models import (
     Attribute,
     Advantage,
     CBAResult,
+    ResultadoCBA,
     SharedGuideLink,
     UserProfile,
 )
@@ -1246,6 +1247,7 @@ def _winner_strengths_and_gaps(dashboard_payload: list[dict]):
 def cba_dashboard(request):
     import json
     from django.utils import timezone
+    from decimal import Decimal, InvalidOperation
 
     setup = request.session.get("cba_setup")
     rows, best_row = _build_step10_rows_and_best()
@@ -1318,7 +1320,7 @@ def cba_dashboard(request):
         if setup and setup.get("project_name"):
             base_name = f"CBA - {setup.get('project_name')}"
 
-        CBAResult.objects.create(
+        saved = CBAResult.objects.create(
             name=f"{base_name} {timezone.now().strftime('%Y-%m-%d %H:%M')}",
             winner_name=winner_name,
             winner_total=winner_total,
@@ -1328,6 +1330,56 @@ def cba_dashboard(request):
             summary_text=summary_text,
             inconsistency_text=inconsistency_text,
         )
+
+        proyecto = (setup or {}).get("project_name") if isinstance(setup, dict) else None
+        proyecto = (proyecto or saved.name or "").strip()[:255]
+        puesto = None
+        if isinstance(setup, dict):
+            puesto = (setup.get("requesting_area") or "").strip() or None
+        if puesto:
+            puesto = puesto[:150]
+
+        winner_alt = (best_row["alternative"].name if best_row else "")
+
+        flat_rows = []
+        for item in dashboard_payload or []:
+            if not isinstance(item, dict):
+                continue
+
+            candidato = (item.get("name") or "").strip()[:150]
+
+            raw_cost = item.get("cost")
+            raw_total = item.get("total")
+            raw_ratio = item.get("ratio")
+
+            def _to_decimal(value):
+                if value is None:
+                    return None
+                try:
+                    return Decimal(str(value))
+                except (InvalidOperation, ValueError, TypeError):
+                    return None
+
+            costo = _to_decimal(raw_cost)
+            ventaja = _to_decimal(raw_total)
+            costo_ventaja = _to_decimal(raw_ratio)
+
+            flat_rows.append(
+                ResultadoCBA(
+                    proyecto=proyecto,
+                    puesto=puesto,
+                    candidato=candidato,
+                    costo=costo,
+                    ventaja=ventaja,
+                    costo_ventaja=costo_ventaja,
+                    recomendado=bool(winner_alt and candidato == winner_alt),
+                    fecha=saved.created_at or timezone.now(),
+                )
+            )
+
+        if flat_rows:
+            ResultadoCBA.objects.bulk_create(flat_rows, batch_size=200)
+
         return redirect("cba_saved_results")
 
     context = {

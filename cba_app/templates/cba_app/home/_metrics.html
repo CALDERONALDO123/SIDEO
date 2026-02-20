@@ -4,38 +4,41 @@
         <h3 class="dashboard-section-head__title">Estado del sistema</h3>
     </div>
 
-    <div class="dashboard-metrics__grid">
-        <div class="dashboard-metrics__item">
-            <span class="dashboard-metrics__icon" aria-hidden="true">📊</span>
-            <div class="dashboard-metrics__label">Análisis guardados</div>
-            <div class="dashboard-metrics__value">{{ total_results|default:0 }}</div>
-            <p class="dashboard-metrics__hint">Histórico disponible para consulta</p>
+    <div class="row" style="margin:0;">
+        <div class="col-lg-4 col-12" style="padding:0 6px;">
+            <div class="small-box bg-info" style="border-radius:12px;">
+                <div class="inner">
+                    <h3 style="margin:0;">{{ total_results|default:0 }}</h3>
+                    <p style="margin:6px 0 0;">Análisis guardados</p>
+                </div>
+                <div class="icon" aria-hidden="true"><i class="fas fa-chart-pie"></i></div>
+            </div>
         </div>
 
-        <div class="dashboard-metrics__item">
-            <span class="dashboard-metrics__icon" aria-hidden="true">⏱</span>
-            <div class="dashboard-metrics__label">Último guardado</div>
-            <div class="dashboard-metrics__value">
-                {% if latest_result %}
-                    <a class="link" href="{% url 'cba_saved_result_detail' latest_result.id %}">{{ latest_result.created_at|date:"d/m/Y H:i" }}</a>
-                {% else %}
-                    -
-                {% endif %}
+        <div class="col-lg-4 col-12" style="padding:0 6px;">
+            <div class="small-box bg-success" style="border-radius:12px;">
+                <div class="inner">
+                    <h3 style="margin:0;">
+                        {% if latest_result %}
+                            {{ latest_result.created_at|date:"d/m/Y" }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </h3>
+                    <p style="margin:6px 0 0;">Último guardado</p>
+                </div>
+                <div class="icon" aria-hidden="true"><i class="far fa-clock"></i></div>
             </div>
-            <p class="dashboard-metrics__hint">Registro más reciente del panel</p>
         </div>
 
-        <div class="dashboard-metrics__item">
-            <span class="dashboard-metrics__icon" aria-hidden="true">📄</span>
-            <div class="dashboard-metrics__label">Guía PDF</div>
-            <div class="dashboard-metrics__value">
-                {% if guide_pdf_available %}
-                    <span class="dashboard-status dashboard-status--ok">Disponible</span>
-                {% else %}
-                    <span class="dashboard-status dashboard-status--muted">No cargada</span>
-                {% endif %}
+        <div class="col-lg-4 col-12" style="padding:0 6px;">
+            <div class="small-box bg-warning" style="border-radius:12px;">
+                <div class="inner">
+                    <h3 style="margin:0;">{% if guide_pdf_available %}OK{% else %}--{% endif %}</h3>
+                    <p style="margin:6px 0 0;">Guía PDF</p>
+                </div>
+                <div class="icon" aria-hidden="true"><i class="far fa-file-pdf"></i></div>
             </div>
-            <p class="dashboard-metrics__hint">Manual de uso para el equipo</p>
         </div>
     </div>
 </div>
