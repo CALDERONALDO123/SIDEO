@@ -9,10 +9,10 @@ services:
     name: sideo
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate && python manage.py ensure_superuser
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
     # Render expone el puerto en la variable de entorno PORT. Si no se hace bind a ese puerto,
     # el healthcheck falla y Render muestra HTTP 502.
-    startCommand: python manage.py ensure_superuser && gunicorn cba_project.wsgi:application --bind 0.0.0.0:$PORT --log-file -
+    startCommand: python manage.py migrate && python manage.py ensure_superuser && gunicorn cba_project.wsgi:application --bind 0.0.0.0:$PORT --log-file -
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.11
