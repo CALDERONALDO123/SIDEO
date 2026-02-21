@@ -73,6 +73,10 @@ if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
 # Application definition
 
 INSTALLED_APPS = [
+    # UI moderna para allauth (Tailwind/DaisyUI)
+    'allauth_ui',
+    'widget_tweaks',
+
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -411,3 +415,6 @@ POWER_BI_FEED_TOKEN = os.environ.get("POWER_BI_FEED_TOKEN", "")
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 OPENROUTER_MODEL = os.environ.get('OPENROUTER_MODEL', 'meta-llama/llama-3.2-3b-instruct:free')
 OPENROUTER_TIMEOUT_SECONDS = float(os.environ.get('OPENROUTER_TIMEOUT_SECONDS', '30'))
+
+# --- allauth-ui (UI para pantallas de auth) ---
+ALLAUTH_UI_THEME = os.environ.get("ALLAUTH_UI_THEME", "light")
