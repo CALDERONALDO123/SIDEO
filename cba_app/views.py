@@ -1107,14 +1107,75 @@ def cba_saved_result_delete(request, result_id: int):
     result = get_object_or_404(CBAResult, id=result_id)
 
     # Limpia también tablas Power BI (Postgres) para que no queden datos huérfanos.
+    # 1) Camino ideal: filas nuevas ya tienen FK result_id.
+    # 2) Fallback: si hay filas legacy (sin result_id), intenta limpiar por proyecto/puesto/candidatos.
+
+    # Extrae llaves desde data_json (sirve para fallback y no depende del esquema de BD).
+    proyecto = None
+    puesto = None
+    candidatos = []
+    try:
+        payload = json.loads(result.data_json or "{}")
+    except Exception:
+        payload = {}
+
+    setup = None
+    dashboard_payload = []
+    if isinstance(payload, dict):
+        setup = payload.get("setup")
+        dashboard_payload = payload.get("dashboard") or payload.get("chart_data") or []
+    elif isinstance(payload, list):
+        dashboard_payload = payload
+
+    if isinstance(setup, dict):
+        proyecto = (setup.get("project_name") or "").strip() or None
+        puesto = (setup.get("requesting_area") or "").strip() or None
+
+    proyecto = (proyecto or result.name or "").strip()[:255]
+    if puesto:
+        puesto = puesto[:150]
+
+    for item in dashboard_payload or []:
+        if not isinstance(item, dict):
+            continue
+        name = (item.get("name") or "").strip()
+        if name:
+            candidatos.append(name[:150])
+
+    # Borra por FK (si existe) y, además, limpia legacy por matching.
     try:
         ResultadoCBA.objects.filter(result=result).delete()
     except Exception:
         pass
+
     try:
         GraficaCostoVentaja.objects.filter(result=result).delete()
     except Exception:
         pass
+
+    if candidatos:
+        try:
+            # ResultadoCBA sí tiene fecha; esto lo hace más exacto en legacy.
+            ResultadoCBA.objects.filter(
+                result__isnull=True,
+                proyecto=proyecto,
+                puesto=puesto,
+                candidato__in=candidatos,
+                fecha=result.created_at,
+            ).delete()
+        except Exception:
+            pass
+
+        try:
+            # GraficaCostoVentaja no tiene fecha; filtramos por proyecto/puesto/candidatos.
+            GraficaCostoVentaja.objects.filter(
+                result__isnull=True,
+                proyectos=proyecto,
+                puesto=puesto,
+                candidatos__in=candidatos,
+            ).delete()
+        except Exception:
+            pass
 
     result.delete()
     return redirect("cba_saved_results")

@@ -33,6 +33,13 @@ class Command(BaseCommand):
         needs_rebuild = force or existing == 0
 
         if existing > 0 and not force:
+            # Si hay filas legacy sin result_id, conviene reconstruir para poder borrar en cascada.
+            try:
+                if GraficaCostoVentaja.objects.filter(result__isnull=True).exists():
+                    needs_rebuild = True
+            except Exception:
+                pass
+
             # Verifica que cada (proyectos, puesto, candidatos) tenga al menos 2 filas
             # y que exista su fila base 0/0. Si no, reconstruye para asegurar el formato.
             broken_groups = (
