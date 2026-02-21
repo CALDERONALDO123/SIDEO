@@ -227,6 +227,10 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 if not DEBUG:
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+    # Si por configuración del servicio no se ejecuta collectstatic,
+    # el manifest puede no existir y Django levantará 500 al resolver `{% static %}`.
+    # Desactivamos strict para evitar que el sitio quede inaccesible.
+    WHITENOISE_MANIFEST_STRICT = False
 
 # Media files (uploads)
 MEDIA_URL = '/media/'
