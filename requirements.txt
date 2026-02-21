@@ -15,3 +15,10 @@ django-cloudinary-storage
 
 # UI (Dashboard)
 django-adminlte3
+
+# Auth (login moderno + social + hardening)
+django-allauth
+django-axes
+requests
+PyJWT
+cryptography; sys_platform != 'win32'

@@ -1,5 +1,6 @@
 from django.urls import path
-from django.contrib.auth import views as auth_views
+from django.views.generic.base import RedirectView
+from django.urls import include
 from . import views
 from . import ai
 
@@ -17,13 +18,15 @@ urlpatterns = [
     ),
     path(
         "cuentas/ingresar/",
-        auth_views.LoginView.as_view(
-            template_name="registration/login.html",
-            redirect_authenticated_user=True,
-        ),
+        RedirectView.as_view(pattern_name="account_login", permanent=False),
         name="cba_login",
     ),
-    path("cuentas/registrar/", views.cba_signup, name="cba_signup"),
+    path(
+        "cuentas/registrar/",
+        RedirectView.as_view(pattern_name="account_signup", permanent=False),
+        name="cba_signup",
+    ),
+    path("cuentas/", include("allauth.urls")),
     path("cuentas/perfil/", views.cba_profile, name="cba_profile"),
     path("cuentas/salir/", views.cba_logout, name="cba_logout"),
     path("", views.cba_home, name="cba_home"),

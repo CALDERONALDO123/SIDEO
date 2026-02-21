@@ -14,6 +14,7 @@ from pathlib import Path
 import os
 import importlib.util
 import logging
+from datetime import timedelta
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -76,9 +77,24 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
+
+    # Auth moderno
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+
+    # Seguridad login
+    'axes',
+
     'adminlte3',
     'cba_app',
 ]
+
+# Provider social (Google) requiere cryptography (y wheels compatibles). Si no está disponible,
+# no lo activamos para evitar romper el arranque/migraciones en entornos limitados.
+if _module_available("cryptography"):
+    INSTALLED_APPS.append('allauth.socialaccount.providers.google')
 
 # Cloudinary (media) opcional: se activa solo si CLOUDINARY_URL está configurado.
 if os.environ.get("CLOUDINARY_URL") and _module_available("cloudinary") and _module_available("cloudinary_storage"):
@@ -112,6 +128,8 @@ MIDDLEWARE += [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
+    'axes.middleware.AxesMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -120,11 +138,12 @@ MIDDLEWARE += [
 X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 ROOT_URLCONF = 'cba_project.urls'
+SITE_ID = int(os.environ.get("DJANGO_SITE_ID", "1"))
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -217,6 +236,88 @@ LOGGING = {
 LOGIN_URL = "/cuentas/ingresar/"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/cuentas/ingresar/"
+
+AUTHENTICATION_BACKENDS = [
+    "axes.backends.AxesBackend",
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
+]
+
+_email_host = (os.environ.get("DJANGO_EMAIL_HOST") or "").strip()
+_sendgrid_api_key = (os.environ.get("SENDGRID_API_KEY") or "").strip()
+_default_from_email = (os.environ.get("DEFAULT_FROM_EMAIL") or os.environ.get("DJANGO_DEFAULT_FROM_EMAIL") or "").strip()
+
+_smtp_configured = bool(_sendgrid_api_key) or bool(_email_host)
+
+# Si no hay SMTP, no bloqueamos el registro con confirmación obligatoria.
+ACCOUNT_EMAIL_VERIFICATION = "mandatory" if _smtp_configured else "optional"
+ACCOUNT_UNIQUE_EMAIL = True if _smtp_configured else False
+
+# allauth (nueva API)
+ACCOUNT_LOGIN_METHODS = {"username"}
+if ACCOUNT_UNIQUE_EMAIL:
+    ACCOUNT_LOGIN_METHODS.add("email")
+
+ACCOUNT_SIGNUP_FIELDS = [
+    "email*" if _smtp_configured else "email",
+    "username*",
+    "password1*",
+    "password2*",
+]
+
+ACCOUNT_SESSION_REMEMBER = True
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
+ACCOUNT_FORMS = {
+    "signup": "cba_app.allauth_forms.AllauthSignupForm",
+}
+
+# Email backend
+if not _smtp_configured:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+
+    # Prioridad: SendGrid (recomendado en Render)
+    if _sendgrid_api_key:
+        EMAIL_HOST = "smtp.sendgrid.net"
+        EMAIL_PORT = 587
+        EMAIL_USE_TLS = True
+        EMAIL_HOST_USER = "apikey"
+        EMAIL_HOST_PASSWORD = _sendgrid_api_key
+    else:
+        EMAIL_HOST = _email_host
+        EMAIL_PORT = int(os.environ.get("DJANGO_EMAIL_PORT", "587"))
+        EMAIL_HOST_USER = os.environ.get("DJANGO_EMAIL_HOST_USER", "")
+        EMAIL_HOST_PASSWORD = os.environ.get("DJANGO_EMAIL_HOST_PASSWORD", "")
+        EMAIL_USE_TLS = _env_bool("DJANGO_EMAIL_USE_TLS", True)
+
+    DEFAULT_FROM_EMAIL = _default_from_email or "no-reply@sideo.local"
+
+# Social login (Google). Activo solo si se setean estas variables.
+_google_client_id = (os.environ.get("GOOGLE_CLIENT_ID") or "").strip()
+_google_client_secret = (os.environ.get("GOOGLE_CLIENT_SECRET") or "").strip()
+if _google_client_id and _google_client_secret:
+    SOCIALACCOUNT_PROVIDERS = {
+        "google": {
+            "SCOPE": ["profile", "email"],
+            "AUTH_PARAMS": {"access_type": "online"},
+            "APP": {
+                "client_id": _google_client_id,
+                "secret": _google_client_secret,
+                "key": "",
+            },
+        }
+    }
+
+# django-axes (anti brute force)
+AXES_ENABLED = _env_bool("AXES_ENABLED", True)
+AXES_FAILURE_LIMIT = int(os.environ.get("AXES_FAILURE_LIMIT", "5"))
+AXES_COOLOFF_TIME = timedelta(
+    minutes=int(os.environ.get("AXES_COOLOFF_MINUTES", "30"))
+)
+AXES_LOCKOUT_PARAMETERS = ["ip_address", "username"]
+AXES_RESET_ON_SUCCESS = True
+AXES_USERNAME_FORM_FIELD = "login"  # allauth usa 'login' como campo de usuario/email
 
 
 # Static files (CSS, JavaScript, Images)

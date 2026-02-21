@@ -26,6 +26,17 @@ Notas importantes:
 - El arranque en producción debe escuchar el puerto que Render expone en `PORT` (por ejemplo con Gunicorn `--bind 0.0.0.0:$PORT`). Si no, Render suele mostrar `HTTP ERROR 502`.
 - Variables mínimas: `DJANGO_SECRET_KEY`, `DJANGO_DEBUG=false`. Render suele proveer `RENDER_EXTERNAL_HOSTNAME` automáticamente.
 
+### Email (SendGrid) + Verificación
+
+Para que el registro y el reset de contraseña envíen correos (y para que la verificación de email sea obligatoria), configura SendGrid y define estas variables en Render:
+
+- `SENDGRID_API_KEY`: API Key de SendGrid (Mail Send → Full Access)
+- `DEFAULT_FROM_EMAIL`: el correo verificado en SendGrid (Single Sender)
+
+Notas:
+
+- Si `SENDGRID_API_KEY` no está configurado, el proyecto usa backend de email por consola (no envía correos reales).
+
 ### Superusuario sin Shell (Render Free)
 
 Si tu plan no permite abrir Shell, puedes crear el superusuario automáticamente configurando estas variables de entorno y redeployando:
