@@ -1,0 +1,42 @@
+{% extends "account/login.html" %}
+{% load i18n %}
+{% load allauth_ui %}
+{% load widget_tweaks %}
+
+{% block content %}
+  {% #container heading="Ingresar" %}
+    {% if not SOCIALACCOUNT_ONLY %}
+      <div class="py-3 text-sm opacity-80">
+        ¿Aún no tienes cuenta? <a class="link" href="{{ signup_url }}">Regístrate</a>.
+      </div>
+
+      {% url 'account_login' as action_url %}
+      {% #form form=form url=action_url button_text="Ingresar" %}
+        {% if form.remember %}
+          <div class="items-start my-2 form-control">
+            <label class="cursor-pointer label">
+              {% render_field form.remember class="checkbox checkbox-accent" %}
+              <span class="ml-2 label-text">Recordarme</span>
+            </label>
+          </div>
+        {% endif %}
+
+        {{ redirect_field }}
+        {% csrf_token %}
+
+        <div class="flex flex-col">
+          <a class="link self-end text-sm" href="{% url "account_reset_password" %}">¿Olvidaste tu contraseña?</a>
+        </div>
+      {% /form %}
+    {% endif %}
+
+    {% if LOGIN_BY_CODE_ENABLED %}
+      <div class="divider divider-neutral"></div>
+      <a href="{{ request_login_code_url }}" class="btn btn-neutral">Envíame un código para ingresar</a>
+    {% endif %}
+
+    {% if SOCIALACCOUNT_ENABLED %}
+      {% include "socialaccount/snippets/login.html" with page_layout="entrance" %}
+    {% endif %}
+  {% /container %}
+{% endblock content %}

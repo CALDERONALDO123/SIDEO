@@ -306,6 +306,7 @@ ACCOUNT_SESSION_REMEMBER = True
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 ACCOUNT_ADAPTER = "cba_app.allauth_adapter.SideoAccountAdapter"
 ACCOUNT_FORMS = {
+    "login": "cba_app.allauth_forms.AllauthLoginForm",
     "signup": "cba_app.allauth_forms.AllauthSignupForm",
 }
 

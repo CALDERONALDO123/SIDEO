@@ -1,0 +1,22 @@
+{% extends "account/signup.html" %}
+{% load i18n %}
+{% load allauth_ui %}
+{% load widget_tweaks %}
+
+{% block content %}
+  {% blocktranslate asvar subheading %}¿Ya tienes cuenta? Entonces <a href="{{ login_url }}" class="link">ingresa</a>.{% endblocktranslate %}
+
+  {% #container heading="Crear cuenta" subheading=subheading %}
+    {% if not SOCIALACCOUNT_ONLY %}
+      {% url 'account_signup' as action_url %}
+      {% #form form=form url=action_url button_text="Crear cuenta" %}
+        {{ redirect_field }}
+        {% csrf_token %}
+      {% /form %}
+    {% endif %}
+
+    {% if SOCIALACCOUNT_ENABLED %}
+      {% include "socialaccount/snippets/login.html" with page_layout="entrance" %}
+    {% endif %}
+  {% /container %}
+{% endblock %}

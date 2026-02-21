@@ -1,0 +1,9 @@
+{% extends "account/verification_sent.html" %}
+{% load i18n %}
+{% load allauth_ui %}
+
+{% block content %}
+  {% blocktrans asvar subheading %}Te hemos enviado un correo para verificar tu cuenta. Sigue el enlace para finalizar el registro. Si no lo ves, revisa tu bandeja de “Spam/No deseado”. Si no te llega en unos minutos, contáctanos.{% endblocktrans %}
+  {% #container heading="Confirma tu correo electrónico" subheading=subheading %}
+  {% /container %}
+{% endblock content %}

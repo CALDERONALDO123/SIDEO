@@ -13,6 +13,8 @@
 
     {% block extra_head %}
       <link rel="stylesheet" href="{% static 'allauth_ui/output.css' %}" />
+      <link rel="stylesheet" href="{% static 'cba_app/style.css' %}" />
+      <link rel="stylesheet" href="{% static 'cba_app/allauth_ui_overrides.css' %}" />
     {% endblock extra_head %}
   </head>
 
@@ -31,9 +33,9 @@
         </div>
         <div class="navbar-end">
           {% if user.is_authenticated %}
-            <a class="btn btn-ghost btn-sm" href="{% url 'account_logout' %}">{% trans "Sign Out" %}</a>
+            <a class="btn btn-ghost btn-sm" href="{% url 'account_logout' %}">Salir</a>
           {% else %}
-            <a class="btn btn-ghost btn-sm" href="{% url 'account_login' %}">{% trans "Sign In" %}</a>
+            <a class="btn btn-ghost btn-sm" href="{% url 'account_login' %}">Ingresar</a>
           {% endif %}
         </div>
       </header>
@@ -56,5 +58,26 @@
     {% endblock body %}
 
     {% block extra_body %}{% endblock extra_body %}
+
+    <script>
+      (function () {
+        function togglePassword(input, button) {
+          if (!input) return;
+          var showText = button.getAttribute('data-show-text') || 'Mostrar';
+          var hideText = button.getAttribute('data-hide-text') || 'Ocultar';
+          var isPassword = input.getAttribute('type') === 'password';
+          input.setAttribute('type', isPassword ? 'text' : 'password');
+          button.textContent = isPassword ? hideText : showText;
+        }
+
+        document.addEventListener('click', function (ev) {
+          var btn = ev.target && ev.target.closest ? ev.target.closest('[data-password-toggle]') : null;
+          if (!btn) return;
+          var inputId = btn.getAttribute('data-password-toggle');
+          var input = document.getElementById(inputId);
+          togglePassword(input, btn);
+        });
+      })();
+    </script>
   </body>
 </html>

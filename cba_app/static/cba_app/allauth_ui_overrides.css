@@ -1,0 +1,33 @@
+/* Overrides mínimos para que allauth-ui use tokens de SIDEO (definidos en cba_app/style.css).
+   Mantenerlo pequeño y de bajo riesgo. */
+
+/* Botón primario (DaisyUI) usando el acento del sitio */
+.btn.btn-primary {
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #ffffff;
+}
+
+.btn.btn-primary:hover {
+  background-color: var(--color-accent-strong);
+  border-color: var(--color-accent-strong);
+}
+
+.link {
+  color: var(--color-accent);
+}
+
+.link:hover {
+  color: var(--color-accent-strong);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent), transparent 82%);
+}
+
+/* Texto de ayuda/placeholder más suave */
+::placeholder {
+  opacity: 0.6;
+}
