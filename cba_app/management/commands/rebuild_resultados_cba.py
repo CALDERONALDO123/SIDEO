@@ -6,13 +6,13 @@ from decimal import Decimal, InvalidOperation
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from cba_app.models import CBAResult, GraficaCostoVentaja
+from cba_app.models import CBAResult, ResultadoCBA
 
 
 class Command(BaseCommand):
     help = (
-        "Reconstruye la tabla grafica_costo_ventaja desde CBAResult.data_json "
-        "(genera 2 filas por candidato: 0/0 y valor)."
+        "Reconstruye la tabla resultados_cba desde CBAResult.data_json "
+        "(1 fila por candidato por resultado)."
     )
 
     def add_arguments(self, parser):
@@ -33,7 +33,7 @@ class Command(BaseCommand):
         limit = int(options.get("limit") or 0)
 
         if not append:
-            GraficaCostoVentaja.objects.all().delete()
+            ResultadoCBA.objects.all().delete()
 
         qs = CBAResult.objects.order_by("-created_at")
         if limit > 0:
@@ -43,11 +43,11 @@ class Command(BaseCommand):
 
         def to_decimal(value):
             if value is None:
-                return Decimal("0")
+                return None
             try:
                 return Decimal(str(value))
             except (InvalidOperation, ValueError, TypeError):
-                return Decimal("0")
+                return None
 
         for result in qs:
             try:
@@ -75,6 +75,8 @@ class Command(BaseCommand):
                 puesto = puesto[:150]
 
             rows = []
+            winner = (result.winner_name or "").strip()
+
             for item in dashboard_payload or []:
                 if not isinstance(item, dict):
                     continue
@@ -86,30 +88,24 @@ class Command(BaseCommand):
 
                 costo = to_decimal(item.get("cost"))
                 ventaja = to_decimal(item.get("total"))
+                ratio = to_decimal(item.get("ratio"))
 
                 rows.append(
-                    GraficaCostoVentaja(
+                    ResultadoCBA(
                         result=result,
-                        proyectos=proyecto,
+                        proyecto=proyecto,
                         puesto=puesto,
-                        candidatos=candidato,
-                        costo=Decimal("0"),
-                        ventaja=Decimal("0"),
-                    )
-                )
-                rows.append(
-                    GraficaCostoVentaja(
-                        result=result,
-                        proyectos=proyecto,
-                        puesto=puesto,
-                        candidatos=candidato,
+                        candidato=candidato,
                         costo=costo,
                         ventaja=ventaja,
+                        costo_ventaja=ratio,
+                        recomendado=bool(winner and candidato == winner),
+                        fecha=result.created_at or timezone.now(),
                     )
                 )
 
             if rows:
-                GraficaCostoVentaja.objects.bulk_create(rows, batch_size=500)
+                ResultadoCBA.objects.bulk_create(rows, batch_size=500)
                 created += len(rows)
 
         self.stdout.write(self.style.SUCCESS(f"OK: {created} filas creadas"))

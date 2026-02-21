@@ -116,6 +116,15 @@ class ResultadoCBA(models.Model):
 
     id = models.AutoField(primary_key=True)
 
+    # Permite borrar/filtrar por resultado guardado (evita que Power BI acumule datos antiguos).
+    result = models.ForeignKey(
+        CBAResult,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="powerbi_resultados",
+    )
+
     proyecto = models.CharField(max_length=255)
     puesto = models.CharField(max_length=150, null=True, blank=True)
     candidato = models.CharField(max_length=150)
@@ -145,6 +154,15 @@ class GraficaCostoVentaja(models.Model):
 
     id = models.AutoField(primary_key=True)
 
+    # Permite borrar/filtrar por resultado guardado (evita que Power BI acumule datos antiguos).
+    result = models.ForeignKey(
+        CBAResult,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="powerbi_grafica_costo_ventaja",
+    )
+
     proyectos = models.CharField(max_length=255)
     puesto = models.CharField(max_length=150, null=True, blank=True)
     candidatos = models.CharField(max_length=150)
@@ -157,6 +175,7 @@ class GraficaCostoVentaja(models.Model):
         verbose_name = "Grafica de Costo/Ventaja (Power BI)"
         verbose_name_plural = "Grafica de Costo/Ventaja (Power BI)"
         indexes = [
+            models.Index(fields=["result"]),
             models.Index(fields=["proyectos"]),
             models.Index(fields=["puesto"]),
             models.Index(fields=["candidatos"]),

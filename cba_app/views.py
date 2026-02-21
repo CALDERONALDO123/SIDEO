@@ -1039,6 +1039,7 @@ def cba_step10(request):
             ventaja_dec = _to_decimal(item.get("total"))
             flat_rows.append(
                 ResultadoCBA(
+                    result=saved,
                     proyecto=proyecto,
                     puesto=puesto,
                     candidato=candidato,
@@ -1053,6 +1054,7 @@ def cba_step10(request):
             # Tabla para Power BI: fila base 0/0 + fila valor
             chart_rows.append(
                 GraficaCostoVentaja(
+                    result=saved,
                     proyectos=proyecto,
                     puesto=puesto,
                     candidatos=candidato,
@@ -1062,6 +1064,7 @@ def cba_step10(request):
             )
             chart_rows.append(
                 GraficaCostoVentaja(
+                    result=saved,
                     proyectos=proyecto,
                     puesto=puesto,
                     candidatos=candidato,
@@ -1102,6 +1105,17 @@ def cba_saved_results(request):
 @require_POST
 def cba_saved_result_delete(request, result_id: int):
     result = get_object_or_404(CBAResult, id=result_id)
+
+    # Limpia también tablas Power BI (Postgres) para que no queden datos huérfanos.
+    try:
+        ResultadoCBA.objects.filter(result=result).delete()
+    except Exception:
+        pass
+    try:
+        GraficaCostoVentaja.objects.filter(result=result).delete()
+    except Exception:
+        pass
+
     result.delete()
     return redirect("cba_saved_results")
 
@@ -1500,6 +1514,7 @@ def cba_dashboard(request):
 
             flat_rows.append(
                 ResultadoCBA(
+                    result=saved,
                     proyecto=proyecto,
                     puesto=puesto,
                     candidato=candidato,
@@ -1513,6 +1528,7 @@ def cba_dashboard(request):
 
             chart_rows.append(
                 GraficaCostoVentaja(
+                    result=saved,
                     proyectos=proyecto,
                     puesto=puesto,
                     candidatos=candidato,
@@ -1522,6 +1538,7 @@ def cba_dashboard(request):
             )
             chart_rows.append(
                 GraficaCostoVentaja(
+                    result=saved,
                     proyectos=proyecto,
                     puesto=puesto,
                     candidatos=candidato,
