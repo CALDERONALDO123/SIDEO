@@ -57,6 +57,8 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-insecure-change-me")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = _env_bool("DJANGO_DEBUG", True)
 
+IS_PRODUCTION = not DEBUG
+
 ALLOWED_HOSTS = _env_list(
     "DJANGO_ALLOWED_HOSTS",
     default=["localhost", "127.0.0.1", "testserver"],
@@ -251,13 +253,27 @@ EMAIL_TIMEOUT = int(os.environ.get("DJANGO_EMAIL_TIMEOUT", "10"))
 
 _smtp_configured = bool(_sendgrid_api_key) or bool(_email_host)
 
-# Si no hay SMTP, no bloqueamos el registro con confirmación obligatoria.
-# Permite override por env var para diagnosticar (ej: "optional" si SMTP está bloqueado).
+# En producción, si se espera verificación de email / reset de contraseña, necesitamos un backend real.
+# Esto evita un despliegue que "parece" funcionar pero nunca entrega correos.
+ALLOW_NO_EMAIL_IN_PROD = _env_bool("ALLOW_NO_EMAIL_IN_PROD", False)
+if IS_PRODUCTION and not _smtp_configured and not ALLOW_NO_EMAIL_IN_PROD:
+    raise ImproperlyConfigured(
+        "Email no configurado en producción. Define SENDGRID_API_KEY (recomendado) o "
+        "DJANGO_EMAIL_HOST (+ DJANGO_EMAIL_HOST_USER/DJANGO_EMAIL_HOST_PASSWORD), y DEFAULT_FROM_EMAIL. "
+        "Si deseas deshabilitar esta validación explícitamente, setea ALLOW_NO_EMAIL_IN_PROD=true."
+    )
+
+EMAIL_REQUIRED_FOR_SIGNUP = _smtp_configured or (IS_PRODUCTION and not ALLOW_NO_EMAIL_IN_PROD)
+
+# Verificación de email:
+# - Producción: por defecto, obligatoria (si no está permitida la excepción).
+# - Desarrollo: obligatoria solo si hay SMTP; si no, opcional (para no bloquear el flujo local).
 ACCOUNT_EMAIL_VERIFICATION = (
     os.environ.get("ACCOUNT_EMAIL_VERIFICATION")
-    or ("mandatory" if _smtp_configured else "optional")
+    or ("mandatory" if EMAIL_REQUIRED_FOR_SIGNUP else "optional")
 )
-ACCOUNT_UNIQUE_EMAIL = True if _smtp_configured else False
+
+ACCOUNT_UNIQUE_EMAIL = True if EMAIL_REQUIRED_FOR_SIGNUP else False
 
 # allauth (nueva API)
 ACCOUNT_LOGIN_METHODS = {"username"}
@@ -265,7 +281,7 @@ if ACCOUNT_UNIQUE_EMAIL:
     ACCOUNT_LOGIN_METHODS.add("email")
 
 ACCOUNT_SIGNUP_FIELDS = [
-    "email*" if _smtp_configured else "email",
+    "email*" if EMAIL_REQUIRED_FOR_SIGNUP else "email",
     "username*",
     "password1*",
     "password2*",
@@ -299,6 +315,14 @@ else:
         EMAIL_USE_TLS = _env_bool("DJANGO_EMAIL_USE_TLS", True)
 
     DEFAULT_FROM_EMAIL = _default_from_email or "no-reply@sideo.local"
+
+if IS_PRODUCTION and not ALLOW_NO_EMAIL_IN_PROD:
+    # Aseguramos remitente válido para proveedores tipo SendGrid.
+    if not (globals().get("DEFAULT_FROM_EMAIL") or "").strip() or DEFAULT_FROM_EMAIL.endswith(".local"):
+        raise ImproperlyConfigured(
+            "DEFAULT_FROM_EMAIL inválido para producción. Configura un remitente real/verificado "
+            "(por ejemplo, un Single Sender en SendGrid)."
+        )
 
 # Social login (Google). Activo solo si se setean estas variables.
 _google_client_id = (os.environ.get("GOOGLE_CLIENT_ID") or "").strip()
@@ -352,6 +376,9 @@ if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+
+    # Allauth: asegurar links https en correos, incluso detrás de proxy.
+    ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
 
 CSRF_TRUSTED_ORIGINS = _env_list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
 if RENDER_EXTERNAL_HOSTNAME:

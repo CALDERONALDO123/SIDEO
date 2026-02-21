@@ -28,14 +28,25 @@ Notas importantes:
 
 ### Email (SendGrid) + Verificación
 
-Para que el registro y el reset de contraseña envíen correos (y para que la verificación de email sea obligatoria), configura SendGrid y define estas variables en Render:
+En producción (Render) el proyecto asume que el registro envía correo de verificación. Para eso debes configurar un proveedor SMTP.
+
+Opción recomendada: SendGrid. Define estas variables en Render:
 
 - `SENDGRID_API_KEY`: API Key de SendGrid (Mail Send → Full Access)
 - `DEFAULT_FROM_EMAIL`: el correo verificado en SendGrid (Single Sender)
 
 Notas:
 
-- Si `SENDGRID_API_KEY` no está configurado, el proyecto usa backend de email por consola (no envía correos reales).
+- Si NO configuras `SENDGRID_API_KEY` ni `DJANGO_EMAIL_HOST`, el deploy en producción fallará con un error explícito (para evitar un sitio "funcionando" sin correo). Si realmente quieres permitir producción sin correo, setea `ALLOW_NO_EMAIL_IN_PROD=true` (no recomendado).
+
+Alternativa SMTP genérica (si no usas SendGrid):
+
+- `DJANGO_EMAIL_HOST`
+- `DJANGO_EMAIL_PORT` (por defecto `587`)
+- `DJANGO_EMAIL_HOST_USER`
+- `DJANGO_EMAIL_HOST_PASSWORD`
+- `DJANGO_EMAIL_USE_TLS` (`true/false`, por defecto `true`)
+- `DEFAULT_FROM_EMAIL`
 
 ### Superusuario sin Shell (Render Free)
 
