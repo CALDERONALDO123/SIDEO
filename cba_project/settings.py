@@ -247,10 +247,16 @@ _email_host = (os.environ.get("DJANGO_EMAIL_HOST") or "").strip()
 _sendgrid_api_key = (os.environ.get("SENDGRID_API_KEY") or "").strip()
 _default_from_email = (os.environ.get("DEFAULT_FROM_EMAIL") or os.environ.get("DJANGO_DEFAULT_FROM_EMAIL") or "").strip()
 
+EMAIL_TIMEOUT = int(os.environ.get("DJANGO_EMAIL_TIMEOUT", "10"))
+
 _smtp_configured = bool(_sendgrid_api_key) or bool(_email_host)
 
 # Si no hay SMTP, no bloqueamos el registro con confirmación obligatoria.
-ACCOUNT_EMAIL_VERIFICATION = "mandatory" if _smtp_configured else "optional"
+# Permite override por env var para diagnosticar (ej: "optional" si SMTP está bloqueado).
+ACCOUNT_EMAIL_VERIFICATION = (
+    os.environ.get("ACCOUNT_EMAIL_VERIFICATION")
+    or ("mandatory" if _smtp_configured else "optional")
+)
 ACCOUNT_UNIQUE_EMAIL = True if _smtp_configured else False
 
 # allauth (nueva API)
@@ -267,6 +273,7 @@ ACCOUNT_SIGNUP_FIELDS = [
 
 ACCOUNT_SESSION_REMEMBER = True
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
+ACCOUNT_ADAPTER = "cba_app.allauth_adapter.SideoAccountAdapter"
 ACCOUNT_FORMS = {
     "signup": "cba_app.allauth_forms.AllauthSignupForm",
 }
