@@ -380,10 +380,10 @@ STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 if not DEBUG:
-    # Nota: algunos assets de terceros (p.ej. AdminLTE docs) referencian sourcemaps
-    # que no vienen en el paquete. El storage Manifest falla en collectstatic.
-    # Usamos el storage comprimido (sin manifest) para evitar builds rotos.
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+    # Nota: algunos assets de terceros y/o del admin pueden referenciar archivos
+    # no presentes (p.ej. sourcemaps). Los storages "Compressed*" intentan abrir
+    # todo para comprimir y pueden fallar el build. Preferimos un build estable.
+    STATICFILES_STORAGE = 'whitenoise.storage.StaticFilesStorage'
 
 # Media files (uploads)
 MEDIA_URL = '/media/'
@@ -394,7 +394,7 @@ if os.environ.get("CLOUDINARY_URL"):
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
     static_backend = (
-        'whitenoise.storage.CompressedStaticFilesStorage'
+        'whitenoise.storage.StaticFilesStorage'
         if not DEBUG
         else 'django.contrib.staticfiles.storage.StaticFilesStorage'
     )
