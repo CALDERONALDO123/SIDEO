@@ -251,6 +251,16 @@ _default_from_email = (os.environ.get("DEFAULT_FROM_EMAIL") or os.environ.get("D
 
 EMAIL_TIMEOUT = int(os.environ.get("DJANGO_EMAIL_TIMEOUT", "10"))
 
+# En algunos PaaS el SMTP puede bloquearse/ser lento. Si hay SENDGRID_API_KEY,
+# preferimos usar la API HTTP de SendGrid para evitar timeouts de workers.
+SENDGRID_USE_HTTP_API = _env_bool(
+    "SENDGRID_USE_HTTP_API",
+    default=bool(_sendgrid_api_key) and IS_PRODUCTION,
+)
+
+# Exponer para el adapter (no imprimirlo en logs).
+SENDGRID_API_KEY = _sendgrid_api_key
+
 _smtp_configured = bool(_sendgrid_api_key) or bool(_email_host)
 
 # En producción, si se espera verificación de email / reset de contraseña, necesitamos un backend real.

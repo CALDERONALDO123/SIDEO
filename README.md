@@ -38,6 +38,7 @@ Opción recomendada: SendGrid. Define estas variables en Render:
 Notas:
 
 - Si NO configuras `SENDGRID_API_KEY` ni `DJANGO_EMAIL_HOST`, el deploy en producción fallará con un error explícito (para evitar un sitio "funcionando" sin correo). Si realmente quieres permitir producción sin correo, setea `ALLOW_NO_EMAIL_IN_PROD=true` (no recomendado).
+- Con `SENDGRID_API_KEY` configurado, por defecto el proyecto envía correos vía API HTTP de SendGrid (no SMTP) para evitar bloqueos/timeouts de SMTP en PaaS. Puedes forzar el comportamiento con `SENDGRID_USE_HTTP_API=true/false`.
 
 Alternativa SMTP genérica (si no usas SendGrid):
 
