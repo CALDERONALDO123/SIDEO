@@ -2038,7 +2038,7 @@ def cba_logout(request):
 def cba_profile(request):
     """Perfil minimalista del usuario."""
 
-    saved = False
+    saved = request.GET.get("saved") == "1"
     profile, _created = UserProfile.objects.get_or_create(user=request.user)
 
     if request.method == "POST":
@@ -2058,8 +2058,7 @@ def cba_profile(request):
                     profile.avatar.delete(save=False)
                 photo_form.save()
 
-            saved = True
-            return redirect("cba_profile")
+            return redirect(f"{reverse('cba_profile')}?saved=1")
     else:
         form = ProfileForm(instance=request.user)
         photo_form = ProfilePhotoForm(instance=profile)

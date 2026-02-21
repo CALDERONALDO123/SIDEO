@@ -253,17 +253,6 @@ class ProfileForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ("first_name", "last_name")
-
-
-class ProfilePhotoForm(forms.ModelForm):
-    delete_avatar = forms.BooleanField(required=False, label="Eliminar foto")
-
-    class Meta:
-        model = UserProfile
-        fields = ("avatar",)
-        widgets = {
-            "avatar": forms.ClearableFileInput(attrs={"accept": "image/*"}),
-        }
         labels = {
             "first_name": "Nombre",
             "last_name": "Apellido",
@@ -271,14 +260,39 @@ class ProfilePhotoForm(forms.ModelForm):
         widgets = {
             "first_name": forms.TextInput(
                 attrs={
-                    "class": "cba-input",
+                    "class": "form-control",
+                    "placeholder": "Tu nombre",
                     "autocomplete": "given-name",
                 }
             ),
             "last_name": forms.TextInput(
                 attrs={
-                    "class": "cba-input",
+                    "class": "form-control",
+                    "placeholder": "Tu apellido",
                     "autocomplete": "family-name",
+                }
+            ),
+        }
+
+
+class ProfilePhotoForm(forms.ModelForm):
+    delete_avatar = forms.BooleanField(
+        required=False,
+        label="Eliminar foto actual",
+        widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
+    )
+
+    class Meta:
+        model = UserProfile
+        fields = ("avatar",)
+        labels = {
+            "avatar": "Cambiar foto",
+        }
+        widgets = {
+            "avatar": forms.FileInput(
+                attrs={
+                    "accept": "image/*",
+                    "class": "form-control-file",
                 }
             ),
         }
