@@ -19,6 +19,7 @@ django-adminlte3
 # Auth (login moderno + social + hardening)
 django-allauth
 django-allauth-ui
+slippers
 django-widget-tweaks
 django-axes
 requests

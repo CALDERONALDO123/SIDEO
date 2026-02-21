@@ -76,6 +76,7 @@ INSTALLED_APPS = [
     # UI moderna para allauth (Tailwind/DaisyUI)
     'allauth_ui',
     'widget_tweaks',
+    'slippers',
 
     'django.contrib.admin',
     'django.contrib.auth',
