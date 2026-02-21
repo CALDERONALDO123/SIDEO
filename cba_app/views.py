@@ -15,6 +15,11 @@ from django.contrib.auth.forms import UserCreationForm
 import os
 import time
 
+try:
+    import cloudinary.uploader as cloudinary_uploader  # type: ignore
+except Exception:  # pragma: no cover
+    cloudinary_uploader = None  # type: ignore
+
 from urllib.parse import urlparse, parse_qsl, urlencode as urlencode_qs, urlunparse
 
 import secrets
@@ -44,6 +49,35 @@ from .forms import (
 )
 from .ai import generate_decision_assistant_text, generate_inconsistency_report_text
 from .guide_meta import ensure_guide_meta, compute_and_store_guide_meta
+
+
+def _delete_cloudinary_image_if_possible(value) -> None:
+    """Intenta borrar el recurso en Cloudinary (si aplica).
+
+    CloudinaryField suele exponer `public_id` (CloudinaryResource). En algunos casos puede
+    ser un string persistido. Si no hay Cloudinary disponible o no hay public_id, no hace nada.
+    """
+
+    if cloudinary_uploader is None or not value:
+        return
+
+    public_id = None
+    try:
+        public_id = getattr(value, "public_id", None) or None
+    except Exception:
+        public_id = None
+
+    if not public_id and isinstance(value, str):
+        public_id = value.strip() or None
+
+    if not public_id:
+        return
+
+    try:
+        cloudinary_uploader.destroy(public_id, invalidate=True, resource_type="image")
+    except Exception:
+        # No queremos tumbar el guardado del perfil si Cloudinary falla.
+        return
 
 
 def _safe_storage_exists(storage_name: str) -> bool:
@@ -2060,6 +2094,7 @@ def cba_profile(request):
             if photo_form.cleaned_data.get("delete_avatar"):
                 if profile.avatar:
                     try:
+                        _delete_cloudinary_image_if_possible(profile.avatar)
                         # CloudinaryField no siempre soporta el mismo API que FileField.
                         try:
                             profile.avatar.delete(save=False)
@@ -2072,6 +2107,7 @@ def cba_profile(request):
             else:
                 if "avatar" in request.FILES and profile.avatar:
                     try:
+                        _delete_cloudinary_image_if_possible(profile.avatar)
                         try:
                             profile.avatar.delete(save=False)
                         except TypeError:
