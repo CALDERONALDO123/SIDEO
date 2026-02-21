@@ -18,12 +18,27 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-import os
+
+
+def _using_cloudinary_storage() -> bool:
+    backend = getattr(settings, "DEFAULT_FILE_STORAGE", "") or ""
+    if backend == "cloudinary_storage.storage.MediaCloudinaryStorage":
+        return True
+
+    storages = getattr(settings, "STORAGES", None)
+    if isinstance(storages, dict):
+        default = storages.get("default")
+        if isinstance(default, dict):
+            be = (default.get("BACKEND") or "").strip()
+            if be == "cloudinary_storage.storage.MediaCloudinaryStorage":
+                return True
+
+    return False
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('cba_app.urls')),
 ]
 
-if settings.DEBUG or not os.environ.get("CLOUDINARY_URL"):
+if settings.DEBUG or not _using_cloudinary_storage():
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

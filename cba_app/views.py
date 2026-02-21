@@ -2059,12 +2059,18 @@ def cba_profile(request):
 
             if photo_form.cleaned_data.get("delete_avatar"):
                 if profile.avatar:
-                    profile.avatar.delete(save=False)
+                    try:
+                        profile.avatar.delete(save=False)
+                    except Exception:
+                        pass
                 profile.avatar = None
                 profile.save(update_fields=["avatar", "updated_at"])
             else:
                 if "avatar" in request.FILES and profile.avatar:
-                    profile.avatar.delete(save=False)
+                    try:
+                        profile.avatar.delete(save=False)
+                    except Exception:
+                        pass
                 photo_form.save()
 
             return redirect(f"{reverse('cba_profile')}?saved=1")
