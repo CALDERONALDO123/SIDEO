@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Activa tu cuenta en SIDEO</title>
+  </head>
+  <body style="margin:0; padding:0; background:#f7f9ff; color:#0f172a; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
+    <div style="padding:24px 12px;">
+      <div style="max-width:560px; margin:0 auto; background:#ffffff; border:1px solid rgba(15,23,42,0.08); border-radius:18px; overflow:hidden;">
+        <div style="padding:22px 22px 14px; background:linear-gradient(180deg,#ffffff,#fbfdff); border-bottom:1px solid rgba(15,23,42,0.08);">
+          <div style="font-size:12px; letter-spacing:0.18em; font-weight:700; color:#0f172a; opacity:0.9;">SIDEO</div>
+          <div style="margin-top:8px; font-size:20px; font-weight:800; color:#0f172a;">Activa tu cuenta</div>
+          <div style="margin-top:6px; font-size:14px; color:#5b6476;">Confirma tu correo para finalizar el registro.</div>
+        </div>
+
+        <div style="padding:18px 22px 22px;">
+          <p style="margin:0 0 12px; font-size:14px; line-height:1.55;">Hola,</p>
+          <p style="margin:0 0 14px; font-size:14px; line-height:1.55;">Gracias por registrarte en <strong>SIDEO</strong>.</p>
+          <p style="margin:0 0 16px; font-size:14px; line-height:1.55;">Para activar tu cuenta, haz clic en el botón:</p>
+
+          <div style="margin:16px 0 18px;">
+            <a href="{{ activate_url }}" style="display:inline-block; padding:12px 18px; background:#0fa3b1; color:#ffffff; text-decoration:none; border-radius:999px; font-weight:700; font-size:14px;">Confirmar cuenta</a>
+          </div>
+
+          <div style="padding:12px 12px; background:rgba(15,23,42,0.04); border:1px solid rgba(15,23,42,0.10); border-radius:12px;">
+            <div style="font-size:12px; color:#5b6476; margin-bottom:6px;">Si el botón no funciona, copia y pega este enlace en tu navegador:</div>
+            <div style="font-size:12px; word-break:break-all; color:#0f172a;">{{ activate_url }}</div>
+          </div>
+
+          <p style="margin:16px 0 0; font-size:12px; line-height:1.55; color:#5b6476;">Si no creaste esta cuenta, puedes ignorar este correo.</p>
+        </div>
+      </div>
+
+      <div style="max-width:560px; margin:12px auto 0; text-align:center; font-size:12px; color:#5b6476;">
+        © {% now "Y" %} SIDEO
+      </div>
+    </div>
+  </body>
+</html>

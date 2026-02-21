@@ -1,0 +1,10 @@
+Hola,
+
+Gracias por registrarte en SIDEO.
+
+Para activar tu cuenta, abre este enlace:
+{{ activate_url }}
+
+Si no creaste esta cuenta, puedes ignorar este correo.
+
+— Equipo SIDEO
