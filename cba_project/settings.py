@@ -380,11 +380,10 @@ STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 if not DEBUG:
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-    # Si por configuración del servicio no se ejecuta collectstatic,
-    # el manifest puede no existir y Django levantará 500 al resolver `{% static %}`.
-    # Desactivamos strict para evitar que el sitio quede inaccesible.
-    WHITENOISE_MANIFEST_STRICT = False
+    # Nota: algunos assets de terceros (p.ej. AdminLTE docs) referencian sourcemaps
+    # que no vienen en el paquete. El storage Manifest falla en collectstatic.
+    # Usamos el storage comprimido (sin manifest) para evitar builds rotos.
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 # Media files (uploads)
 MEDIA_URL = '/media/'
@@ -395,7 +394,7 @@ if os.environ.get("CLOUDINARY_URL"):
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
     static_backend = (
-        'whitenoise.storage.CompressedManifestStaticFilesStorage'
+        'whitenoise.storage.CompressedStaticFilesStorage'
         if not DEBUG
         else 'django.contrib.staticfiles.storage.StaticFilesStorage'
     )
