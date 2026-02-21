@@ -1,0 +1,2 @@
+# Ensure Unix line-endings for shell scripts (Render runs on Linux)
+*.sh text eol=lf

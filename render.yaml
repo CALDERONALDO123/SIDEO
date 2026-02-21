@@ -12,7 +12,7 @@ services:
     buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
     # Render expone el puerto en la variable de entorno PORT. Si no se hace bind a ese puerto,
     # el healthcheck falla y Render muestra HTTP 502.
-    startCommand: python manage.py migrate --noinput && python manage.py ensure_superuser && gunicorn cba_project.wsgi:application --bind 0.0.0.0:$PORT --access-logfile - --error-logfile - --log-level info --capture-output
+    startCommand: bash scripts/render_start.sh
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.11
