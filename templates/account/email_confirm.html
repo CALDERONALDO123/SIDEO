@@ -1,18 +1,20 @@
 {% extends "cba_app/base.html" %}
 
+{% block body_class %}layout--auth page-auth{% endblock %}
+
 {% block content %}
-    <div class="table-wrapper" style="max-width: 560px; margin: 0 auto;">
-        <h2 style="margin-top:0;">Confirmar email</h2>
+    <div class="auth-card">
+        <h2 class="auth-title">Confirmar email</h2>
 
         {% if confirmation %}
-            <p class="text-muted" style="margin-top: 6px;">Confirmá que este email te pertenece para activar tu cuenta.</p>
-            <form method="post" style="margin-top: 14px;">
+            <p class="auth-subtitle">Confirmá que este email te pertenece para activar tu cuenta.</p>
+            <form method="post" class="auth-form">
                 {% csrf_token %}
                 <button type="submit" class="button">Confirmar</button>
             </form>
         {% else %}
             <div class="notice notice--error">El enlace de confirmación no es válido o ya expiró.</div>
-            <div style="margin-top: 14px;">
+            <div class="auth-actions">
                 <a href="{% url 'account_email' %}" class="button">Gestionar emails</a>
             </div>
         {% endif %}

@@ -1,0 +1,18 @@
+{% extends "cba_app/base.html" %}
+
+{% block body_class %}layout--auth page-auth{% endblock %}
+
+{% block content %}
+    <div class="auth-card">
+        <h2 class="auth-title">Verificá tu dirección de correo</h2>
+        <p class="auth-subtitle">
+            Te enviamos un email con un enlace para confirmar tu cuenta. Si no lo ves en tu bandeja de entrada,
+            revisa Spam/Promociones.
+        </p>
+
+        <div class="auth-actions">
+            <a href="{% url 'account_login' %}" class="button">Ir al login</a>
+            <a href="{% url 'account_signup' %}" class="link-back" style="margin:0;">Volver al registro</a>
+        </div>
+    </div>
+{% endblock %}
