@@ -6,19 +6,20 @@
   </label>
 
   {% if input_type == "password" %}
-    <div class="relative">
+    <div class="join w-full">
       {% if field.errors %}
-        {% render_field field placeholder="" class="w-full input input-bordered text-primary input-error pr-24" %}
+        {% render_field field placeholder="" class="join-item w-full input input-bordered text-primary input-error" %}
       {% else %}
-        {% render_field field placeholder="" class="w-full input input-bordered text-primary pr-24" %}
+        {% render_field field placeholder="" class="join-item w-full input input-bordered text-primary" %}
       {% endif %}
 
       <button
         type="button"
-        class="btn btn-ghost btn-xs absolute right-2 top-1/2 -translate-y-1/2"
+        class="join-item btn btn-outline"
         data-password-toggle="{{ field.id_for_label }}"
         data-show-text="Mostrar"
         data-hide-text="Ocultar"
+        aria-label="Mostrar u ocultar contraseña"
       >
         Mostrar
       </button>
