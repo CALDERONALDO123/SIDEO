@@ -45,9 +45,8 @@
                                         >
 
                                         <div
-                                            class="profile-user-img img-fluid img-circle elevation-2 d-flex align-items-center justify-content-center bg-light"
+                                            class="profile-user-img img-fluid img-circle elevation-2 bg-light {% if profile.avatar %}d-none{% else %}d-flex align-items-center justify-content-center{% endif %}"
                                             data-role="avatar-placeholder"
-                                            {% if profile.avatar %}style="display:none;"{% endif %}
                                         >
                                             <span class="text-muted text-sm">Sin foto</span>
                                         </div>
