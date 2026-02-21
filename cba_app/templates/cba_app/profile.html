@@ -4,8 +4,8 @@
 
     <section class="content pt-3">
         <div class="container-fluid">
-            <div class="d-flex flex-wrap align-items-center justify-content-between" style="gap:10px; margin-bottom:12px;">
-                <div>
+            <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+                <div class="mb-2 mb-sm-0">
                     <div class="text-muted text-uppercase text-sm">Cuenta</div>
                     <h1 class="h4 m-0">Perfil</h1>
                     <div class="text-muted text-sm mt-1">Actualiza tu nombre y tu foto.</div>
@@ -13,82 +13,100 @@
             </div>
 
             {% if saved %}
-                <div class="notice notice--success">Perfil actualizado correctamente.</div>
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle mr-1"></i>
+                    Perfil actualizado correctamente.
+                </div>
             {% endif %}
 
-            <div class="row justify-content-center">
-                <div class="col-12 col-lg-8">
-                    <div class="card">
-                        <div class="card-body">
-                            <form method="post" enctype="multipart/form-data">
-                                {% csrf_token %}
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
 
-                                <div class="row">
-                                    <div class="col-12 col-md-4 mb-3 mb-md-0">
-                                        <div class="text-muted text-sm mb-2">Foto de perfil</div>
-
-                                        <div class="d-flex align-items-center" style="gap:12px;">
-                                            <div class="bg-light border" style="width:88px; height:88px; border-radius: 12px; overflow:hidden; display:flex; align-items:center; justify-content:center;">
-                                                {% if profile.avatar %}
-                                                    <img src="{{ profile.avatar.url }}" alt="Foto de perfil" style="width:100%; height:100%; object-fit:cover;" />
-                                                {% else %}
-                                                    <span class="text-muted text-sm">Sin foto</span>
-                                                {% endif %}
-                                            </div>
-
-                                            <div class="flex-grow-1">
-                                                <label for="{{ photo_form.avatar.id_for_label }}" class="text-muted text-sm mb-1">{{ photo_form.avatar.label }}</label>
-                                                {{ photo_form.avatar }}
-                                                <div class="text-muted text-sm mt-1" data-role="avatar-file-name">Ningún archivo seleccionado</div>
-
-                                                {% if photo_form.avatar.errors %}
-                                                    <div class="text-danger text-sm mt-1">{{ photo_form.avatar.errors }}</div>
-                                                {% endif %}
-                                            </div>
+                <div class="row">
+                    <div class="col-12 col-md-4">
+                        <div class="card card-primary card-outline">
+                            <div class="card-body box-profile">
+                                <div class="text-center">
+                                    {% if profile.avatar %}
+                                        <img class="profile-user-img img-fluid img-circle elevation-2" src="{{ profile.avatar.url }}" alt="Foto de perfil">
+                                    {% else %}
+                                        <div class="profile-user-img img-fluid img-circle elevation-2 d-flex align-items-center justify-content-center bg-light" style="height:100px; width:100px; margin:0 auto;">
+                                            <span class="text-muted text-sm">Sin foto</span>
                                         </div>
+                                    {% endif %}
+                                </div>
 
-                                        {% if profile.avatar %}
-                                            <div class="form-check mt-3">
-                                                {{ photo_form.delete_avatar }}
-                                                <label class="form-check-label" for="{{ photo_form.delete_avatar.id_for_label }}">{{ photo_form.delete_avatar.label }}</label>
-                                            </div>
-                                        {% endif %}
+                                <h3 class="profile-username text-center mt-3 mb-0">
+                                    {% if request.user.first_name or request.user.last_name %}
+                                        {{ request.user.first_name }} {{ request.user.last_name }}
+                                    {% else %}
+                                        {{ request.user.username }}
+                                    {% endif %}
+                                </h3>
+                                <p class="text-muted text-center mb-3">@{{ request.user.username }}</p>
+
+                                <div class="form-group">
+                                    <label class="text-muted text-sm mb-1">{{ photo_form.avatar.label }}</label>
+                                    <div class="custom-file">
+                                        {{ photo_form.avatar }}
+                                        <label class="custom-file-label" for="{{ photo_form.avatar.id_for_label }}">Seleccionar archivo</label>
                                     </div>
+                                    {% if photo_form.avatar.errors %}
+                                        <div class="text-danger text-sm mt-2">{{ photo_form.avatar.errors }}</div>
+                                    {% endif %}
+                                </div>
 
-                                    <div class="col-12 col-md-8">
-                                        <div class="form-group">
-                                            <label class="text-muted text-sm mb-1">Usuario</label>
-                                            <input type="text" class="form-control" value="{{ request.user.username }}" readonly>
-                                        </div>
+                                {% if profile.avatar %}
+                                    <div class="form-check">
+                                        {{ photo_form.delete_avatar }}
+                                        <label class="form-check-label" for="{{ photo_form.delete_avatar.id_for_label }}">{{ photo_form.delete_avatar.label }}</label>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
 
-                                        <div class="form-group">
-                                            <label for="{{ form.first_name.id_for_label }}" class="text-muted text-sm mb-1">{{ form.first_name.label }}</label>
-                                            {{ form.first_name }}
-                                            {% if form.first_name.errors %}
-                                                <div class="text-danger text-sm mt-1">{{ form.first_name.errors }}</div>
-                                            {% endif %}
+                    <div class="col-12 col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title m-0">Datos personales</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label class="text-muted text-sm mb-1">Usuario</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i class="far fa-user"></i></span>
                                         </div>
-
-                                        <div class="form-group mb-0">
-                                            <label for="{{ form.last_name.id_for_label }}" class="text-muted text-sm mb-1">{{ form.last_name.label }}</label>
-                                            {{ form.last_name }}
-                                            {% if form.last_name.errors %}
-                                                <div class="text-danger text-sm mt-1">{{ form.last_name.errors }}</div>
-                                            {% endif %}
-                                        </div>
+                                        <input type="text" class="form-control" value="{{ request.user.username }}" readonly>
                                     </div>
                                 </div>
 
-                                <div class="d-flex flex-wrap align-items-center justify-content-end mt-4" style="gap:8px;">
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="fas fa-save mr-1"></i> Guardar cambios
-                                    </button>
+                                <div class="form-group">
+                                    <label for="{{ form.first_name.id_for_label }}" class="text-muted text-sm mb-1">{{ form.first_name.label }}</label>
+                                    {{ form.first_name }}
+                                    {% if form.first_name.errors %}
+                                        <div class="text-danger text-sm mt-2">{{ form.first_name.errors }}</div>
+                                    {% endif %}
                                 </div>
-                            </form>
+
+                                <div class="form-group mb-0">
+                                    <label for="{{ form.last_name.id_for_label }}" class="text-muted text-sm mb-1">{{ form.last_name.label }}</label>
+                                    {{ form.last_name }}
+                                    {% if form.last_name.errors %}
+                                        <div class="text-danger text-sm mt-2">{{ form.last_name.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="card-footer d-flex justify-content-end" style="gap:8px;">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save mr-1"></i> Guardar cambios
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </form>
         </div>
     </section>
 {% endblock %}
@@ -103,12 +121,15 @@
 
             onReady(function () {
                 var input = document.getElementById('{{ photo_form.avatar.id_for_label }}');
-                var nameEl = document.querySelector('[data-role="avatar-file-name"]');
-                if (!input || !nameEl) return;
+                if (!input) return;
+
+                var label = null;
+                var wrap = input.closest('.custom-file');
+                if (wrap) label = wrap.querySelector('.custom-file-label');
 
                 input.addEventListener('change', function () {
                     var f = input.files && input.files[0];
-                    nameEl.textContent = f ? f.name : 'Ningún archivo seleccionado';
+                    if (label) label.textContent = f ? f.name : 'Seleccionar archivo';
                 });
             });
         })();

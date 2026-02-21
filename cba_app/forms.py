@@ -292,7 +292,7 @@ class ProfilePhotoForm(forms.ModelForm):
             "avatar": forms.FileInput(
                 attrs={
                     "accept": "image/*",
-                    "class": "form-control-file",
+                    "class": "custom-file-input",
                 }
             ),
         }
