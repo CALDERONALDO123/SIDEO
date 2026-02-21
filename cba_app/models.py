@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 
+from cloudinary.models import CloudinaryField
 
 def _user_avatar_upload_to(instance, filename: str) -> str:
     base = f"avatars/user_{instance.user_id}"
@@ -248,7 +249,8 @@ class UserProfile(models.Model):
     """Perfil de usuario (foto/avatar)."""
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
-    avatar = models.FileField(upload_to=_user_avatar_upload_to, blank=True, null=True)
+    # En Cloudinary, FileField suele subirse como "raw"; para un avatar necesitamos "image".
+    avatar = CloudinaryField("image", blank=True, null=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):

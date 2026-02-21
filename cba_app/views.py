@@ -2060,7 +2060,11 @@ def cba_profile(request):
             if photo_form.cleaned_data.get("delete_avatar"):
                 if profile.avatar:
                     try:
-                        profile.avatar.delete(save=False)
+                        # CloudinaryField no siempre soporta el mismo API que FileField.
+                        try:
+                            profile.avatar.delete(save=False)
+                        except TypeError:
+                            profile.avatar.delete()
                     except Exception:
                         pass
                 profile.avatar = None
@@ -2068,7 +2072,10 @@ def cba_profile(request):
             else:
                 if "avatar" in request.FILES and profile.avatar:
                     try:
-                        profile.avatar.delete(save=False)
+                        try:
+                            profile.avatar.delete(save=False)
+                        except TypeError:
+                            profile.avatar.delete()
                     except Exception:
                         pass
                 photo_form.save()

@@ -12,6 +12,7 @@ psycopg[binary]
 
 # Media (Cloudinary)
 django-cloudinary-storage
+cloudinary
 
 # UI (Dashboard)
 django-adminlte3
