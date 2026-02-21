@@ -42,28 +42,31 @@ def write_guide_meta(meta: dict, storage: Storage | None = None) -> None:
     storage.save(GUIDE_META_STORAGE_NAME, ContentFile(payload.encode("utf-8")))
 
 
-def compute_and_store_guide_meta(storage: Storage | None = None) -> dict | None:
+def compute_and_store_guide_meta(storage: Storage | None = None, *, pdf_storage_name: str | None = None) -> dict | None:
     storage = storage or default_storage
-    if not storage.exists(GUIDE_PDF_STORAGE_NAME):
+    target = (pdf_storage_name or GUIDE_PDF_STORAGE_NAME).strip() or GUIDE_PDF_STORAGE_NAME
+    if not storage.exists(target):
         return None
 
-    sha256 = _sha256_storage(storage, GUIDE_PDF_STORAGE_NAME)
+    sha256 = _sha256_storage(storage, target)
     meta = {
         "sha256": sha256,
         "version": sha256[:16],
         "updated_at": datetime.now(timezone.utc).isoformat(),
+        "pdf_storage_name": target,
     }
     write_guide_meta(meta, storage=storage)
     return meta
 
 
-def ensure_guide_meta(storage: Storage | None = None) -> dict | None:
+def ensure_guide_meta(storage: Storage | None = None, *, pdf_storage_name: str | None = None) -> dict | None:
     storage = storage or default_storage
-    if not storage.exists(GUIDE_PDF_STORAGE_NAME):
+    target = (pdf_storage_name or GUIDE_PDF_STORAGE_NAME).strip() or GUIDE_PDF_STORAGE_NAME
+    if not storage.exists(target):
         return None
 
     meta = read_guide_meta(storage=storage)
     if meta and isinstance(meta.get("version"), str) and meta.get("version"):
         return meta
 
-    return compute_and_store_guide_meta(storage=storage)
+    return compute_and_store_guide_meta(storage=storage, pdf_storage_name=target)

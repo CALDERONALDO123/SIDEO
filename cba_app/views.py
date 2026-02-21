@@ -37,6 +37,7 @@ from .models import (
     GraficaCostoVentaja,
     SharedGuideLink,
     UserProfile,
+    GuideDocument,
 )
 from .forms import (
     AlternativeForm,
@@ -160,6 +161,17 @@ def _safe_storage_exists(storage_name: str) -> bool:
         return bool(default_storage.exists(storage_name))
     except Exception:
         return False
+
+
+def _get_guide_storage_name() -> str | None:
+    """Devuelve el nombre real del PDF de guía en el storage, si está registrado."""
+
+    try:
+        doc = GuideDocument.objects.order_by("-updated_at").first()
+    except Exception:
+        doc = None
+    name = (getattr(doc, "storage_name", "") or "").strip() if doc else ""
+    return name or None
 
 
 def _powerbi_token_ok(request) -> bool:
@@ -1865,16 +1877,20 @@ def cba_saved_result_powerbi_config(request, result_id: int):
 def cba_guide(request):
     """Página con una guía básica de uso de CBA en el sistema."""
 
-    storage_name = "guides/guia.pdf"
+    legacy_name = "guides/guia.pdf"
+    storage_name = _get_guide_storage_name() or legacy_name
+
     pdf_url = None
-    if _safe_storage_exists(storage_name):
+    # Si tenemos un storage_name registrado, asumimos que existe y dejamos que
+    # los endpoints /guia/pdf manejen errores de lectura/streaming.
+    if _get_guide_storage_name() or _safe_storage_exists(storage_name):
         # En producción (Cloudinary u otro storage remoto) MEDIA_URL puede no servir el archivo.
         # PDF.js necesita una URL same-origin que entregue bytes del PDF.
         pdf_url = reverse("cba_guide_pdf")
     download_url = reverse("cba_guide_download") if pdf_url else None
     pdf_version = None
     if pdf_url:
-        meta = ensure_guide_meta()
+        meta = ensure_guide_meta(pdf_storage_name=storage_name)
         if isinstance(meta, dict):
             pdf_version = meta.get("version")
 
@@ -1906,14 +1922,24 @@ def cba_guide(request):
         form = GuidePdfUploadForm(request.POST, request.FILES)
         if form.is_valid():
             try:
-                if _safe_storage_exists(storage_name):
-                    default_storage.delete(storage_name)
-                default_storage.save(storage_name, form.cleaned_data["pdf_file"])
+                # Borrar anterior si lo conocemos (Cloudinary puede renombrar).
+                previous = _get_guide_storage_name()
+                if previous:
+                    try:
+                        default_storage.delete(previous)
+                    except Exception:
+                        pass
+
+                saved_name = default_storage.save(legacy_name, form.cleaned_data["pdf_file"])
+
+                # Persistir el nombre real.
+                GuideDocument.objects.create(storage_name=saved_name)
+                storage_name = saved_name
             except Exception:
                 messages.error(request, "No se pudo guardar la guía (storage no disponible).")
                 return redirect("cba_guide")
             try:
-                compute_and_store_guide_meta()
+                compute_and_store_guide_meta(pdf_storage_name=storage_name)
             except Exception:
                 # Si falla el hash/metadata, el visor sigue funcionando sin cache persistente
                 pass
@@ -1948,8 +1974,8 @@ def cba_guide_pdf(request):
     Usar esta ruta evita problemas de CORS y de MEDIA_URL en storages remotos.
     """
 
-    storage_name = "guides/guia.pdf"
-    if not _safe_storage_exists(storage_name):
+    storage_name = _get_guide_storage_name() or "guides/guia.pdf"
+    if not _get_guide_storage_name() and not _safe_storage_exists(storage_name):
         raise Http404("No hay guía disponible.")
 
     return _stream_pdf_from_storage(request, storage_name, as_attachment=False, filename="guia.pdf")
@@ -2024,8 +2050,8 @@ def cba_guide_shared(request, token: str):
             },
         )
 
-    storage_name = "guides/guia.pdf"
-    if not _safe_storage_exists(storage_name):
+    storage_name = _get_guide_storage_name() or "guides/guia.pdf"
+    if not _get_guide_storage_name() and not _safe_storage_exists(storage_name):
         raise Http404("No hay guía disponible.")
 
     page_raw = request.GET.get("page", "1")
@@ -2037,7 +2063,7 @@ def cba_guide_shared(request, token: str):
     protected_pdf_url = reverse("cba_guide_shared_pdf", args=[link.token])
     download_url = reverse("cba_guide_shared_download", args=[link.token])
     pdf_version = None
-    meta = ensure_guide_meta()
+    meta = ensure_guide_meta(pdf_storage_name=storage_name)
     if isinstance(meta, dict):
         pdf_version = meta.get("version")
 
@@ -2060,8 +2086,8 @@ def cba_guide_shared_pdf(request, token: str):
     if not _shared_guide_has_access(request, link):
         raise Http404("No autorizado")
 
-    storage_name = "guides/guia.pdf"
-    if not _safe_storage_exists(storage_name):
+    storage_name = _get_guide_storage_name() or "guides/guia.pdf"
+    if not _get_guide_storage_name() and not _safe_storage_exists(storage_name):
         raise Http404("No hay guía disponible.")
 
     # PDF.js necesita acceso directo al contenido
@@ -2073,8 +2099,8 @@ def cba_guide_shared_download(request, token: str):
     if not _shared_guide_has_access(request, link):
         raise Http404("No autorizado")
 
-    storage_name = "guides/guia.pdf"
-    if not _safe_storage_exists(storage_name):
+    storage_name = _get_guide_storage_name() or "guides/guia.pdf"
+    if not _get_guide_storage_name() and not _safe_storage_exists(storage_name):
         raise Http404("No hay guía disponible.")
 
     safe_title = slugify(link.title.strip()) if (link.title or "").strip() else "guia"
@@ -2085,8 +2111,8 @@ def cba_guide_shared_download(request, token: str):
 
 @login_required
 def cba_guide_download(request):
-    storage_name = "guides/guia.pdf"
-    if not _safe_storage_exists(storage_name):
+    storage_name = _get_guide_storage_name() or "guides/guia.pdf"
+    if not _get_guide_storage_name() and not _safe_storage_exists(storage_name):
         raise Http404("No hay guía disponible.")
 
     try:

@@ -259,3 +259,21 @@ class UserProfile(models.Model):
     class Meta:
         verbose_name = "Perfil de usuario"
         verbose_name_plural = "Perfiles de usuario"
+
+
+class GuideDocument(models.Model):
+    """Documento de guía (PDF) almacenado en el storage (Cloudinary u otro).
+
+    Guardamos el `storage_name` real devuelto por `default_storage.save(...)` porque
+    algunos storages remotos pueden renombrar el archivo (p.ej. nombres únicos).
+    """
+
+    storage_name = models.CharField(max_length=512, blank=True, default="")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.storage_name or "(sin guía)"
+
+    class Meta:
+        verbose_name = "Guía (PDF)"
+        verbose_name_plural = "Guía (PDF)"
