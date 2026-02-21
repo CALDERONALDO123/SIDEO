@@ -31,7 +31,7 @@
                                         <img
                                             class="profile-user-img img-fluid img-circle elevation-2"
                                             data-role="avatar-img"
-                                            src="{% if profile.avatar %}{{ profile.avatar.url }}{% else %}#{% endif %}"
+                                            src="{% if profile.avatar %}{{ profile.avatar.url }}{% if profile.updated_at %}?v={{ profile.updated_at|date:'U' }}{% endif %}{% else %}#{% endif %}"
                                             alt="Foto de perfil"
                                             {% if not profile.avatar %}style="display:none;"{% endif %}
                                         >

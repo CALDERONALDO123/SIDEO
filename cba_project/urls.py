@@ -18,11 +18,12 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+import os
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('cba_app.urls')),
 ]
 
-if settings.DEBUG:
+if settings.DEBUG or not os.environ.get("CLOUDINARY_URL"):
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

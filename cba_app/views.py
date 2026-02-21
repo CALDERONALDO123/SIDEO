@@ -12,6 +12,8 @@ from django.contrib.auth.hashers import check_password, make_password
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, logout as auth_logout
 from django.contrib.auth.forms import UserCreationForm
+import os
+import time
 
 from urllib.parse import urlparse, parse_qsl, urlencode as urlencode_qs, urlunparse
 
@@ -2042,6 +2044,13 @@ def cba_profile(request):
     profile, _created = UserProfile.objects.get_or_create(user=request.user)
 
     if request.method == "POST":
+        # Evita caching/colisiones en storages (ej. Cloudinary/CDN) usando nombre único por subida.
+        uploaded = request.FILES.get("avatar")
+        if uploaded is not None:
+            _root, ext = os.path.splitext(getattr(uploaded, "name", "") or "")
+            safe_ext = (ext or "").lower()[:10]
+            uploaded.name = f"avatar_{request.user.id}_{int(time.time())}{safe_ext}"
+
         form = ProfileForm(request.POST, instance=request.user)
         photo_form = ProfilePhotoForm(request.POST, request.FILES, instance=profile)
 
