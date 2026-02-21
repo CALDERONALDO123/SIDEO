@@ -27,13 +27,34 @@
                         <div class="card card-primary card-outline">
                             <div class="card-body box-profile">
                                 <div class="text-center">
-                                    {% if profile.avatar %}
-                                        <img class="profile-user-img img-fluid img-circle elevation-2" src="{{ profile.avatar.url }}" alt="Foto de perfil">
-                                    {% else %}
-                                        <div class="profile-user-img img-fluid img-circle elevation-2 d-flex align-items-center justify-content-center bg-light" style="height:100px; width:100px; margin:0 auto;">
+                                    <div class="position-relative d-inline-block">
+                                        <img
+                                            class="profile-user-img img-fluid img-circle elevation-2"
+                                            data-role="avatar-img"
+                                            src="{% if profile.avatar %}{{ profile.avatar.url }}{% else %}#{% endif %}"
+                                            alt="Foto de perfil"
+                                            {% if not profile.avatar %}style="display:none;"{% endif %}
+                                        >
+
+                                        <div
+                                            class="profile-user-img img-fluid img-circle elevation-2 d-flex align-items-center justify-content-center bg-light"
+                                            data-role="avatar-placeholder"
+                                            {% if profile.avatar %}style="display:none;"{% endif %}
+                                        >
                                             <span class="text-muted text-sm">Sin foto</span>
                                         </div>
-                                    {% endif %}
+
+                                        <button
+                                            type="button"
+                                            class="btn btn-primary btn-sm position-absolute"
+                                            data-role="avatar-pick"
+                                            aria-label="Cambiar foto"
+                                            title="Cambiar foto"
+                                            style="right:-6px; bottom:-6px; border-radius:999px; width:34px; height:34px; padding:0; display:grid; place-items:center;"
+                                        >
+                                            <i class="fas fa-camera"></i>
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <h3 class="profile-username text-center mt-3 mb-0">
@@ -45,16 +66,12 @@
                                 </h3>
                                 <p class="text-muted text-center mb-3">@{{ request.user.username }}</p>
 
-                                <div class="form-group">
-                                    <label class="text-muted text-sm mb-1">{{ photo_form.avatar.label }}</label>
-                                    <div class="custom-file">
-                                        {{ photo_form.avatar }}
-                                        <label class="custom-file-label" for="{{ photo_form.avatar.id_for_label }}">Seleccionar archivo</label>
-                                    </div>
-                                    {% if photo_form.avatar.errors %}
-                                        <div class="text-danger text-sm mt-2">{{ photo_form.avatar.errors }}</div>
-                                    {% endif %}
-                                </div>
+                                {{ photo_form.avatar }}
+                                <div class="text-muted text-sm" data-role="avatar-filename">{% if profile.avatar %}Foto actual{% else %}Sube una imagen (PNG/JPG){% endif %}</div>
+
+                                {% if photo_form.avatar.errors %}
+                                    <div class="text-danger text-sm mt-2">{{ photo_form.avatar.errors }}</div>
+                                {% endif %}
 
                                 {% if profile.avatar %}
                                     <div class="form-check">
@@ -84,7 +101,12 @@
 
                                 <div class="form-group">
                                     <label for="{{ form.first_name.id_for_label }}" class="text-muted text-sm mb-1">{{ form.first_name.label }}</label>
-                                    {{ form.first_name }}
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i class="fas fa-id-card"></i></span>
+                                        </div>
+                                        {{ form.first_name }}
+                                    </div>
                                     {% if form.first_name.errors %}
                                         <div class="text-danger text-sm mt-2">{{ form.first_name.errors }}</div>
                                     {% endif %}
@@ -92,7 +114,12 @@
 
                                 <div class="form-group mb-0">
                                     <label for="{{ form.last_name.id_for_label }}" class="text-muted text-sm mb-1">{{ form.last_name.label }}</label>
-                                    {{ form.last_name }}
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i class="fas fa-id-card"></i></span>
+                                        </div>
+                                        {{ form.last_name }}
+                                    </div>
                                     {% if form.last_name.errors %}
                                         <div class="text-danger text-sm mt-2">{{ form.last_name.errors }}</div>
                                     {% endif %}
@@ -123,13 +150,32 @@
                 var input = document.getElementById('{{ photo_form.avatar.id_for_label }}');
                 if (!input) return;
 
-                var label = null;
-                var wrap = input.closest('.custom-file');
-                if (wrap) label = wrap.querySelector('.custom-file-label');
+                var pickBtn = document.querySelector('[data-role="avatar-pick"]');
+                var img = document.querySelector('[data-role="avatar-img"]');
+                var placeholder = document.querySelector('[data-role="avatar-placeholder"]');
+                var filename = document.querySelector('[data-role="avatar-filename"]');
+
+                if (pickBtn) {
+                    pickBtn.addEventListener('click', function () {
+                        input.click();
+                    });
+                }
 
                 input.addEventListener('change', function () {
                     var f = input.files && input.files[0];
-                    if (label) label.textContent = f ? f.name : 'Seleccionar archivo';
+                    if (filename) filename.textContent = f ? f.name : 'Sube una imagen (PNG/JPG)';
+
+                    if (!f) return;
+                    if (!img || !placeholder) return;
+
+                    try {
+                        var url = URL.createObjectURL(f);
+                        img.src = url;
+                        img.style.display = '';
+                        placeholder.style.display = 'none';
+                    } catch (e) {
+                        // noop
+                    }
                 });
             });
         })();
