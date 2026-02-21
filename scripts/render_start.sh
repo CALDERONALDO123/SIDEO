@@ -11,6 +11,9 @@ python -c "import cba_project.wsgi; print('wsgi import ok')"
 echo "[render_start] migrate (non-fatal)"
 python manage.py migrate --noinput || echo "[render_start] WARNING: migrate failed (continuing)"
 
+echo "[render_start] ensure_grafica_costo_ventaja (non-fatal)"
+python manage.py ensure_grafica_costo_ventaja || echo "[render_start] WARNING: ensure_grafica_costo_ventaja failed (continuing)"
+
 echo "[render_start] ensure_superuser (non-fatal)"
 python manage.py ensure_superuser || echo "[render_start] WARNING: ensure_superuser failed (continuing)"
 
