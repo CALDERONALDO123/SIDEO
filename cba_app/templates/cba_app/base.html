@@ -109,7 +109,7 @@
     {% endif %}
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <script src="{% static 'cba_app/sideo.js' %}"></script>
+    <script src="{% static 'cba_app/sideo.js' %}?v=20260220"></script>
 
     {% if user.is_authenticated and url_name and url_name != 'cba_login' and url_name != 'cba_signup' and url_name != 'powerbi_feed_results' and url_name != 'powerbi_feed_dashboard_rows' and url_name != 'cba_saved_result_public' and url_name != 'cba_saved_result_public_json' and url_name != 'cba_saved_result_powerbi' and url_name != 'cba_saved_result_powerbi_config' and url_name != 'cba_guide_shared' and url_name != 'cba_guide_shared_pdf' and url_name != 'cba_guide_shared_download' %}
         <script src="{% static 'admin-lte/plugins/jquery/jquery.min.js' %}"></script>

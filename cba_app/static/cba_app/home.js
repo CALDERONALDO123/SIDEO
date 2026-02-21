@@ -4,6 +4,36 @@
     const SIDEO = global.SIDEO || (global.SIDEO = {});
     const home = SIDEO.home || (SIDEO.home = {});
 
+    function toNumber(value) {
+        if (value === null || value === undefined || value === '') return null;
+        const n = Number(value);
+        return Number.isFinite(n) ? n : null;
+    }
+
+    function getCost(item) {
+        if (!item) return null;
+        return toNumber(item.cost ?? item.costo ?? item.COSTO);
+    }
+
+    function getTotal(item) {
+        if (!item) return null;
+        return toNumber(item.total ?? item.ventaja ?? item.VENTAJA);
+    }
+
+    function getRatio(item, cost, total) {
+        if (!item) return null;
+        if (item.ratio !== null && item.ratio !== undefined) return toNumber(item.ratio);
+        if (item.RATIO !== null && item.RATIO !== undefined) return toNumber(item.RATIO);
+        const c = cost != null ? cost : getCost(item);
+        const t = total != null ? total : getTotal(item);
+        if (c == null || t == null || t === 0) return null;
+        return c / t;
+    }
+
+    function isZeroRow(cost, total) {
+        return cost === 0 && total === 0;
+    }
+
     function setAboutExpanded(section, nav, toggle, isExpanded) {
         section.hidden = !isExpanded;
         if (nav) nav.setAttribute('aria-expanded', String(isExpanded));
@@ -74,11 +104,18 @@
         const items = Array.isArray(payload) ? payload : [];
 
         const hasRatios = items.some(function (item) {
-            return item && item.ratio !== null && item.ratio !== undefined;
+            const cost = getCost(item);
+            const total = getTotal(item);
+            if (cost == null || total == null) return false;
+            if (isZeroRow(cost, total)) return false;
+            return getRatio(item, cost, total) != null;
         });
 
         const hasCostBenefit = items.some(function (item) {
-            return item && item.cost !== null && item.cost !== undefined && item.total !== null && item.total !== undefined;
+            const cost = getCost(item);
+            const total = getTotal(item);
+            if (cost == null || total == null) return false;
+            return !isZeroRow(cost, total);
         });
 
         const ratioEmpty = document.querySelector('.dashboard-chart-card__empty[data-chart="ratio"]');

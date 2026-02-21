@@ -11,6 +11,11 @@ urlpatterns = [
         name="powerbi_feed_dashboard_rows",
     ),
     path(
+        "powerbi/feed/grafica-costo-ventaja/",
+        views.powerbi_feed_grafica_costo_ventaja,
+        name="powerbi_feed_grafica_costo_ventaja",
+    ),
+    path(
         "cuentas/ingresar/",
         auth_views.LoginView.as_view(
             template_name="registration/login.html",

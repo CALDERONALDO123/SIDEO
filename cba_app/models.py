@@ -140,6 +140,29 @@ class ResultadoCBA(models.Model):
         ]
 
 
+class GraficaCostoVentaja(models.Model):
+    """Tabla para Power BI: 2 filas por candidato (0/0 y valor) para graficar Costo vs Ventaja."""
+
+    id = models.AutoField(primary_key=True)
+
+    proyectos = models.CharField(max_length=255)
+    puesto = models.CharField(max_length=150, null=True, blank=True)
+    candidatos = models.CharField(max_length=150)
+
+    costo = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    ventaja = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+
+    class Meta:
+        db_table = "grafica_costo_ventaja"
+        verbose_name = "Grafica de Costo/Ventaja (Power BI)"
+        verbose_name_plural = "Grafica de Costo/Ventaja (Power BI)"
+        indexes = [
+            models.Index(fields=["proyectos"]),
+            models.Index(fields=["puesto"]),
+            models.Index(fields=["candidatos"]),
+        ]
+
+
 class AIProviderSetting(models.Model):
     """Configuración de proveedores IA administrable desde Django Admin."""
 

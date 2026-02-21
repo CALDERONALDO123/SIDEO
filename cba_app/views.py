@@ -25,6 +25,7 @@ from .models import (
     Advantage,
     CBAResult,
     ResultadoCBA,
+    GraficaCostoVentaja,
     SharedGuideLink,
     UserProfile,
 )
@@ -221,6 +222,45 @@ def powerbi_feed_dashboard_rows(request):
     return JsonResponse(rows, safe=False)
 
 
+def powerbi_feed_grafica_costo_ventaja(request):
+    """Tabla para Power BI (2 filas por candidato: 0/0 y valor) (JSON)."""
+
+    if not _powerbi_token_ok(request):
+        return JsonResponse({"ok": False, "error": "Token inválido"}, status=403)
+
+    limit = request.GET.get("limit")
+    try:
+        limit_n = int(limit) if limit else 1000
+    except (TypeError, ValueError):
+        limit_n = 1000
+    limit_n = max(1, min(10000, limit_n))
+
+    proyecto = (request.GET.get("proyecto") or "").strip()
+    puesto = (request.GET.get("puesto") or "").strip()
+
+    qs = GraficaCostoVentaja.objects.all()
+    if proyecto:
+        qs = qs.filter(proyectos=proyecto)
+    if puesto:
+        qs = qs.filter(puesto=puesto)
+
+    qs = qs.order_by("proyectos", "puesto", "candidatos", "id")[:limit_n]
+
+    rows = []
+    for r in qs:
+        rows.append(
+            {
+                "PROYECTOS": r.proyectos,
+                "PUESTO": r.puesto,
+                "CANDIDATOS": r.candidatos,
+                "COSTO": float(r.costo or 0),
+                "VENTAJA": float(r.ventaja or 0),
+            }
+        )
+
+    return JsonResponse(rows, safe=False)
+
+
 @login_required
 def cba_home(request):
     """Panel principal con las opciones generales."""
@@ -250,10 +290,28 @@ def cba_home(request):
         if not isinstance(item, dict):
             continue
 
-        name = (item.get("name") or "").strip()
+        name = (
+            item.get("name")
+            or item.get("candidatos")
+            or item.get("CANDIDATOS")
+            or ""
+        ).strip()
+
         cost = item.get("cost")
+        if cost is None:
+            cost = item.get("costo")
+        if cost is None:
+            cost = item.get("COSTO")
+
         total = item.get("total")
+        if total is None:
+            total = item.get("ventaja")
+        if total is None:
+            total = item.get("VENTAJA")
+
         ratio = item.get("ratio")
+        if ratio is None:
+            ratio = item.get("RATIO")
 
         try:
             cost_value = float(cost) if cost is not None else None
@@ -261,7 +319,7 @@ def cba_home(request):
             cost_value = None
 
         try:
-            total_value = int(total) if total is not None else 0
+            total_value = float(total) if total is not None else 0
         except (TypeError, ValueError):
             total_value = 0
 
@@ -971,25 +1029,52 @@ def cba_step10(request):
                 return None
 
         flat_rows = []
+        chart_rows = []
         for item in chart_data or []:
             if not isinstance(item, dict):
                 continue
             candidato = (item.get("name") or "").strip()[:150]
+
+            costo_dec = _to_decimal(item.get("cost"))
+            ventaja_dec = _to_decimal(item.get("total"))
             flat_rows.append(
                 ResultadoCBA(
                     proyecto=proyecto,
                     puesto=puesto,
                     candidato=candidato,
-                    costo=_to_decimal(item.get("cost")),
-                    ventaja=_to_decimal(item.get("total")),
+                    costo=costo_dec,
+                    ventaja=ventaja_dec,
                     costo_ventaja=_to_decimal(item.get("ratio")),
                     recomendado=bool(winner_name and candidato == winner_name),
                     fecha=saved.created_at or timezone.now(),
                 )
             )
 
+            # Tabla para Power BI: fila base 0/0 + fila valor
+            chart_rows.append(
+                GraficaCostoVentaja(
+                    proyectos=proyecto,
+                    puesto=puesto,
+                    candidatos=candidato,
+                    costo=_to_decimal(0) or 0,
+                    ventaja=_to_decimal(0) or 0,
+                )
+            )
+            chart_rows.append(
+                GraficaCostoVentaja(
+                    proyectos=proyecto,
+                    puesto=puesto,
+                    candidatos=candidato,
+                    costo=costo_dec or 0,
+                    ventaja=ventaja_dec or 0,
+                )
+            )
+
         if flat_rows:
             ResultadoCBA.objects.bulk_create(flat_rows, batch_size=200)
+
+        if chart_rows:
+            GraficaCostoVentaja.objects.bulk_create(chart_rows, batch_size=400)
 
         return redirect("cba_home")
 
@@ -1390,6 +1475,7 @@ def cba_dashboard(request):
         winner_alt = (best_row["alternative"].name if best_row else "")
 
         flat_rows = []
+        chart_rows = []
         for item in dashboard_payload or []:
             if not isinstance(item, dict):
                 continue
@@ -1425,8 +1511,30 @@ def cba_dashboard(request):
                 )
             )
 
+            chart_rows.append(
+                GraficaCostoVentaja(
+                    proyectos=proyecto,
+                    puesto=puesto,
+                    candidatos=candidato,
+                    costo=_to_decimal(0) or 0,
+                    ventaja=_to_decimal(0) or 0,
+                )
+            )
+            chart_rows.append(
+                GraficaCostoVentaja(
+                    proyectos=proyecto,
+                    puesto=puesto,
+                    candidatos=candidato,
+                    costo=costo or 0,
+                    ventaja=ventaja or 0,
+                )
+            )
+
         if flat_rows:
             ResultadoCBA.objects.bulk_create(flat_rows, batch_size=200)
+
+        if chart_rows:
+            GraficaCostoVentaja.objects.bulk_create(chart_rows, batch_size=400)
 
         return redirect("cba_saved_results")
 

@@ -88,6 +88,37 @@
         return canvasOrId;
     };
 
+    charts._num = function _num(value) {
+        if (value === null || value === undefined || value === '') return null;
+        const n = Number(value);
+        return Number.isFinite(n) ? n : null;
+    };
+
+    charts._getName = function _getName(item) {
+        if (!item) return '';
+        return String(item.name ?? item.candidatos ?? item.CANDIDATOS ?? item.label ?? '');
+    };
+
+    charts._getCost = function _getCost(item) {
+        if (!item) return null;
+        return charts._num(item.cost ?? item.costo ?? item.COSTO);
+    };
+
+    charts._getTotal = function _getTotal(item) {
+        if (!item) return null;
+        return charts._num(item.total ?? item.ventaja ?? item.VENTAJA);
+    };
+
+    charts._getRatio = function _getRatio(item, cost, total) {
+        if (item && item.ratio != null) return charts._num(item.ratio);
+        if (item && item.RATIO != null) return charts._num(item.RATIO);
+
+        const c = cost != null ? cost : charts._getCost(item);
+        const t = total != null ? total : charts._getTotal(item);
+        if (c == null || t == null || t === 0) return null;
+        return c / t;
+    };
+
     charts._setupHiDPICanvas = function _setupHiDPICanvas(canvas) {
         const dpr = global.devicePixelRatio || 1;
 
@@ -135,7 +166,10 @@
         const plotW = Math.max(1, width - paddingLeft - paddingRight);
         const plotH = Math.max(1, height - paddingTop - paddingBottom);
 
-        const ratios = itemsSafe.map(i => (i && i.ratio != null ? Number(i.ratio) : 0));
+        const ratios = itemsSafe.map(i => {
+            const ratio = charts._getRatio(i);
+            return ratio != null ? ratio : 0;
+        });
         const maxV = Math.max.apply(null, ratios.concat([1]));
 
         // Fondo
@@ -162,7 +196,8 @@
         const barW = Math.max(14, (plotW - barGap * (count - 1)) / count);
 
         itemsSafe.forEach((item, idx) => {
-            const v = (item && item.ratio != null) ? Number(item.ratio) : 0;
+            const ratio = charts._getRatio(item);
+            const v = ratio != null ? ratio : 0;
             const h = (v / maxV) * plotH;
             const x = paddingLeft + idx * (barW + barGap);
             const y = paddingTop + plotH - h;
@@ -177,7 +212,7 @@
             ctx.font = '11px "Segoe UI", system-ui, -apple-system, sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
-            const label = (item && item.name) ? String(item.name) : '';
+            const label = charts._getName(item);
             ctx.fillText(label, x + barW / 2, paddingTop + plotH + 6);
         });
 
@@ -204,15 +239,28 @@
         const pointRadius = (options.pointRadius != null) ? Number(options.pointRadius) : 4;
 
         const itemsSafe = Array.isArray(items) ? items : [];
-        const points = itemsSafe.filter(p => p && p.cost !== null && p.cost !== undefined);
+        const points = itemsSafe
+            .map(function (p) {
+                const cost = charts._getCost(p);
+                const total = charts._getTotal(p);
+                if (cost == null || total == null) return null;
+                if (cost === 0 && total === 0) return null;
+                return {
+                    name: charts._getName(p),
+                    cost: cost,
+                    total: total,
+                    ratio: charts._getRatio(p, cost, total),
+                };
+            })
+            .filter(Boolean);
 
         const { ctx, width, height } = charts._setupHiDPICanvas(canvas);
         ctx.clearRect(0, 0, width, height);
 
         if (points.length === 0) return;
 
-        const maxCost = Math.max.apply(null, points.map(p => Number(p.cost) || 0).concat([1]));
-        const maxTotal = Math.max.apply(null, points.map(p => Number(p.total) || 0).concat([1]));
+        const maxCost = Math.max.apply(null, points.map(p => p.cost || 0).concat([1]));
+        const maxTotal = Math.max.apply(null, points.map(p => p.total || 0).concat([1]));
 
         const paddingLeft = 64;
         const paddingBottom = 56;
@@ -374,8 +422,11 @@
 
         charts._destroyChartJs(canvas);
 
-        const labels = itemsSafe.map(i => (i && i.name) ? String(i.name) : '');
-        const values = itemsSafe.map(i => (i && i.ratio != null) ? Number(i.ratio) : null);
+        const labels = itemsSafe.map(i => charts._getName(i));
+        const values = itemsSafe.map(i => {
+            const ratio = charts._getRatio(i);
+            return ratio != null ? Number(ratio) : null;
+        });
         const colors = itemsSafe.map((_i, idx) => charts.palette[idx % charts.palette.length]);
 
         const aspectRatio = charts._getCanvasAttrRatio(canvas, 520 / 280);
@@ -438,7 +489,20 @@
         if (!canvas) return;
 
         const itemsSafe = Array.isArray(items) ? items : [];
-        const points = itemsSafe.filter(p => p && p.cost !== null && p.cost !== undefined);
+        const points = itemsSafe
+            .map(function (p) {
+                const cost = charts._getCost(p);
+                const total = charts._getTotal(p);
+                if (cost == null || total == null) return null;
+                if (cost === 0 && total === 0) return null;
+                return {
+                    name: charts._getName(p),
+                    cost: cost,
+                    total: total,
+                    ratio: charts._getRatio(p, cost, total),
+                };
+            })
+            .filter(Boolean);
         const options = opts || {};
 
         if (!charts._hasChartJs()) {
@@ -767,7 +831,20 @@
         if (!canvas) return;
 
         const itemsSafe = Array.isArray(chartData) ? chartData : [];
-        const points = itemsSafe.filter(p => p && p.cost !== null && p.cost !== undefined);
+        const points = itemsSafe
+            .map(function (p) {
+                const cost = charts._getCost(p);
+                const total = charts._getTotal(p);
+                if (cost == null || total == null) return null;
+                if (cost === 0 && total === 0) return null;
+                return {
+                    name: charts._getName(p),
+                    cost: cost,
+                    total: total,
+                    ratio: charts._getRatio(p, cost, total),
+                };
+            })
+            .filter(Boolean);
 
         const { ctx, width, height } = charts._setupHiDPICanvas(canvas);
 
@@ -776,8 +853,8 @@
 
         if (points.length === 0) return;
 
-        const maxCost = Math.max.apply(null, points.map(p => Number(p.cost) || 0).concat([1]));
-        const maxTotal = Math.max.apply(null, points.map(p => Number(p.total) || 0).concat([1]));
+    const maxCost = Math.max.apply(null, points.map(p => p.cost || 0).concat([1]));
+    const maxTotal = Math.max.apply(null, points.map(p => p.total || 0).concat([1]));
 
         const paddingLeft = 64;
         const paddingBottom = 56;
