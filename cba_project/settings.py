@@ -59,6 +59,17 @@ DEBUG = _env_bool("DJANGO_DEBUG", True)
 
 IS_PRODUCTION = not DEBUG
 
+# Cloudinary
+# El usuario pidió que los uploads (avatar/guía) se guarden sí o sí en Cloudinary.
+# En producción, si no está configurado CLOUDINARY_URL, preferimos fallar explícitamente
+# para evitar “guardados” en disco efímero del PaaS.
+ALLOW_NO_CLOUDINARY_IN_PROD = _env_bool("ALLOW_NO_CLOUDINARY_IN_PROD", False)
+if IS_PRODUCTION and not os.environ.get("CLOUDINARY_URL") and not ALLOW_NO_CLOUDINARY_IN_PROD:
+    raise ImproperlyConfigured(
+        "Cloudinary no está configurado en producción. Define CLOUDINARY_URL en el entorno. "
+        "(Si deseas deshabilitar esta validación explícitamente, setea ALLOW_NO_CLOUDINARY_IN_PROD=true.)"
+    )
+
 ALLOWED_HOSTS = _env_list(
     "DJANGO_ALLOWED_HOSTS",
     default=["localhost", "127.0.0.1", "testserver"],

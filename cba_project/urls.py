@@ -21,8 +21,8 @@ from django.conf.urls.static import static
 
 
 def _using_cloudinary_storage() -> bool:
-    backend = getattr(settings, "DEFAULT_FILE_STORAGE", "") or ""
-    if backend == "cloudinary_storage.storage.MediaCloudinaryStorage":
+    backend = (getattr(settings, "DEFAULT_FILE_STORAGE", "") or "").strip()
+    if backend.startswith("cloudinary_storage."):
         return True
 
     storages = getattr(settings, "STORAGES", None)
@@ -30,7 +30,7 @@ def _using_cloudinary_storage() -> bool:
         default = storages.get("default")
         if isinstance(default, dict):
             be = (default.get("BACKEND") or "").strip()
-            if be == "cloudinary_storage.storage.MediaCloudinaryStorage":
+            if be.startswith("cloudinary_storage."):
                 return True
 
     return False
