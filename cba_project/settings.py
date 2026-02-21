@@ -104,7 +104,13 @@ if _module_available("cryptography"):
     INSTALLED_APPS.append('allauth.socialaccount.providers.google')
 
 # Cloudinary (media) opcional: se activa solo si CLOUDINARY_URL está configurado.
-if os.environ.get("CLOUDINARY_URL") and _module_available("cloudinary") and _module_available("cloudinary_storage"):
+if os.environ.get("CLOUDINARY_URL"):
+    if not (_module_available("cloudinary") and _module_available("cloudinary_storage")):
+        raise ImproperlyConfigured(
+            "CLOUDINARY_URL está configurado pero faltan dependencias. "
+            "Instala 'django-cloudinary-storage' y sus requisitos en el deploy."
+        )
+
     INSTALLED_APPS = [
         "cloudinary",
         "cloudinary_storage",
@@ -384,8 +390,25 @@ if not DEBUG:
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-if os.environ.get("CLOUDINARY_URL") and _module_available("cloudinary_storage"):
+if os.environ.get("CLOUDINARY_URL"):
+    # Cloudinary obligatorio: usar storage remoto para media.
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+    static_backend = (
+        'whitenoise.storage.CompressedManifestStaticFilesStorage'
+        if not DEBUG
+        else 'django.contrib.staticfiles.storage.StaticFilesStorage'
+    )
+
+    # Django moderno: STORAGES es la fuente principal para backends.
+    STORAGES = {
+        'default': {
+            'BACKEND': DEFAULT_FILE_STORAGE,
+        },
+        'staticfiles': {
+            'BACKEND': static_backend,
+        },
+    }
 
 # Seguridad básica para producción detrás de proxy (Render)
 if not DEBUG:

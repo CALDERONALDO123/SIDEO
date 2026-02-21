@@ -22,6 +22,14 @@
             <form method="post" enctype="multipart/form-data">
                 {% csrf_token %}
 
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                {% endif %}
+
+                {% if photo_form.non_field_errors %}
+                    <div class="alert alert-danger">{{ photo_form.non_field_errors }}</div>
+                {% endif %}
+
                 <div class="row">
                     <div class="col-12 col-md-4">
                         <div class="card card-primary card-outline">
