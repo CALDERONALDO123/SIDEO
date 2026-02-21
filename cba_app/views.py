@@ -3,6 +3,7 @@ from django.conf import settings
 from django.core.files.storage import default_storage
 from django.http import FileResponse, Http404
 from django.http import JsonResponse
+from django.http import StreamingHttpResponse
 from django.utils.http import urlencode
 from django.urls import reverse
 from django.utils.text import slugify
@@ -14,6 +15,7 @@ from django.contrib.auth import login, logout as auth_logout
 from django.contrib.auth.forms import UserCreationForm
 import os
 import time
+import requests
 
 try:
     import cloudinary.uploader as cloudinary_uploader  # type: ignore
@@ -78,6 +80,72 @@ def _delete_cloudinary_image_if_possible(value) -> None:
     except Exception:
         # No queremos tumbar el guardado del perfil si Cloudinary falla.
         return
+
+
+def _stream_pdf_from_storage(request, storage_name: str, *, as_attachment: bool, filename: str):
+    """Entrega un PDF desde default_storage.
+
+    - Primero intenta `default_storage.open()` (rápido en storage local y algunos remotos).
+    - Si falla (frecuente con Cloudinary/raw), intenta hacer proxy streaming desde `default_storage.url()`.
+    - Soporta header Range para que PDF.js pueda pedir porciones.
+    """
+
+    try:
+        fh = default_storage.open(storage_name, "rb")
+        return FileResponse(
+            fh,
+            content_type="application/pdf",
+            as_attachment=as_attachment,
+            filename=filename,
+        )
+    except Exception:
+        pass
+
+    try:
+        source_url = default_storage.url(storage_name)
+    except Exception:
+        raise Http404("No hay guía disponible.")
+
+    headers = {}
+    range_header = request.headers.get("Range")
+    if range_header:
+        headers["Range"] = range_header
+
+    try:
+        upstream = requests.get(source_url, stream=True, headers=headers, timeout=(5, 30))
+    except Exception:
+        raise Http404("No hay guía disponible.")
+
+    if upstream.status_code not in (200, 206):
+        try:
+            upstream.close()
+        except Exception:
+            pass
+        raise Http404("No hay guía disponible.")
+
+    def body_iter():
+        try:
+            for chunk in upstream.iter_content(chunk_size=1024 * 512):
+                if chunk:
+                    yield chunk
+        finally:
+            try:
+                upstream.close()
+            except Exception:
+                pass
+
+    resp = StreamingHttpResponse(body_iter(), content_type="application/pdf", status=upstream.status_code)
+    if as_attachment:
+        resp["Content-Disposition"] = f'attachment; filename="{filename}"'
+    else:
+        resp["Content-Disposition"] = f'inline; filename="{filename}"'
+
+    # Propagar headers útiles para PDF.js si Cloudinary respondió 206.
+    for h in ("Accept-Ranges", "Content-Range", "Content-Length"):
+        v = upstream.headers.get(h)
+        if v:
+            resp[h] = v
+    return resp
 
 
 def _safe_storage_exists(storage_name: str) -> bool:
@@ -1884,17 +1952,7 @@ def cba_guide_pdf(request):
     if not _safe_storage_exists(storage_name):
         raise Http404("No hay guía disponible.")
 
-    try:
-        fh = default_storage.open(storage_name, "rb")
-    except Exception:
-        raise Http404("No hay guía disponible.")
-
-    return FileResponse(
-        fh,
-        content_type="application/pdf",
-        as_attachment=False,
-        filename="guia.pdf",
-    )
+    return _stream_pdf_from_storage(request, storage_name, as_attachment=False, filename="guia.pdf")
 
 
 @login_required
@@ -2006,12 +2064,8 @@ def cba_guide_shared_pdf(request, token: str):
     if not _safe_storage_exists(storage_name):
         raise Http404("No hay guía disponible.")
 
-    try:
-        fh = default_storage.open(storage_name, "rb")
-    except Exception:
-        raise Http404("No hay guía disponible.")
     # PDF.js necesita acceso directo al contenido
-    return FileResponse(fh, content_type="application/pdf")
+    return _stream_pdf_from_storage(request, storage_name, as_attachment=False, filename="guia.pdf")
 
 
 def cba_guide_shared_download(request, token: str):
@@ -2025,11 +2079,8 @@ def cba_guide_shared_download(request, token: str):
 
     safe_title = slugify(link.title.strip()) if (link.title or "").strip() else "guia"
     filename = f"{safe_title}.pdf"
-    try:
-        fh = default_storage.open(storage_name, "rb")
-    except Exception:
-        raise Http404("No hay guía disponible.")
-    return FileResponse(fh, as_attachment=True, filename=filename)
+
+    return _stream_pdf_from_storage(request, storage_name, as_attachment=True, filename=filename)
 
 
 @login_required
@@ -2039,10 +2090,9 @@ def cba_guide_download(request):
         raise Http404("No hay guía disponible.")
 
     try:
-        fh = default_storage.open(storage_name, "rb")
-    except Exception:
-        raise Http404("No hay guía disponible.")
-    return FileResponse(fh, as_attachment=True, filename="guia.pdf")
+        return _stream_pdf_from_storage(request, storage_name, as_attachment=True, filename="guia.pdf")
+    except Http404:
+        raise
 
 
 def cba_signup(request):
