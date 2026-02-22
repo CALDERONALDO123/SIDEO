@@ -262,6 +262,20 @@ class AIProviderSetting(models.Model):
         verbose_name_plural = "Configuraciones de IA"
 
 
+class PowerBISetting(models.Model):
+    """Configuración global de Power BI (un solo link para todo el sistema)."""
+
+    dashboard_url = models.URLField(blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return self.dashboard_url or "(sin link)"
+
+    class Meta:
+        verbose_name = "Configuración Power BI"
+        verbose_name_plural = "Configuraciones Power BI"
+
+
 class SharedGuideLink(models.Model):
     """Link compartible para la Guía PDF con contraseña opcional."""
 

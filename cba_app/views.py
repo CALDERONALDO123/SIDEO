@@ -46,6 +46,21 @@ import json
 logger = logging.getLogger(__name__)
 
 
+def _get_powerbi_dashboard_url() -> str:
+    """Devuelve el link global de Power BI desde BD o, si está vacío, desde settings."""
+
+    try:
+        row = PowerBISetting.objects.order_by("-updated_at").first()
+    except Exception:
+        row = None
+
+    url = (getattr(row, "dashboard_url", "") or "").strip()
+    if url:
+        return url
+
+    return (getattr(settings, "POWER_BI_DASHBOARD_URL", "") or "").strip()
+
+
 def healthz(request):
     return JsonResponse({"ok": True})
 
@@ -78,6 +93,7 @@ from .models import (
     SharedGuideLink,
     UserProfile,
     GuideDocument,
+    PowerBISetting,
 )
 from .forms import (
     AlternativeForm,
@@ -1489,8 +1505,35 @@ def cba_step10(request):
 def cba_saved_results(request):
     """Listado de resultados CBA guardados desde el Paso 10."""
 
+    if request.method == "POST":
+        url = (request.POST.get("powerbi_dashboard_url") or "").strip()
+
+        try:
+            row = PowerBISetting.objects.order_by("-updated_at").first()
+        except Exception:
+            row = None
+
+        if row is None:
+            PowerBISetting.objects.create(dashboard_url=url)
+        else:
+            row.dashboard_url = url
+            row.save(update_fields=["dashboard_url", "updated_at"])
+
+        if url:
+            messages.success(request, "Link global de Power BI actualizado.")
+        else:
+            messages.success(request, "Link global de Power BI eliminado.")
+        return redirect("cba_saved_results")
+
     results = CBAResult.objects.order_by("-created_at")
-    return render(request, "cba_app/saved_results.html", {"results": results})
+    return render(
+        request,
+        "cba_app/saved_results.html",
+        {
+            "results": results,
+            "powerbi_dashboard_url": _get_powerbi_dashboard_url(),
+        },
+    )
 
 
 @login_required
@@ -2073,7 +2116,7 @@ def cba_saved_result_detail(request, result_id: int):
         **data,
         "saved_result": result,
         "public_view": False,
-        "allow_powerbi_form": True,
+        "allow_powerbi_form": False,
     }
     return render(request, "cba_app/dashboard.html", context)
 
@@ -2145,11 +2188,11 @@ def cba_saved_result_powerbi(request, result_id: int):
 
     result = get_object_or_404(CBAResult, id=result_id)
 
-    base_url = (result.power_bi_url or "").strip() or (getattr(settings, "POWER_BI_DASHBOARD_URL", "") or "").strip()
+    base_url = _get_powerbi_dashboard_url()
     if not base_url:
         messages.error(
             request,
-            "No hay un link de Power BI para este proyecto. Cárgalo aquí o define POWER_BI_DASHBOARD_URL.",
+            "No hay un link global de Power BI configurado. Agrégalo en Archivos guardados.",
         )
         return redirect("cba_saved_result_detail", result_id=result_id)
 
@@ -2177,14 +2220,23 @@ def cba_saved_result_powerbi(request, result_id: int):
 @login_required
 @require_POST
 def cba_saved_result_powerbi_config(request, result_id: int):
-    """Guarda/edita el link Power BI asociado a un resultado guardado."""
+    """Compatibilidad: guarda el link global de Power BI (no por resultado)."""
 
-    result = get_object_or_404(CBAResult, id=result_id)
     url = (request.POST.get("power_bi_url") or "").strip()
-    result.power_bi_url = url
-    result.save(update_fields=["power_bi_url"])
-    messages.success(request, "Link de Power BI actualizado.")
-    return redirect("cba_saved_result_detail", result_id=result_id)
+
+    try:
+        row = PowerBISetting.objects.order_by("-updated_at").first()
+    except Exception:
+        row = None
+
+    if row is None:
+        PowerBISetting.objects.create(dashboard_url=url)
+    else:
+        row.dashboard_url = url
+        row.save(update_fields=["dashboard_url", "updated_at"])
+
+    messages.success(request, "Link global de Power BI actualizado.")
+    return redirect("cba_saved_results")
 
 
 @login_required
