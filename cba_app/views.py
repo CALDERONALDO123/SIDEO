@@ -51,11 +51,11 @@ def healthz(request):
 
 
 def _normalize_cloudinary_public_id(value: str) -> str:
+    import re
+
     public_id = (value or "").strip()
-        import re
-        public_id = (value or "").strip()
-        # Elimina .pdf al final, si existe (case-insensitive)
-        return re.sub(r"\.pdf$", "", public_id, flags=re.IGNORECASE)
+    # Elimina .pdf al final, si existe (case-insensitive)
+    return re.sub(r"\.pdf$", "", public_id, flags=re.IGNORECASE)
 
 
 def _build_guide_cloudinary_public_id(uploaded_filename: str) -> str:
