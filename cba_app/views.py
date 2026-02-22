@@ -1325,13 +1325,11 @@ def cba_step10(request):
 
     save_and_close = False
     save_to_dashboard = False
-    save_to_powerbi = False
 
     # Si vienen costos editados, los actualizamos primero
     if request.method == "POST":
         save_and_close = "save_close" in request.POST
         save_to_dashboard = "save_to_dashboard" in request.POST
-        save_to_powerbi = "save_to_powerbi" in request.POST
 
         for alt in alternatives:
             field_name = f"cost_{alt.id}"
@@ -1388,8 +1386,8 @@ def cba_step10(request):
         for row in rows
     ]
 
-    # Si el usuario pulsa Guardar y cerrar / Power BI, registramos el resultado
-    if save_and_close or save_to_powerbi:
+    # Si el usuario pulsa Guardar y cerrar, registramos el resultado
+    if save_and_close:
         winner_name = best_row["alternative"].name if best_row else "Sin ganador"
         winner_total = best_row["total_importance"] if best_row else 0
         winner_cost = best_row["cost"] if best_row else None
@@ -1500,9 +1498,6 @@ def cba_step10(request):
 
         if chart_rows:
             GraficaCostoVentaja.objects.bulk_create(chart_rows, batch_size=400)
-
-        if save_to_powerbi:
-            return redirect("cba_saved_result_powerbi", result_id=saved.id)
 
         return redirect("cba_home")
 
