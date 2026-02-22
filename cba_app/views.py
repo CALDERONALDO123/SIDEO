@@ -16,6 +16,7 @@ from django.contrib.auth.forms import UserCreationForm
 import os
 import time
 import requests
+import logging
 
 try:
     import cloudinary.uploader as cloudinary_uploader  # type: ignore
@@ -31,6 +32,8 @@ from urllib.parse import urlparse, parse_qsl, urlencode as urlencode_qs, urlunpa
 
 import secrets
 import json
+
+logger = logging.getLogger(__name__)
 
 from .models import (
     Criterion,
@@ -194,6 +197,7 @@ def _stream_pdf_from_cloudinary_public_id(request, public_id: str, *, resource_t
         public_id,
         resource_type=(resource_type or "raw"),
         type=(delivery_type or "upload"),
+        format="pdf",
         secure=True,
         sign_url=True,
     )
@@ -209,6 +213,16 @@ def _stream_pdf_from_cloudinary_public_id(request, public_id: str, *, resource_t
         raise Http404("No hay guía disponible.")
 
     if upstream.status_code not in (200, 206):
+        try:
+            logger.warning(
+                "Cloudinary PDF proxy failed: status=%s public_id=%s resource_type=%s type=%s",
+                upstream.status_code,
+                public_id,
+                (resource_type or "raw"),
+                (delivery_type or "upload"),
+            )
+        except Exception:
+            pass
         try:
             upstream.close()
         except Exception:
@@ -2092,8 +2106,9 @@ def cba_guide_pdf(request):
 @login_required
 @require_POST
 def cba_guide_share_create(request):
-    storage_name = "guides/guia.pdf"
-    if not _safe_storage_exists(storage_name):
+    doc = _get_guide_doc()
+    has_doc = bool(doc and (doc.cloudinary_public_id or doc.storage_name))
+    if not has_doc and not _safe_storage_exists("guides/guia.pdf"):
         return redirect(reverse("cba_guide") + "?" + urlencode({"share_error": "1"}))
 
     form = GuideShareLinkForm(request.POST)
