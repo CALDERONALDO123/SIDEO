@@ -45,21 +45,24 @@ def _median(values: list[float]) -> float | None:
 def _criterion_cap_by_rank(*, rank: int, total: int) -> int:
     """Cap máximo por factor según orden (1 = más importante)."""
 
-    if total <= 0:
+    # Para UX y consistencia CBA: mantener una escala gradual.
+    # El primer factor tiene 100; luego baja de 10 en 10 (mínimo 40).
+    # Esto evita sugerencias tipo 100 → 40 cuando solo hay pocos factores.
+    if rank <= 1:
         return 100
-    cap = 100 * (total - rank + 1) / float(total)
-    return _clamp_int(cap, 10, 100)
+    cap = 100 - (rank - 1) * 10
+    return _clamp_int(cap, 40, 100)
 
 
 def _range_multipliers_by_diff(diff: int) -> tuple[float, float]:
     """Rango sugerido según la diferencia ordinal entre mejor y segundo mejor."""
 
     if diff <= 0:
-        return 0.55, 0.65
+        return 0.75, 0.85
     if diff == 1:
-        return 0.70, 0.80
-    if diff == 2:
         return 0.80, 0.90
+    if diff == 2:
+        return 0.85, 0.95
     return 0.90, 1.00
 
 
@@ -1900,7 +1903,8 @@ def cba_ai_scores_audit(request):
     # 4) Saltos ilógicos en la escala (heurística simple por cambios fuertes entre factores)
     per_rank_norms.sort(key=lambda t: t[0])
     for (r1, n1, name1), (r2, n2, name2) in zip(per_rank_norms, per_rank_norms[1:]):
-        if abs(n2 - n1) >= 0.65:
+        # Umbral más sensible para detectar bajones muy grandes (ej. 100 → 40)
+        if abs(n2 - n1) >= 0.45:
             warnings.append(
                 f"Saltos fuertes en la escala: {name1} → {name2}. Revisa jerarquía/proporcionalidad."
             )
@@ -2212,6 +2216,12 @@ def cba_ai_suggest_scores(request):
         else:
             low = _clamp_int(cap * low_m, 0, cap)
             high = _clamp_int(cap * high_m, 0, cap)
+            if low > high:
+                low, high = high, low
+            # Piso para evitar sugerencias demasiado bajas (p.ej. 40) en factores altos.
+            floor_value = _clamp_int(cap * 0.80, 0, cap)
+            low = max(low, floor_value)
+            high = max(high, floor_value)
             if low > high:
                 low, high = high, low
             value = _clamp_int((low + high) / 2.0, 0, cap)
