@@ -127,6 +127,15 @@ def _stream_pdf_from_storage(request, storage_name: str, *, as_attachment: bool,
     if range_header:
         headers["Range"] = range_header
 
+    # Algunos storages (Cloudinary) pueden aplicar protección por Referer.
+    try:
+        headers["User-Agent"] = request.headers.get("User-Agent", "") or "Mozilla/5.0"
+        headers["Accept"] = request.headers.get("Accept", "") or "application/pdf,*/*;q=0.8"
+        headers["Referer"] = request.build_absolute_uri("/")
+        headers["Origin"] = request.build_absolute_uri("/").rstrip("/")
+    except Exception:
+        pass
+
     try:
         upstream = requests.get(source_url, stream=True, headers=headers, timeout=(5, 30))
     except Exception:
@@ -215,6 +224,16 @@ def _stream_pdf_from_cloudinary_public_id(request, public_id: str, *, resource_t
     range_header = request.headers.get("Range")
     if range_header:
         headers["Range"] = range_header
+
+    # Cloudinary puede estar configurado con protección por Referer/hotlink.
+    # Propagamos headers básicos del request del navegador.
+    try:
+        headers["User-Agent"] = request.headers.get("User-Agent", "") or "Mozilla/5.0"
+        headers["Accept"] = request.headers.get("Accept", "") or "application/pdf,*/*;q=0.8"
+        headers["Referer"] = request.build_absolute_uri("/")
+        headers["Origin"] = request.build_absolute_uri("/").rstrip("/")
+    except Exception:
+        pass
 
     try:
         upstream = requests.get(url, stream=True, headers=headers, timeout=(5, 30))
