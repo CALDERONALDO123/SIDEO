@@ -1324,10 +1324,12 @@ def cba_step10(request):
     alternatives = list(Alternative.objects.all())
 
     save_and_close = False
+    save_to_dashboard = False
 
     # Si vienen costos editados, los actualizamos primero
     if request.method == "POST":
         save_and_close = "save_close" in request.POST
+        save_to_dashboard = "save_to_dashboard" in request.POST
 
         for alt in alternatives:
             field_name = f"cost_{alt.id}"
@@ -1340,6 +1342,11 @@ def cba_step10(request):
             except InvalidOperation:
                 # Si el valor no es numérico, lo ignoramos
                 continue
+
+        # Si el usuario quiere ir al dashboard, solo guardamos costos y redirigimos.
+        # El dashboard recalcula con el estado actual.
+        if save_to_dashboard:
+            return redirect("cba_dashboard")
 
     # Recalcular totales y relación costo / ventaja
     rows = []
