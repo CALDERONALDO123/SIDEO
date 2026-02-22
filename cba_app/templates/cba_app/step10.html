@@ -81,9 +81,12 @@
         <button type="button" class="btn btn-outline-secondary" onclick="drawChart()">Graficar</button>
 
         <br><br>
-        <div style="display:flex; gap:16px; align-items:flex-start;">
-            <canvas id="cbaChart" width="640" height="400" style="border:1px solid #e5e7eb; background:#ffffff;"></canvas>
-            <div id="cbaLegend" style="font-size:13px; color:#374151;"></div>
+        <div style="display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap;">
+            <div class="cba-chartwrap" style="flex:1 1 640px; min-width:280px;">
+                <canvas id="cbaChart" width="640" height="400" style="border:1px solid #e5e7eb; background:#ffffff; max-width:100%; height:auto;"></canvas>
+                <div id="cbaTooltip" class="cba-tooltip" role="status" aria-live="polite"></div>
+            </div>
+            <div id="cbaLegend" style="font-size:13px; color:#374151; flex:0 1 240px; min-width:200px; max-width:100%; word-break:break-word;"></div>
         </div>
 
         <div style="margin-top:16px; display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap;">
@@ -146,6 +149,8 @@
                     xLabel: 'Costo (S/)',
                     yLabel: 'Total de ventajas',
                     legendContainer: legendContainer,
+                    tooltipElement: document.getElementById('cbaTooltip'),
+                    tooltipTrigger: 'hover-line',
                 });
                 return;
             }

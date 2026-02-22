@@ -554,6 +554,8 @@
         const xLabel = options.xLabel || 'Costo (S/)';
         const yLabel = options.yLabel || 'Ventaja total';
 
+        const useHoverLineTooltip = options.tooltipTrigger === 'hover-line' && !!options.tooltipElement;
+
         canvas._chartjs = new global.Chart(canvas, {
             type: 'line',
             data: { datasets: datasets },
@@ -566,6 +568,7 @@
                 plugins: {
                     legend: { display: false },
                     tooltip: {
+                        enabled: !useHoverLineTooltip,
                         filter: function (ctx) {
                             // Solo el punto final (no el origen)
                             return ctx.dataIndex === 1;
@@ -630,6 +633,8 @@
 
                     const label = document.createElement('span');
                     label.textContent = String(p.name || '');
+                    label.style.whiteSpace = 'normal';
+                    label.style.wordBreak = 'break-word';
 
                     item.appendChild(swatch);
                     item.appendChild(label);
@@ -641,8 +646,137 @@
         }
 
         if (options.tooltipElement) {
-            charts.attachChartJsClickTooltip(canvas._chartjs, canvas, options.tooltipElement);
+            if (useHoverLineTooltip) {
+                charts.attachChartJsHoverLineTooltip(canvas._chartjs, canvas, options.tooltipElement);
+            } else {
+                charts.attachChartJsClickTooltip(canvas._chartjs, canvas, options.tooltipElement);
+            }
         }
+    };
+
+    charts.attachChartJsHoverLineTooltip = function attachChartJsHoverLineTooltip(chart, canvas, tooltipElement) {
+        if (!chart || !canvas || !tooltipElement) return;
+        if (canvas._chartjsHoverLineTooltipBound) return;
+        canvas._chartjsHoverLineTooltipBound = true;
+
+        function distPointToSegment(px, py, ax, ay, bx, by) {
+            const abx = bx - ax;
+            const aby = by - ay;
+            const apx = px - ax;
+            const apy = py - ay;
+            const abLen2 = abx * abx + aby * aby;
+            let t = 0;
+            if (abLen2 > 0) {
+                t = (apx * abx + apy * aby) / abLen2;
+                t = Math.max(0, Math.min(1, t));
+            }
+            const cx = ax + t * abx;
+            const cy = ay + t * aby;
+            const dx = px - cx;
+            const dy = py - cy;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        function hideTip() {
+            tooltipElement.style.display = 'none';
+        }
+
+        function showTip(x, y, html) {
+            tooltipElement.innerHTML = html;
+            tooltipElement.style.display = 'block';
+
+            const wrap = canvas.parentElement;
+            const wrapRect = wrap.getBoundingClientRect();
+            const tipRect = tooltipElement.getBoundingClientRect();
+
+            let left = x + 12;
+            let top = y + 12;
+
+            left = Math.min(left, wrapRect.width - tipRect.width - 8);
+            top = Math.min(top, wrapRect.height - tipRect.height - 8);
+            left = Math.max(8, left);
+            top = Math.max(8, top);
+
+            tooltipElement.style.left = left + 'px';
+            tooltipElement.style.top = top + 'px';
+        }
+
+        function onMove(evt) {
+            const xScale = chart && chart.scales ? chart.scales.x : null;
+            const yScale = chart && chart.scales ? chart.scales.y : null;
+            const area = chart ? chart.chartArea : null;
+            if (!xScale || !yScale || !area) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const mx = evt.clientX - rect.left;
+            const my = evt.clientY - rect.top;
+
+            if (mx < area.left || mx > area.right || my < area.top || my > area.bottom) {
+                hideTip();
+                return;
+            }
+
+            let best = null;
+            let bestDist = Infinity;
+
+            const dsList = (chart && chart.data && Array.isArray(chart.data.datasets)) ? chart.data.datasets : [];
+            dsList.forEach(function (ds) {
+                const d0 = ds && ds.data ? ds.data[0] : null;
+                const d1 = ds && ds.data ? ds.data[1] : null;
+                if (!d0 || !d1) return;
+
+                const ax = xScale.getPixelForValue(d0.x);
+                const ay = yScale.getPixelForValue(d0.y);
+                const bx = xScale.getPixelForValue(d1.x);
+                const by = yScale.getPixelForValue(d1.y);
+                const dist = distPointToSegment(mx, my, ax, ay, bx, by);
+                if (dist < bestDist) {
+                    bestDist = dist;
+                    best = { ds: ds, end: d1 };
+                }
+            });
+
+            const HIT_PX = 10;
+            if (!best || bestDist > HIT_PX) {
+                hideTip();
+                return;
+            }
+
+            const meta = (best.end && best.end._meta) ? best.end._meta : {};
+            const endCost = (meta.cost !== null && meta.cost !== undefined) ? Number(meta.cost) : null;
+            const endTotal = (meta.total !== null && meta.total !== undefined) ? Number(meta.total) : null;
+            if (!endCost || endCost <= 0 || endTotal === null || endTotal === undefined) {
+                hideTip();
+                return;
+            }
+
+            let xValue = xScale.getValueForPixel(mx);
+            xValue = (xValue !== null && xValue !== undefined) ? Number(xValue) : NaN;
+            if (!isFinite(xValue)) {
+                hideTip();
+                return;
+            }
+
+            xValue = Math.max(0, Math.min(xValue, endCost));
+            const yValue = (endTotal / endCost) * xValue;
+
+            const name = String(meta.name || (best.ds ? best.ds.label : '') || '');
+            const ratio = (meta.ratio !== null && meta.ratio !== undefined && isFinite(Number(meta.ratio)))
+                ? Number(meta.ratio).toFixed(6)
+                : '-';
+
+            const html =
+                '<div class="cba-tooltip__title">' + utils.escapeHtml(name) + '</div>' +
+                '<div class="cba-tooltip__row"><span class="k">Coordenada:</span> <span class="v">(S/ ' + utils.escapeHtml(xValue.toFixed(2)) + ', ' + utils.escapeHtml(yValue.toFixed(2)) + ')</span></div>' +
+                '<div class="cba-tooltip__row"><span class="k">Costo/Ventaja:</span> <span class="v">S/ ' + utils.escapeHtml(ratio) + '</span></div>';
+
+            showTip(mx, my, html);
+        }
+
+        canvas.addEventListener('mousemove', onMove, { passive: true });
+        canvas.addEventListener('mouseleave', hideTip);
+        global.addEventListener('scroll', hideTip, { passive: true });
+        global.addEventListener('resize', hideTip);
     };
 
     charts.attachChartJsClickTooltip = function attachChartJsClickTooltip(chart, canvas, tooltipElement) {
