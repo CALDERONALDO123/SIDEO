@@ -149,9 +149,39 @@ class GuidePdfUploadForm(forms.Form):
 
     def clean_pdf_file(self):
         uploaded = self.cleaned_data["pdf_file"]
-        name = (uploaded.name or "").lower()
+
+        name = (getattr(uploaded, "name", "") or "").strip().lower()
         if not name.endswith(".pdf"):
             raise forms.ValidationError("El archivo debe ser un PDF (.pdf).")
+
+        # MIME puede venir vacío o como application/octet-stream según navegador.
+        content_type = (getattr(uploaded, "content_type", "") or "").strip().lower()
+        if content_type and content_type not in {"application/pdf", "application/x-pdf"}:
+            if content_type != "application/octet-stream":
+                raise forms.ValidationError("El archivo debe ser un PDF válido (application/pdf).")
+
+        # Validación fuerte: firma del archivo PDF (magic bytes).
+        try:
+            pos = uploaded.tell()
+        except Exception:
+            pos = None
+
+        try:
+            header = uploaded.read(5)
+        except Exception:
+            header = b""
+        finally:
+            try:
+                if pos is not None:
+                    uploaded.seek(pos)
+                else:
+                    uploaded.seek(0)
+            except Exception:
+                pass
+
+        if header != b"%PDF-":
+            raise forms.ValidationError("El archivo no parece un PDF válido.")
+
         return uploaded
 
 

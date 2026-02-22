@@ -2178,6 +2178,35 @@ def cba_guide(request):
                     saved_resource_type = (res.get("resource_type") or "").strip() or "raw"
                     saved_type = (res.get("type") or "").strip() or "upload"
 
+                    saved_format = (res.get("format") or "").strip().lower()
+                    # Si Cloudinary reporta formato y no es pdf, rechazamos.
+                    if saved_format and saved_format != "pdf":
+                        try:
+                            cloudinary_uploader.destroy(
+                                saved_public_id,
+                                invalidate=True,
+                                resource_type=saved_resource_type,
+                                type=saved_type,
+                            )
+                        except Exception:
+                            pass
+                        messages.error(request, "La guía debe ser un PDF. Sube un archivo .pdf válido.")
+                        return redirect("cba_guide")
+
+                    # Aseguramos que quede como RAW (docs). Si no, rechazamos.
+                    if saved_resource_type != "raw":
+                        try:
+                            cloudinary_uploader.destroy(
+                                saved_public_id,
+                                invalidate=True,
+                                resource_type=saved_resource_type,
+                                type=saved_type,
+                            )
+                        except Exception:
+                            pass
+                        messages.error(request, "No se pudo guardar la guía como PDF (tipo de recurso inválido).")
+                        return redirect("cba_guide")
+
                     GuideDocument.objects.create(
                         storage_name="",
                         cloudinary_public_id=saved_public_id,
