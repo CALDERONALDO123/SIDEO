@@ -411,6 +411,9 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = int(
     os.environ.get("DJANGO_FILE_UPLOAD_MAX_MEMORY_SIZE", str(5 * 1024 * 1024))
 )
 
+# Guía PDF: límite máximo permitido para subida (MB).
+GUIDE_PDF_MAX_SIZE_MB = int(os.environ.get("GUIDE_PDF_MAX_SIZE_MB", "20"))
+
 if os.environ.get("CLOUDINARY_URL"):
     # Cloudinary obligatorio: usar storage remoto para media.
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'

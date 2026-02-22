@@ -1,4 +1,5 @@
 from django import forms
+from django.conf import settings
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
@@ -149,6 +150,13 @@ class GuidePdfUploadForm(forms.Form):
 
     def clean_pdf_file(self):
         uploaded = self.cleaned_data["pdf_file"]
+
+        max_mb = int(getattr(settings, "GUIDE_PDF_MAX_SIZE_MB", 20) or 20)
+        max_bytes = max_mb * 1024 * 1024
+        file_size = int(getattr(uploaded, "size", 0) or 0)
+
+        if file_size > max_bytes:
+            raise forms.ValidationError(f"El PDF supera el límite permitido ({max_mb} MB).")
 
         name = (getattr(uploaded, "name", "") or "").strip().lower()
         if not name.endswith(".pdf"):
