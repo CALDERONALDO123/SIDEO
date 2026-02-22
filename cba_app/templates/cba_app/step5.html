@@ -39,12 +39,8 @@
                     <td>{{ row.criterion.name }}</td>
                     {% for cell in row.cells %}
                     {% with value=cell.value %}
-                    <td class="attr-cell attr-cell--least {% if value %}{% with val=value|lower %}{% if val == 'excelente' %}attr-excelente{% elif val == 'bueno' %}attr-bueno{% elif val == 'regular' %}attr-regular{% elif val == 'cumple' %}attr-cumple{% elif val == 'no cumple' %}attr-no-cumple{% endif %}{% endwith %}{% endif %}">
-                        {% if value %}
-                            <span class="least-pill">{{ value }}</span>
-                        {% else %}
-                            <span class="least-empty">-</span>
-                        {% endif %}
+                    <td class="{% if value %}{% with val=value|lower %}{% if val == 'excelente' %}attr-cell attr-excelente{% elif val == 'bueno' %}attr-cell attr-bueno{% elif val == 'regular' %}attr-cell attr-regular{% elif val == 'cumple' %}attr-cell attr-cumple{% elif val == 'no cumple' %}attr-cell attr-no-cumple{% endif %}{% endwith %}{% endif %}">
+                        {{ value }}
                     </td>
                     {% endwith %}
                     {% endfor %}

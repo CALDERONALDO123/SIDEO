@@ -2204,11 +2204,17 @@ def cba_ai_suggest_scores(request):
         cap = _criterion_cap_by_rank(rank=idx, total=total_criteria)
         low_m, high_m = _range_multipliers_by_diff(diff)
 
-        low = _clamp_int(cap * low_m, 0, cap)
-        high = _clamp_int(cap * high_m, 0, cap)
-        if low > high:
-            low, high = high, low
-        value = _clamp_int((low + high) / 2.0, 0, cap)
+        # Regla UX: el factor más importante (el primero) inicia en 100 puntos.
+        if idx == 1:
+            low = cap
+            high = cap
+            value = cap
+        else:
+            low = _clamp_int(cap * low_m, 0, cap)
+            high = _clamp_int(cap * high_m, 0, cap)
+            if low > high:
+                low, high = high, low
+            value = _clamp_int((low + high) / 2.0, 0, cap)
 
         # Puede haber empate: sugerir para todas las alternativas con mejor score.
         for s, attr in scored:
