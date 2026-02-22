@@ -28,6 +28,11 @@ try:
 except Exception:  # pragma: no cover
     cloudinary_url = None  # type: ignore
 
+try:
+    from cloudinary.utils import private_download_url  # type: ignore
+except Exception:  # pragma: no cover
+    private_download_url = None  # type: ignore
+
 from urllib.parse import urlparse, parse_qsl, urlencode as urlencode_qs, urlunparse
 
 import secrets
@@ -211,14 +216,42 @@ def _stream_pdf_from_cloudinary_public_id(request, public_id: str, *, resource_t
 
     public_id = _normalize_cloudinary_public_id(public_id)
 
-    url, _opts = cloudinary_url(
-        public_id,
-        resource_type=(resource_type or "raw"),
-        type=(delivery_type or "upload"),
-        format="pdf",
-        secure=True,
-        sign_url=True,
-    )
+    url_candidates: list[str] = []
+
+    # 1) URL de delivery (CDN). Si la cuenta exige tokens u otras políticas,
+    # puede responder 401/403 aunque el recurso exista.
+    try:
+        delivery_url, _opts = cloudinary_url(
+            public_id,
+            resource_type=(resource_type or "raw"),
+            type=(delivery_type or "upload"),
+            format="pdf",
+            secure=True,
+            sign_url=True,
+        )
+        if delivery_url:
+            url_candidates.append(delivery_url)
+    except Exception:
+        pass
+
+    # 2) Fallback robusto: URL firmada al endpoint API /download.
+    # Esto evita bloqueos de delivery/hotlinking porque usa firma server-side.
+    if private_download_url is not None:
+        try:
+            api_url = private_download_url(
+                public_id,
+                "pdf",
+                resource_type=(resource_type or "raw"),
+                type=(delivery_type or "upload"),
+                attachment=bool(as_attachment),
+            )
+            if api_url:
+                url_candidates.append(api_url)
+        except Exception:
+            pass
+
+    if not url_candidates:
+        raise Http404("No hay guía disponible.")
 
     headers = {}
     range_header = request.headers.get("Range")
@@ -235,24 +268,36 @@ def _stream_pdf_from_cloudinary_public_id(request, public_id: str, *, resource_t
     except Exception:
         pass
 
-    try:
-        upstream = requests.get(url, stream=True, headers=headers, timeout=(5, 30))
-    except Exception:
-        raise Http404("No hay guía disponible.")
+    upstream = None
+    last_status = None
 
-    if upstream.status_code not in (200, 206):
+    for candidate_url in url_candidates:
+        try:
+            upstream = requests.get(candidate_url, stream=True, headers=headers, timeout=(5, 30))
+            last_status = upstream.status_code
+        except Exception:
+            upstream = None
+            last_status = None
+            continue
+
+        if upstream.status_code in (200, 206):
+            break
+
+        try:
+            upstream.close()
+        except Exception:
+            pass
+        upstream = None
+
+    if upstream is None:
         try:
             logger.warning(
                 "Cloudinary PDF proxy failed: status=%s public_id=%s resource_type=%s type=%s",
-                upstream.status_code,
+                last_status,
                 public_id,
                 (resource_type or "raw"),
                 (delivery_type or "upload"),
             )
-        except Exception:
-            pass
-        try:
-            upstream.close()
         except Exception:
             pass
         raise Http404("No hay guía disponible.")
