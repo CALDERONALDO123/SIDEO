@@ -56,20 +56,12 @@ def _normalize_cloudinary_public_id(value: str) -> str:
 
 
 def _build_guide_cloudinary_public_id(uploaded_filename: str) -> str:
-    """Genera un public_id estable y único para la guía.
+    """Devuelve un public_id fijo para la guía PDF.
 
-    - Siempre cae en la carpeta `guides/`.
-    - Deriva del nombre original del archivo (sin extensión) + timestamp.
-    - No incluye extensión: el `format` se maneja aparte.
+    Usar ID fijo evita desalineación entre DB y Cloudinary cuando se reemplaza la guía.
     """
 
-    base = (uploaded_filename or "").replace("\\", "/").split("/")[-1]
-    name_no_ext, _ext = os.path.splitext(base)
-    slug = slugify(name_no_ext) or "guia"
-    slug = slug[:150]
-    stamp = int(time.time())
-    # Para RAW, Cloudinary recomienda incluir extensión en el public_id.
-    return f"guides/{slug}-{stamp}.pdf"
+    return "guides/guia.pdf"
 
 from .models import (
     Criterion,
@@ -2215,6 +2207,7 @@ def cba_guide(request):
                         messages.error(request, "No se pudo guardar la guía como PDF (tipo de recurso inválido en Cloudinary).")
                         return redirect("cba_guide")
 
+                    GuideDocument.objects.all().delete()
                     GuideDocument.objects.create(
                         storage_name="",
                         cloudinary_public_id=saved_public_id,
