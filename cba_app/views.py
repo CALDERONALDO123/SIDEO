@@ -2165,6 +2165,9 @@ def cba_guide(request):
                         except Exception:
                             pass
 
+                    # Subimos como `raw` para que quede como archivo/documento PDF.
+                    # Nota: en Cloudinary Media Library, los `raw` suelen verse como ícono de documento.
+                    # El visor en la web funciona igual porque hacemos proxy de bytes.
                     res = cloudinary_uploader.upload(
                         uploaded,
                         resource_type="raw",
@@ -2193,8 +2196,9 @@ def cba_guide(request):
                         messages.error(request, "La guía debe ser un PDF. Sube un archivo .pdf válido.")
                         return redirect("cba_guide")
 
-                    # Aseguramos que quede como RAW (docs). Si no, rechazamos.
-                    if saved_resource_type != "raw":
+                    # Aseguramos que quede como PDF (ya validado por formato) y un resource_type compatible.
+                    # Para que haya preview en Cloudinary, muchos casos quedan como `image`.
+                    if saved_resource_type not in {"raw", "image"}:
                         try:
                             cloudinary_uploader.destroy(
                                 saved_public_id,
@@ -2204,7 +2208,7 @@ def cba_guide(request):
                             )
                         except Exception:
                             pass
-                        messages.error(request, "No se pudo guardar la guía como PDF (tipo de recurso inválido).")
+                        messages.error(request, "No se pudo guardar la guía como PDF (tipo de recurso inválido en Cloudinary).")
                         return redirect("cba_guide")
 
                     GuideDocument.objects.create(
