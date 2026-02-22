@@ -43,8 +43,6 @@ logger = logging.getLogger(__name__)
 
 def _normalize_cloudinary_public_id(value: str) -> str:
     public_id = (value or "").strip()
-    if public_id.lower().endswith(".pdf"):
-        public_id = public_id[:-4]
     return public_id
 
 
@@ -61,7 +59,8 @@ def _build_guide_cloudinary_public_id(uploaded_filename: str) -> str:
     slug = slugify(name_no_ext) or "guia"
     slug = slug[:150]
     stamp = int(time.time())
-    return f"guides/{slug}-{stamp}"
+    # Para RAW, Cloudinary recomienda incluir extensión en el public_id.
+    return f"guides/{slug}-{stamp}.pdf"
 
 from .models import (
     Criterion,
@@ -230,21 +229,26 @@ def _stream_pdf_from_cloudinary_public_id(request, public_id: str, *, resource_t
     if cloudinary_url is None:
         raise Http404("No hay guía disponible.")
 
-    public_id = _normalize_cloudinary_public_id(public_id)
+    public_id = (public_id or "").strip()
+    if not public_id:
+        raise Http404("No hay guía disponible.")
 
     url_candidates: list[str] = []
 
     # 1) URL de delivery (CDN). Si la cuenta exige tokens u otras políticas,
     # puede responder 401/403 aunque el recurso exista.
     try:
-        delivery_url, _opts = cloudinary_url(
-            public_id,
-            resource_type=(resource_type or "raw"),
-            type=(delivery_type or "upload"),
-            format="pdf",
-            secure=True,
-            sign_url=True,
-        )
+        cloudinary_kwargs = {
+            "resource_type": (resource_type or "raw"),
+            "type": (delivery_type or "upload"),
+            "secure": True,
+            "sign_url": True,
+        }
+        # Si el public_id ya incluye .pdf (común en RAW), no forzamos format.
+        if not public_id.lower().endswith(".pdf"):
+            cloudinary_kwargs["format"] = "pdf"
+
+        delivery_url, _opts = cloudinary_url(public_id, **cloudinary_kwargs)
         if delivery_url:
             url_candidates.append(delivery_url)
     except Exception:
@@ -254,8 +258,9 @@ def _stream_pdf_from_cloudinary_public_id(request, public_id: str, *, resource_t
     # Esto evita bloqueos de delivery/hotlinking porque usa firma server-side.
     if private_download_url is not None:
         try:
+            base_public_id = public_id[:-4] if public_id.lower().endswith(".pdf") else public_id
             api_url = private_download_url(
-                public_id,
+                base_public_id,
                 "pdf",
                 resource_type=(resource_type or "raw"),
                 type=(delivery_type or "upload"),
@@ -2119,9 +2124,7 @@ def cba_guide(request):
                         invalidate=True,
                     )
 
-                    saved_public_id = _normalize_cloudinary_public_id(
-                        (res.get("public_id") or new_public_id)
-                    )
+                    saved_public_id = (res.get("public_id") or new_public_id or "").strip()
 
                     GuideDocument.objects.create(
                         storage_name="",
