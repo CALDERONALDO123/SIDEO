@@ -79,6 +79,67 @@ def _similarity(a: str, b: str) -> float:
         return 0.0
 
 
+_PERSON_ROLE_TOKENS = {
+    "residente",
+    "gerente",
+    "jefe",
+    "director",
+    "coordinador",
+    "supervisor",
+    "ingeniero",
+    "arquitecto",
+    "analista",
+    "especialista",
+    "asistente",
+    "consultor",
+}
+
+_COMPANY_TOKENS = {
+    "sac",
+    "s.a.c",
+    "sa",
+    "s.a.",
+    "srl",
+    "s.r.l",
+    "eirl",
+    "e.i.r.l",
+    "cia",
+    "compañia",
+    "compania",
+    "empresa",
+    "consorcio",
+    "corporacion",
+    "corporación",
+    "ltda",
+}
+
+
+def _infer_cost_context_from_setup(setup: object) -> tuple[str, str]:
+    """Heurística simple para interpretar si los montos parecen de persona vs empresa.
+
+    Retorna (context, reason) donde context ∈ {'persona', 'empresa', 'desconocido'}.
+    """
+
+    if not isinstance(setup, dict):
+        return "desconocido", "setup no disponible"
+
+    requesting_area = _normalize_name_key(str(setup.get("requesting_area") or ""))
+    public_entity = _normalize_name_key(str(setup.get("public_entity") or ""))
+    private_company = _normalize_name_key(str(setup.get("private_company") or ""))
+
+    if requesting_area and any(tok in requesting_area for tok in _PERSON_ROLE_TOKENS):
+        return "persona", f"área solicitante contiene rol ({setup.get('requesting_area')})"
+
+    ent = " ".join([public_entity, private_company]).strip()
+    if ent and any(tok in ent for tok in _COMPANY_TOKENS):
+        return "empresa", "solicitante parece empresa (siglas/razón social)"
+
+    if ent and ("gobierno" in ent or "municipal" in ent or "minister" in ent or "regional" in ent):
+        return "empresa", "solicitante parece entidad pública"
+
+    return "desconocido", "sin señales claras"
+
+
 def _build_generic_audit_prompts(*, title: str, payload: dict) -> tuple[str, str]:
     system_prompt = (
         "Eres un auditor técnico de calidad de datos para SIDEO (Choosing By Advantages - CBA). "
@@ -207,6 +268,8 @@ def _render_costs_audit_assistant_text(
     max_cost: float | None,
     outlier_high: list[str],
     ratio_low: list[str],
+    context_note: str | None,
+    context_warnings: list[str],
 ) -> str:
     lines: list[str] = []
     lines.append("✔ Costos revisados")
@@ -243,6 +306,13 @@ def _render_costs_audit_assistant_text(
     if ratio_low:
         lines.append(f"⚠ Ventajas/costo muy bajo en: {_join_some(ratio_low, 3)}")
 
+    if context_note:
+        lines.append(f"ℹ {context_note}")
+
+    for w in (context_warnings or [])[:2]:
+        if w:
+            lines.append(f"⚠ {w}")
+
     if len(lines) == 2:
         lines.append("✔ No se detectaron alertas de costo")
 
@@ -250,6 +320,9 @@ def _render_costs_audit_assistant_text(
     if missing or non_numeric or outlier_high or ratio_low:
         lines.append("💡 Completa costos faltantes y recalcula")
         lines.append("💡 Revisa unidades (mensual/anual, miles) si hay outliers")
+
+    if context_warnings:
+        lines.append("💡 Verifica si el monto es mensual o total")
 
     return "\n".join(lines[:9]).strip()
 
@@ -1989,6 +2062,10 @@ def cba_ai_costs_audit(request):
 
     reviewed_at = datetime.now().strftime("%H:%M")
 
+    setup = request.session.get("cba_setup")
+    cost_context, cost_context_reason = _infer_cost_context_from_setup(setup)
+    persona_max_expected = 25000.0
+
     norm: list[dict] = []
     costs: list[float] = []
     ratios: list[float] = []
@@ -2052,6 +2129,22 @@ def cba_ai_costs_audit(request):
     min_cost = min(costs) if costs else None
     max_cost = max(costs) if costs else None
 
+    context_note = None
+    context_warnings: list[str] = []
+    if cost_context != "desconocido":
+        context_note = f"Contexto detectado: {cost_context} ({cost_context_reason})."
+
+    # Reglas solicitadas: umbral simple por contexto.
+    if max_cost is not None:
+        if cost_context == "persona" and float(max_cost) > persona_max_expected:
+            context_warnings.append(
+                f"Monto alto para rol de persona: S/ {int(round(max_cost))} (esperable ≤ S/ {int(persona_max_expected)})."
+            )
+        if cost_context == "empresa" and float(max_cost) <= persona_max_expected:
+            context_warnings.append(
+                f"Monto bajo para empresa/entidad: máximo S/ {int(round(max_cost))} (revisa si falta un cero o si es mensual)."
+            )
+
     fallback = _render_costs_audit_assistant_text(
         reviewed_at=reviewed_at,
         missing=missing,
@@ -2060,10 +2153,13 @@ def cba_ai_costs_audit(request):
         max_cost=max_cost,
         outlier_high=outlier_high,
         ratio_low=ratio_low,
+        context_note=context_note,
+        context_warnings=context_warnings,
     )
 
     payload = {
         "items": norm,
+        "setup": setup or {},
         "computed": {
             "reviewed_at": reviewed_at,
             "missing": missing,
@@ -2074,6 +2170,10 @@ def cba_ai_costs_audit(request):
             "median_ratio": med_ratio,
             "outlier_high": outlier_high,
             "ratio_low": ratio_low,
+            "cost_context": cost_context,
+            "cost_context_reason": cost_context_reason,
+            "persona_max_expected": persona_max_expected,
+            "context_warnings": context_warnings,
         },
     }
 
