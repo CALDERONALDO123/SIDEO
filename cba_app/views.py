@@ -47,6 +47,22 @@ def _normalize_cloudinary_public_id(value: str) -> str:
         public_id = public_id[:-4]
     return public_id
 
+
+def _build_guide_cloudinary_public_id(uploaded_filename: str) -> str:
+    """Genera un public_id estable y único para la guía.
+
+    - Siempre cae en la carpeta `guides/`.
+    - Deriva del nombre original del archivo (sin extensión) + timestamp.
+    - No incluye extensión: el `format` se maneja aparte.
+    """
+
+    base = (uploaded_filename or "").replace("\\", "/").split("/")[-1]
+    name_no_ext, _ext = os.path.splitext(base)
+    slug = slugify(name_no_ext) or "guia"
+    slug = slug[:150]
+    stamp = int(time.time())
+    return f"guides/{slug}-{stamp}"
+
 from .models import (
     Criterion,
     Alternative,
@@ -2080,6 +2096,8 @@ def cba_guide(request):
 
                 # Preferido: subir a Cloudinary como RAW con public_id fijo.
                 if cloudinary_uploader is not None:
+                    new_public_id = _build_guide_cloudinary_public_id(getattr(uploaded, "name", ""))
+
                     previous_doc = _get_guide_doc()
                     if previous_doc and previous_doc.cloudinary_public_id:
                         try:
@@ -2095,14 +2113,14 @@ def cba_guide(request):
                     res = cloudinary_uploader.upload(
                         uploaded,
                         resource_type="raw",
-                        public_id="guides/guia",
+                        public_id=new_public_id,
                         overwrite=True,
                         unique_filename=False,
                         invalidate=True,
                     )
 
                     saved_public_id = _normalize_cloudinary_public_id(
-                        (res.get("public_id") or "guides/guia")
+                        (res.get("public_id") or new_public_id)
                     )
 
                     GuideDocument.objects.create(

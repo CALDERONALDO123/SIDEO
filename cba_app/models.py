@@ -275,7 +275,7 @@ class GuideDocument(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.storage_name or "(sin guía)"
+        return self.storage_name or self.cloudinary_public_id or "(sin guía)"
 
     class Meta:
         verbose_name = "Guía (PDF)"
