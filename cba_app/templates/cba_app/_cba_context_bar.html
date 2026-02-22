@@ -14,10 +14,12 @@
                 {% else %}
                     {{ setup.private_company|default:'-' }}
                 {% endif %}
-                {% if setup.requesting_area %}
-                    <span class="cba-contextbar__sep">·</span> {{ setup.requesting_area }}
-                {% endif %}
             </span>
+        </div>
+
+        <div class="cba-contextbar__item">
+            <span class="cba-contextbar__label">Área solicitante:</span>
+            <span class="cba-contextbar__value">{{ setup.requesting_area|default:'-' }}</span>
         </div>
 
         <div class="cba-contextbar__item">

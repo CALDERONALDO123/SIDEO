@@ -64,13 +64,13 @@
                                     {% else %}
                                         {{ setup.private_company|default:'-' }}
                                     {% endif %}
-                                    {% if setup.requesting_area %}
-                                        <span class="text-muted"> · </span>{{ setup.requesting_area }}
-                                    {% endif %}
                                 {% else %}
                                     -
                                 {% endif %}
                             </div>
+
+                            <div class="text-muted text-sm">Área solicitante</div>
+                            <div class="mb-3">{% if setup and setup.requesting_area %}{{ setup.requesting_area }}{% else %}-{% endif %}</div>
                         </div>
                         <div class="col-md-6">
                             <div class="text-muted text-sm">Ubicación</div>
