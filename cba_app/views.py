@@ -35,6 +35,13 @@ import json
 
 logger = logging.getLogger(__name__)
 
+
+def _normalize_cloudinary_public_id(value: str) -> str:
+    public_id = (value or "").strip()
+    if public_id.lower().endswith(".pdf"):
+        public_id = public_id[:-4]
+    return public_id
+
 from .models import (
     Criterion,
     Alternative,
@@ -192,6 +199,8 @@ def _get_guide_doc() -> GuideDocument | None:
 def _stream_pdf_from_cloudinary_public_id(request, public_id: str, *, resource_type: str, delivery_type: str, filename: str, as_attachment: bool):
     if cloudinary_url is None:
         raise Http404("No hay guía disponible.")
+
+    public_id = _normalize_cloudinary_public_id(public_id)
 
     url, _opts = cloudinary_url(
         public_id,
@@ -2028,9 +2037,13 @@ def cba_guide(request):
                         invalidate=True,
                     )
 
+                    saved_public_id = _normalize_cloudinary_public_id(
+                        (res.get("public_id") or "guides/guia")
+                    )
+
                     GuideDocument.objects.create(
                         storage_name="",
-                        cloudinary_public_id=(res.get("public_id") or "guides/guia"),
+                        cloudinary_public_id=saved_public_id,
                         cloudinary_resource_type=(res.get("resource_type") or "raw"),
                         cloudinary_type=(res.get("type") or "upload"),
                     )
