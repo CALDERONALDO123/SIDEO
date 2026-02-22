@@ -262,29 +262,13 @@ def _stream_pdf_from_cloudinary_public_id(request, public_id: str, *, resource_t
             if pair not in combos:
                 combos.append(pair)
 
-    url_candidates: list[str] = []
+    # Armamos candidatos en dos grupos: delivery (CDN) y download (API) firmados.
+    # En cuentas con access control, los delivery URLs pueden responder 401 mientras que
+    # el endpoint de download firmado suele funcionar.
+    delivery_candidates: list[str] = []
+    download_candidates: list[str] = []
 
-    # 1) URL de delivery (CDN). Probamos firmado y no firmado.
-    for pid in public_id_variants:
-        for rt, typ in combos:
-            for sign in (True, False):
-                try:
-                    cloudinary_kwargs = {
-                        "resource_type": rt,
-                        "type": typ,
-                        "secure": True,
-                        "sign_url": bool(sign),
-                    }
-                    # Si el public_id no incluye .pdf, forzamos format para apuntar al PDF.
-                    if not pid.lower().endswith(".pdf"):
-                        cloudinary_kwargs["format"] = "pdf"
-
-                    delivery_url, _opts = cloudinary_url(pid, **cloudinary_kwargs)
-                    _add_unique(url_candidates, delivery_url)
-                except Exception:
-                    continue
-
-    # 2) Fallback robusto: URL firmada al endpoint API /download.
+    # 1) Fallback robusto: URL firmada al endpoint API /download.
     if private_download_url is not None:
         for pid in public_id_variants:
             candidate_base_ids: list[str] = []
@@ -302,9 +286,36 @@ def _stream_pdf_from_cloudinary_public_id(request, public_id: str, *, resource_t
                             type=typ,
                             attachment=bool(as_attachment),
                         )
-                        _add_unique(url_candidates, api_url)
+                        _add_unique(download_candidates, api_url)
                     except Exception:
                         continue
+
+    # 2) URL de delivery (CDN). Probamos firmado y no firmado.
+    for pid in public_id_variants:
+        for rt, typ in combos:
+            for sign in (True, False):
+                try:
+                    cloudinary_kwargs = {
+                        "resource_type": rt,
+                        "type": typ,
+                        "secure": True,
+                        "sign_url": bool(sign),
+                    }
+                    # Si el public_id no incluye .pdf, forzamos format para apuntar al PDF.
+                    if not pid.lower().endswith(".pdf"):
+                        cloudinary_kwargs["format"] = "pdf"
+
+                    delivery_url, _opts = cloudinary_url(pid, **cloudinary_kwargs)
+                    _add_unique(delivery_candidates, delivery_url)
+                except Exception:
+                    continue
+
+    url_candidates: list[str] = []
+    # Prioridad: primero download firmado, luego delivery.
+    for u in download_candidates:
+        _add_unique(url_candidates, u)
+    for u in delivery_candidates:
+        _add_unique(url_candidates, u)
 
     if not url_candidates:
         raise Http404("No hay guía disponible.")
@@ -347,12 +358,11 @@ def _stream_pdf_from_cloudinary_public_id(request, public_id: str, *, resource_t
                 pass
         return None
 
-    # Intento rápido: probamos unas cuantas URLs (las primeras suelen ser las más probables).
-    # En algunos despliegues Cloudinary puede tardar ~sub-segundos en propagar el recurso.
-    # Reintentamos un par de veces para evitar 404 intermitentes justo después de subir.
+    # Intento: probamos varias URLs y reintentamos un par de veces.
+    # Nota: no limitamos demasiado porque queremos alcanzar los download URLs firmados.
     upstream = None
     for attempt in range(3):
-        upstream = _fetch_first_ok(url_candidates, max_urls=10)
+        upstream = _fetch_first_ok(url_candidates, max_urls=40)
         if upstream is not None:
             break
         if attempt < 2:
@@ -2193,6 +2203,8 @@ def cba_guide(request):
                     res = cloudinary_uploader.upload(
                         uploaded,
                         resource_type="raw",
+                        type="upload",
+                        access_mode="public",
                         folder="guides",
                         # Importante: NO incluir extensión en public_id.
                         # Cloudinary usa `format` (o el tipo detectado) para servir la extensión.
