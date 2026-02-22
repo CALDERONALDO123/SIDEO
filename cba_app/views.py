@@ -2147,7 +2147,7 @@ def cba_guide(request):
 
                 # Preferido: subir a Cloudinary como RAW con public_id fijo.
                 if cloudinary_uploader is not None:
-                    new_public_id = _build_guide_cloudinary_public_id(getattr(uploaded, "name", ""))
+                    canonical_public_id = "guides/guia.pdf"
 
                     previous_doc = _get_guide_doc()
                     if previous_doc and previous_doc.cloudinary_public_id:
@@ -2167,13 +2167,14 @@ def cba_guide(request):
                     res = cloudinary_uploader.upload(
                         uploaded,
                         resource_type="raw",
-                        public_id=new_public_id,
+                        folder="guides",
+                        public_id="guia.pdf",
                         overwrite=True,
                         unique_filename=False,
                         invalidate=True,
                     )
 
-                    saved_public_id = (res.get("public_id") or new_public_id or "").strip()
+                    saved_public_id = canonical_public_id
                     saved_resource_type = (res.get("resource_type") or "").strip() or "raw"
                     saved_type = (res.get("type") or "").strip() or "upload"
 
