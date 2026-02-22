@@ -215,32 +215,13 @@
                                 </div>
                             {% else %}
                                 <div id="aiDecisionStatus" class="cba-ai__status text-muted" style="display:none;"></div>
-                                <pre id="aiDecisionOutput" class="cba-ai__output" aria-label="Salida del asistente IA"></pre>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-6">
-                    <div class="card">
-                        <div class="card-header d-flex align-items-center justify-content-between">
-                            <h3 class="card-title m-0">Auditor IA</h3>
-                            {% if not saved_result %}
-                                <button type="button" class="btn btn-outline-secondary btn-sm" id="aiAuditBtn">Detectar inconsistencias</button>
-                            {% endif %}
-                        </div>
-                        <div class="card-body">
-                            {% if saved_result %}
-                                <div class="text-muted text-sm mb-2">Este reporte es histórico (solo lectura).</div>
-                                <div id="aiAuditFrozen" class="cba-ai__output" aria-label="Auditoría IA congelada">
-                                    {% if saved_result.inconsistency_text %}
-                                        <span class="text-muted">Cargando auditoría IA guardada...</span>
-                                    {% else %}
-                                        <span class="text-muted">No se guardó ninguna auditoría IA para este resultado.</span>
-                                    {% endif %}
+                                <textarea id="aiDecisionOutput" class="cba-ai__output" aria-label="Editor del análisis IA" style="width:100%; min-height:220px; white-space:pre-wrap;">{{ prefill_summary_text|default_if_none:'' }}</textarea>
+                                <div class="text-muted text-sm" style="margin-top:8px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                                    <label class="mb-0" style="display:flex; gap:6px; align-items:center;">
+                                        <input type="checkbox" id="aiDecisionUseEdited" checked>
+                                        Guardar texto editado
+                                    </label>
                                 </div>
-                            {% else %}
-                                <div id="aiAuditStatus" class="cba-ai__status text-muted" style="display:none;"></div>
-                                <pre id="aiAuditOutput" class="cba-ai__output" aria-label="Salida del auditor IA"></pre>
                             {% endif %}
                         </div>
                     </div>
@@ -517,26 +498,6 @@
                                         {% endif %}
                                     </div>
                                 </article>
-                                <article class="cba-card__segment">
-                                    <div class="cba-card__segment-head">
-                                        <div>
-                                            <div class="cba-card__title">Auditor IA de inconsistencias</div>
-                                            <p class="cba-card__text text-muted">
-                                                Para revisar nuevamente, ejecuta el flujo CBA hasta el Paso 10 y lanza la auditoría antes de guardar.
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div class="cba-ai__status text-muted" style="margin-top:8px;">
-                                        Este reporte es solo lectura y refleja el último guardado.
-                                    </div>
-                                    <div id="aiAuditFrozen" class="cba-ai__output" aria-label="Auditoría IA congelada">
-                                        {% if saved_result.inconsistency_text %}
-                                            <span class="text-muted">Cargando auditoría IA guardada...</span>
-                                        {% else %}
-                                            <span class="text-muted">No se guardó ninguna auditoría IA para este resultado.</span>
-                                        {% endif %}
-                                    </div>
-                                </article>
                             </div>
                         {% else %}
                             <div class="cba-card cba-card--wide cba-card--split">
@@ -550,20 +511,13 @@
                                         </div>
                                     </div>
                                     <div id="aiDecisionStatus" class="cba-ai__status text-muted" style="margin-top:8px; display:none;"></div>
-                                    <pre id="aiDecisionOutput" class="cba-ai__output" aria-label="Salida del asistente IA"></pre>
-                                </article>
-                                <article class="cba-card__segment">
-                                    <div class="cba-card__segment-head">
-                                        <div>
-                                            <div class="cba-card__title">Auditor IA de inconsistencias</div>
-                                            <p class="cba-card__text text-muted">Revisa duplicados de factores, puntajes incoherentes y costos desproporcionados (sin imponer cambios).</p>
-                                        </div>
-                                        <div class="cba-card__segment-actions">
-                                            <button type="button" class="button button--ghost" id="aiAuditBtn">Detectar inconsistencias</button>
-                                        </div>
+                                    <textarea id="aiDecisionOutput" class="cba-ai__output" aria-label="Editor del análisis IA" style="width:100%; min-height:220px; white-space:pre-wrap;">{{ prefill_summary_text|default_if_none:'' }}</textarea>
+                                    <div class="text-muted" style="margin-top:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; font-size:13px;">
+                                        <label style="display:flex; gap:6px; align-items:center; margin:0;">
+                                            <input type="checkbox" id="aiDecisionUseEdited" checked>
+                                            Guardar texto editado
+                                        </label>
                                     </div>
-                                    <div id="aiAuditStatus" class="cba-ai__status text-muted" style="margin-top:8px; display:none;"></div>
-                                    <pre id="aiAuditOutput" class="cba-ai__output" aria-label="Salida del auditor IA"></pre>
                                 </article>
                             </div>
                         {% endif %}
@@ -646,47 +600,111 @@
             drawCharts();
 
             // IA (solo si existe la sección)
-            if (window.SIDEO && SIDEO.ai) {
-                SIDEO.ai.bindAuditButton({
-                    buttonId: 'aiDecisionBtn',
-                    outputId: 'aiDecisionOutput',
-                    statusId: 'aiDecisionStatus',
-                    url: "{% url 'cba_ai_decision_assistant' %}",
-                    loadingText: 'Generando análisis IA...',
-                    buildPayload: function () {
-                        return { setup: setupJson(), dashboard: dashboardPayload };
-                    }
-                });
+            (function bindDecisionEditor() {
+                const btn = document.getElementById('aiDecisionBtn');
+                const out = document.getElementById('aiDecisionOutput');
+                const status = document.getElementById('aiDecisionStatus');
+                if (!btn || !out) return;
 
-                SIDEO.ai.bindAuditButton({
-                    buttonId: 'aiAuditBtn',
-                    outputId: 'aiAuditOutput',
-                    statusId: 'aiAuditStatus',
-                    url: "{% url 'cba_ai_inconsistency_audit' %}",
-                    loadingText: 'Auditando inconsistencias...',
-                    buildPayload: function () {
-                        return { dashboard: dashboardPayload };
+                btn.addEventListener('click', async function () {
+                    btn.disabled = true;
+                    if (status) {
+                        status.style.display = 'block';
+                        status.textContent = 'Generando análisis IA...';
+                    }
+
+                    try {
+                        const resp = await fetch("{% url 'cba_ai_decision_assistant' %}", {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': (window.SIDEO && SIDEO.utils) ? SIDEO.utils.getCookie('csrftoken') : ''
+                            },
+                            body: JSON.stringify({ setup: setupJson(), dashboard: dashboardPayload })
+                        });
+
+                        const data = await resp.json();
+                        if (!data.ok) throw new Error(data.error || 'No se pudo generar el análisis IA.');
+
+                        // Editor: guardamos texto plano (editable)
+                        if ('value' in out) {
+                            out.value = String(data.content || '');
+                        } else {
+                            out.textContent = String(data.content || '');
+                        }
+                        if (status) status.textContent = 'Listo. Puedes editar antes de guardar.';
+                    } catch (e) {
+                        if (status) status.textContent = (e && e.message) ? e.message : 'Error generando análisis IA.';
+                    } finally {
+                        btn.disabled = false;
                     }
                 });
-            }
+            })();
+
+            (function bindSaveEditedText() {
+                const editor = document.getElementById('aiDecisionOutput');
+                const useEdited = document.getElementById('aiDecisionUseEdited');
+                const status = document.getElementById('aiDecisionStatus');
+                if (!editor) return;
+
+                document.addEventListener('submit', function (evt) {
+                    const form = evt.target;
+                    if (!form || form.tagName !== 'FORM') return;
+
+                    const submitter = evt.submitter;
+                    const submitName = submitter && submitter.getAttribute ? submitter.getAttribute('name') : '';
+                    if (submitName !== 'save_result' && submitName !== 'save_to_powerbi') return;
+
+                    const editedText = ('value' in editor) ? editor.value : (editor.textContent || '');
+                    const editedTextTrim = String(editedText || '').trim();
+
+                    if (!editedTextTrim) {
+                        evt.preventDefault();
+                        if (status) {
+                            status.style.display = 'block';
+                            status.textContent = 'Falta generar el análisis IA (o escribirlo) antes de guardar.';
+                        }
+                        try {
+                            editor.focus();
+                            editor.scrollIntoView({ block: 'center' });
+                        } catch (e) {
+                            // no-op
+                        }
+                        return;
+                    }
+
+                    // Evitar duplicados
+                    const existingEdited = form.querySelector('input[name="edited_summary_text"]');
+                    const existingUse = form.querySelector('input[name="use_edited_summary"]');
+                    if (existingEdited) existingEdited.remove();
+                    if (existingUse) existingUse.remove();
+
+                    const useFlag = (useEdited && useEdited.checked) ? '1' : '0';
+
+                    const h1 = document.createElement('input');
+                    h1.type = 'hidden';
+                    h1.name = 'edited_summary_text';
+                    h1.value = String(editedText || '');
+
+                    const h2 = document.createElement('input');
+                    h2.type = 'hidden';
+                    h2.name = 'use_edited_summary';
+                    h2.value = useFlag;
+
+                    form.appendChild(h1);
+                    form.appendChild(h2);
+                }, true);
+            })();
 
             // Hidratación de outputs congelados (si aplica)
             const decisionNode = document.getElementById('aiDecisionFrozen');
-            const auditNode = document.getElementById('aiAuditFrozen');
-            if ((decisionNode || auditNode) && window.SIDEO && SIDEO.utils) {
+            if (decisionNode && window.SIDEO && SIDEO.utils) {
                 const decisionText = "{{ saved_result.summary_text|default_if_none:''|escapejs }}";
-                const auditText = "{{ saved_result.inconsistency_text|default_if_none:''|escapejs }}";
 
                 if (decisionNode) {
                     decisionNode.innerHTML = decisionText
                         ? SIDEO.utils.renderAIMarkup(decisionText)
                         : '<span class="text-muted">No hay resumen IA guardado para este resultado.</span>';
-                }
-
-                if (auditNode) {
-                    auditNode.innerHTML = auditText
-                        ? SIDEO.utils.renderAIMarkup(auditText)
-                        : '<span class="text-muted">No se guardó ninguna auditoría IA para este resultado.</span>';
                 }
             }
         });

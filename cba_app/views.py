@@ -1951,6 +1951,33 @@ def cba_dashboard(request):
     save_to_powerbi = request.method == "POST" and "save_to_powerbi" in request.POST
 
     if request.method == "POST" and ("save_result" in request.POST or save_to_powerbi):
+        edited_summary_text = request.POST.get("edited_summary_text")
+        edited_summary_text = (edited_summary_text or "").strip()
+
+        if not edited_summary_text:
+            messages.error(
+                request,
+                "Falta generar el análisis IA (o escribirlo) antes de guardar.",
+            )
+            context = {
+                "setup": setup,
+                "best_row": best_row,
+                "best_item": best_item,
+                "second_item": second_item,
+                "delta_ratio": delta_ratio,
+                "delta_pct": delta_pct,
+                "table_rows": dashboard_payload,
+                "dashboard_json": json.dumps(dashboard_payload, ensure_ascii=False),
+                "winner_main_advantage": winner_main_advantage,
+                "winner_disadvantage": winner_disadvantage,
+                "winner_least_attributes": winner_least_attributes,
+                "saved_result": None,
+                "public_view": False,
+                "allow_powerbi_form": False,
+                "prefill_summary_text": "",
+            }
+            return render(request, "cba_app/dashboard.html", context)
+
         winner_name = best_row["alternative"].name if best_row else "Sin ganador"
         winner_total = best_row["total_importance"] if best_row else 0
         winner_cost = best_row["cost"] if best_row else None
@@ -1969,31 +1996,10 @@ def cba_dashboard(request):
 
         origin = request.build_absolute_uri("/")
 
-        try:
-            summary_text = generate_decision_assistant_text(
-                setup=setup,
-                dashboard=dashboard_payload,
-                request_origin=origin,
-            )
-        except Exception as exc:  # noqa: BLE001
-            summary_text = (
-                "No fue posible generar el resumen IA automáticamente al guardar este análisis. "
-                "Vuelve a Paso 10 para reintentar. "
-                f"Detalle: {exc}"
-            )
+        summary_text = edited_summary_text
 
-        try:
-            inconsistency_text, _computed, warning = generate_inconsistency_report_text(
-                dashboard=dashboard_payload,
-                request_origin=origin,
-            )
-            if warning:
-                inconsistency_text = f"{inconsistency_text}\n\n(Advertencia: {warning})"
-        except ValueError as exc:
-            inconsistency_text = (
-                "No se pudo ejecutar la auditoría de inconsistencias al guardar este análisis. "
-                f"Detalle: {exc}"
-            )
+        # Auditor IA de inconsistencias removido del dashboard: no se genera al guardar.
+        inconsistency_text = ""
 
         base_name = "Análisis CBA"
         if setup and setup.get("project_name"):
@@ -2127,6 +2133,7 @@ def cba_dashboard(request):
         "saved_result": None,
         "public_view": False,
         "allow_powerbi_form": False,
+        "prefill_summary_text": "",
     }
     return render(request, "cba_app/dashboard.html", context)
 
