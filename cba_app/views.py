@@ -2174,7 +2174,10 @@ def cba_guide(request):
                         invalidate=True,
                     )
 
-                    saved_public_id = canonical_public_id
+                    saved_public_id = (res.get("public_id") or "").strip()
+                    if not saved_public_id:
+                        messages.error(request, "No se pudo obtener el identificador del PDF en Cloudinary.")
+                        return redirect("cba_guide")
                     saved_resource_type = (res.get("resource_type") or "").strip() or "raw"
                     saved_type = (res.get("type") or "").strip() or "upload"
 
