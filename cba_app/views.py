@@ -24,6 +24,11 @@ except Exception:  # pragma: no cover
     cloudinary_uploader = None  # type: ignore
 
 try:
+    import cloudinary.api as cloudinary_api  # type: ignore
+except Exception:  # pragma: no cover
+    cloudinary_api = None  # type: ignore
+
+try:
     from cloudinary.utils import cloudinary_url  # type: ignore
 except Exception:  # pragma: no cover
     cloudinary_url = None  # type: ignore
@@ -233,43 +238,67 @@ def _stream_pdf_from_cloudinary_public_id(request, public_id: str, *, resource_t
     if not public_id:
         raise Http404("No hay guía disponible.")
 
+    def _add_unique(items: list[str], value: str | None):
+        v = (value or "").strip()
+        if v and v not in items:
+            items.append(v)
+
+    # Cloudinary puede almacenar PDFs como raw o como image, y puede ser upload/private/authenticated.
+    # Para que el visor funcione incluso con recursos "viejos" o con políticas de cuenta,
+    # generamos una lista de candidatos y probamos hasta que uno responda 200/206.
+    public_id_variants: list[str] = []
+    _add_unique(public_id_variants, public_id)
+    if public_id.lower().endswith(".pdf"):
+        _add_unique(public_id_variants, public_id[:-4])
+    else:
+        _add_unique(public_id_variants, f"{public_id}.pdf")
+
+    combos: list[tuple[str, str]] = []
+    combos.append(((resource_type or "raw").strip() or "raw", (delivery_type or "upload").strip() or "upload"))
+    for rt in ("raw", "image"):
+        for typ in ("upload", "authenticated", "private"):
+            pair = (rt, typ)
+            if pair not in combos:
+                combos.append(pair)
+
     url_candidates: list[str] = []
 
-    # 1) URL de delivery (CDN). Si la cuenta exige tokens u otras políticas,
-    # puede responder 401/403 aunque el recurso exista.
-    try:
-        cloudinary_kwargs = {
-            "resource_type": (resource_type or "raw"),
-            "type": (delivery_type or "upload"),
-            "secure": True,
-            "sign_url": True,
-        }
-        # Si el public_id ya incluye .pdf (común en RAW), no forzamos format.
-        if not public_id.lower().endswith(".pdf"):
-            cloudinary_kwargs["format"] = "pdf"
+    # 1) URL de delivery (CDN). Probamos firmado y no firmado.
+    for pid in public_id_variants:
+        for rt, typ in combos:
+            for sign in (True, False):
+                try:
+                    cloudinary_kwargs = {
+                        "resource_type": rt,
+                        "type": typ,
+                        "secure": True,
+                        "sign_url": bool(sign),
+                    }
+                    # Si el public_id no incluye .pdf, forzamos format para apuntar al PDF.
+                    if not pid.lower().endswith(".pdf"):
+                        cloudinary_kwargs["format"] = "pdf"
 
-        delivery_url, _opts = cloudinary_url(public_id, **cloudinary_kwargs)
-        if delivery_url:
-            url_candidates.append(delivery_url)
-    except Exception:
-        pass
+                    delivery_url, _opts = cloudinary_url(pid, **cloudinary_kwargs)
+                    _add_unique(url_candidates, delivery_url)
+                except Exception:
+                    continue
 
     # 2) Fallback robusto: URL firmada al endpoint API /download.
-    # Esto evita bloqueos de delivery/hotlinking porque usa firma server-side.
     if private_download_url is not None:
-        try:
-            base_public_id = public_id[:-4] if public_id.lower().endswith(".pdf") else public_id
-            api_url = private_download_url(
-                base_public_id,
-                "pdf",
-                resource_type=(resource_type or "raw"),
-                type=(delivery_type or "upload"),
-                attachment=bool(as_attachment),
-            )
-            if api_url:
-                url_candidates.append(api_url)
-        except Exception:
-            pass
+        for pid in public_id_variants:
+            base_public_id = pid[:-4] if pid.lower().endswith(".pdf") else pid
+            for rt, typ in combos:
+                try:
+                    api_url = private_download_url(
+                        base_public_id,
+                        "pdf",
+                        resource_type=rt,
+                        type=typ,
+                        attachment=bool(as_attachment),
+                    )
+                    _add_unique(url_candidates, api_url)
+                except Exception:
+                    continue
 
     if not url_candidates:
         raise Http404("No hay guía disponible.")
@@ -292,23 +321,44 @@ def _stream_pdf_from_cloudinary_public_id(request, public_id: str, *, resource_t
     upstream = None
     last_status = None
 
-    for candidate_url in url_candidates:
-        try:
-            upstream = requests.get(candidate_url, stream=True, headers=headers, timeout=(5, 30))
-            last_status = upstream.status_code
-        except Exception:
-            upstream = None
-            last_status = None
-            continue
+    def _fetch_first_ok(candidates: list[str]):
+        nonlocal last_status
+        for candidate_url in candidates:
+            try:
+                resp = requests.get(candidate_url, stream=True, headers=headers, timeout=(5, 30))
+                last_status = resp.status_code
+            except Exception:
+                last_status = None
+                continue
 
-        if upstream.status_code in (200, 206):
-            break
+            if resp.status_code in (200, 206):
+                return resp
 
-        try:
-            upstream.close()
-        except Exception:
-            pass
-        upstream = None
+            try:
+                resp.close()
+            except Exception:
+                pass
+        return None
+
+    upstream = _fetch_first_ok(url_candidates)
+
+    # Último fallback: si todas las URLs construidas fallan, intentamos resolver por API
+    # (por ejemplo, si el recurso existe pero está guardado como image/private/authenticated).
+    if upstream is None and cloudinary_api is not None:
+        resolved_urls: list[str] = []
+        for pid in public_id_variants:
+            base_pid = pid[:-4] if pid.lower().endswith(".pdf") else pid
+            for rt, typ in combos:
+                try:
+                    info = cloudinary_api.resource(base_pid, resource_type=rt, type=typ)
+                except Exception:
+                    continue
+                if isinstance(info, dict):
+                    _add_unique(resolved_urls, info.get("secure_url") or info.get("url"))
+            if resolved_urls:
+                break
+        if resolved_urls:
+            upstream = _fetch_first_ok(resolved_urls)
 
     if upstream is None:
         try:
@@ -2125,12 +2175,14 @@ def cba_guide(request):
                     )
 
                     saved_public_id = (res.get("public_id") or new_public_id or "").strip()
+                    saved_resource_type = (res.get("resource_type") or "").strip() or "raw"
+                    saved_type = (res.get("type") or "").strip() or "upload"
 
                     GuideDocument.objects.create(
                         storage_name="",
                         cloudinary_public_id=saved_public_id,
-                        cloudinary_resource_type=(res.get("resource_type") or "raw"),
-                        cloudinary_type=(res.get("type") or "upload"),
+                        cloudinary_resource_type=saved_resource_type,
+                        cloudinary_type=saved_type,
                     )
                     storage_name = legacy_name
                 else:
