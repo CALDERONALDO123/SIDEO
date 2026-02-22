@@ -117,7 +117,8 @@
                     const y = parseInt(raw, 10);
                     window.sessionStorage.removeItem(KEY);
                     if (Number.isFinite(y) && y >= 0) {
-                        window.scrollTo({ top: y, left: 0, behavior: 'instant' });
+                        // Usar API compatible (evitar ScrollBehavior no estándar)
+                        window.requestAnimationFrame(() => window.scrollTo(0, y));
                     }
                 } catch (e) {
                     // no-op
