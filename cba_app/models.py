@@ -269,6 +269,9 @@ class GuideDocument(models.Model):
     """
 
     storage_name = models.CharField(max_length=512, blank=True, default="")
+    cloudinary_public_id = models.CharField(max_length=512, blank=True, default="")
+    cloudinary_resource_type = models.CharField(max_length=32, blank=True, default="")
+    cloudinary_type = models.CharField(max_length=32, blank=True, default="")
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):

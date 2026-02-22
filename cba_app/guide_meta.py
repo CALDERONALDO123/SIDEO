@@ -45,10 +45,16 @@ def write_guide_meta(meta: dict, storage: Storage | None = None) -> None:
 def compute_and_store_guide_meta(storage: Storage | None = None, *, pdf_storage_name: str | None = None) -> dict | None:
     storage = storage or default_storage
     target = (pdf_storage_name or GUIDE_PDF_STORAGE_NAME).strip() or GUIDE_PDF_STORAGE_NAME
-    if not storage.exists(target):
+    try:
+        if not storage.exists(target):
+            return None
+    except Exception:
         return None
 
-    sha256 = _sha256_storage(storage, target)
+    try:
+        sha256 = _sha256_storage(storage, target)
+    except Exception:
+        return None
     meta = {
         "sha256": sha256,
         "version": sha256[:16],
@@ -62,7 +68,10 @@ def compute_and_store_guide_meta(storage: Storage | None = None, *, pdf_storage_
 def ensure_guide_meta(storage: Storage | None = None, *, pdf_storage_name: str | None = None) -> dict | None:
     storage = storage or default_storage
     target = (pdf_storage_name or GUIDE_PDF_STORAGE_NAME).strip() or GUIDE_PDF_STORAGE_NAME
-    if not storage.exists(target):
+    try:
+        if not storage.exists(target):
+            return None
+    except Exception:
         return None
 
     meta = read_guide_meta(storage=storage)

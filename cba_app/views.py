@@ -22,6 +22,11 @@ try:
 except Exception:  # pragma: no cover
     cloudinary_uploader = None  # type: ignore
 
+try:
+    from cloudinary.utils import cloudinary_url  # type: ignore
+except Exception:  # pragma: no cover
+    cloudinary_url = None  # type: ignore
+
 from urllib.parse import urlparse, parse_qsl, urlencode as urlencode_qs, urlunparse
 
 import secrets
@@ -172,6 +177,63 @@ def _get_guide_storage_name() -> str | None:
         doc = None
     name = (getattr(doc, "storage_name", "") or "").strip() if doc else ""
     return name or None
+
+
+def _get_guide_doc() -> GuideDocument | None:
+    try:
+        return GuideDocument.objects.order_by("-updated_at").first()
+    except Exception:
+        return None
+
+
+def _stream_pdf_from_cloudinary_public_id(request, public_id: str, *, resource_type: str, delivery_type: str, filename: str, as_attachment: bool):
+    if cloudinary_url is None:
+        raise Http404("No hay guía disponible.")
+
+    url, _opts = cloudinary_url(
+        public_id,
+        resource_type=(resource_type or "raw"),
+        type=(delivery_type or "upload"),
+        secure=True,
+        sign_url=True,
+    )
+
+    headers = {}
+    range_header = request.headers.get("Range")
+    if range_header:
+        headers["Range"] = range_header
+
+    try:
+        upstream = requests.get(url, stream=True, headers=headers, timeout=(5, 30))
+    except Exception:
+        raise Http404("No hay guía disponible.")
+
+    if upstream.status_code not in (200, 206):
+        try:
+            upstream.close()
+        except Exception:
+            pass
+        raise Http404("No hay guía disponible.")
+
+    def body_iter():
+        try:
+            for chunk in upstream.iter_content(chunk_size=1024 * 512):
+                if chunk:
+                    yield chunk
+        finally:
+            try:
+                upstream.close()
+            except Exception:
+                pass
+
+    resp = StreamingHttpResponse(body_iter(), content_type="application/pdf", status=upstream.status_code)
+    disp = "attachment" if as_attachment else "inline"
+    resp["Content-Disposition"] = f'{disp}; filename="{filename}"'
+    for h in ("Accept-Ranges", "Content-Range", "Content-Length"):
+        v = upstream.headers.get(h)
+        if v:
+            resp[h] = v
+    return resp
 
 
 def _powerbi_token_ok(request) -> bool:
@@ -1878,19 +1940,24 @@ def cba_guide(request):
     """Página con una guía básica de uso de CBA en el sistema."""
 
     legacy_name = "guides/guia.pdf"
-    storage_name = _get_guide_storage_name() or legacy_name
+    doc = _get_guide_doc()
+    storage_name = (doc.storage_name or "").strip() if doc else ""
+    storage_name = storage_name or legacy_name
 
     pdf_url = None
     # Si tenemos un storage_name registrado, asumimos que existe y dejamos que
     # los endpoints /guia/pdf manejen errores de lectura/streaming.
-    if _get_guide_storage_name() or _safe_storage_exists(storage_name):
+    if (doc and (doc.cloudinary_public_id or doc.storage_name)) or _safe_storage_exists(storage_name):
         # En producción (Cloudinary u otro storage remoto) MEDIA_URL puede no servir el archivo.
         # PDF.js necesita una URL same-origin que entregue bytes del PDF.
         pdf_url = reverse("cba_guide_pdf")
     download_url = reverse("cba_guide_download") if pdf_url else None
     pdf_version = None
     if pdf_url:
-        meta = ensure_guide_meta(pdf_storage_name=storage_name)
+        try:
+            meta = ensure_guide_meta(pdf_storage_name=storage_name)
+        except Exception:
+            meta = None
         if isinstance(meta, dict):
             pdf_version = meta.get("version")
 
@@ -1922,19 +1989,49 @@ def cba_guide(request):
         form = GuidePdfUploadForm(request.POST, request.FILES)
         if form.is_valid():
             try:
-                # Borrar anterior si lo conocemos (Cloudinary puede renombrar).
-                previous = _get_guide_storage_name()
-                if previous:
-                    try:
-                        default_storage.delete(previous)
-                    except Exception:
-                        pass
+                uploaded = form.cleaned_data["pdf_file"]
 
-                saved_name = default_storage.save(legacy_name, form.cleaned_data["pdf_file"])
+                # Preferido: subir a Cloudinary como RAW con public_id fijo.
+                if cloudinary_uploader is not None:
+                    previous_doc = _get_guide_doc()
+                    if previous_doc and previous_doc.cloudinary_public_id:
+                        try:
+                            cloudinary_uploader.destroy(
+                                previous_doc.cloudinary_public_id,
+                                invalidate=True,
+                                resource_type=(previous_doc.cloudinary_resource_type or "raw"),
+                                type=(previous_doc.cloudinary_type or "upload"),
+                            )
+                        except Exception:
+                            pass
 
-                # Persistir el nombre real.
-                GuideDocument.objects.create(storage_name=saved_name)
-                storage_name = saved_name
+                    res = cloudinary_uploader.upload(
+                        uploaded,
+                        resource_type="raw",
+                        public_id="guides/guia",
+                        overwrite=True,
+                        unique_filename=False,
+                        invalidate=True,
+                    )
+
+                    GuideDocument.objects.create(
+                        storage_name="",
+                        cloudinary_public_id=(res.get("public_id") or "guides/guia"),
+                        cloudinary_resource_type=(res.get("resource_type") or "raw"),
+                        cloudinary_type=(res.get("type") or "upload"),
+                    )
+                    storage_name = legacy_name
+                else:
+                    # Fallback: usar default_storage (puede renombrar).
+                    previous = _get_guide_storage_name()
+                    if previous:
+                        try:
+                            default_storage.delete(previous)
+                        except Exception:
+                            pass
+                    saved_name = default_storage.save(legacy_name, uploaded)
+                    GuideDocument.objects.create(storage_name=saved_name)
+                    storage_name = saved_name
             except Exception:
                 messages.error(request, "No se pudo guardar la guía (storage no disponible).")
                 return redirect("cba_guide")
@@ -1973,6 +2070,17 @@ def cba_guide_pdf(request):
 
     Usar esta ruta evita problemas de CORS y de MEDIA_URL en storages remotos.
     """
+
+    doc = _get_guide_doc()
+    if doc and doc.cloudinary_public_id:
+        return _stream_pdf_from_cloudinary_public_id(
+            request,
+            doc.cloudinary_public_id,
+            resource_type=(doc.cloudinary_resource_type or "raw"),
+            delivery_type=(doc.cloudinary_type or "upload"),
+            filename="guia.pdf",
+            as_attachment=False,
+        )
 
     storage_name = _get_guide_storage_name() or "guides/guia.pdf"
     if not _get_guide_storage_name() and not _safe_storage_exists(storage_name):
@@ -2063,7 +2171,10 @@ def cba_guide_shared(request, token: str):
     protected_pdf_url = reverse("cba_guide_shared_pdf", args=[link.token])
     download_url = reverse("cba_guide_shared_download", args=[link.token])
     pdf_version = None
-    meta = ensure_guide_meta(pdf_storage_name=storage_name)
+    try:
+        meta = ensure_guide_meta(pdf_storage_name=storage_name)
+    except Exception:
+        meta = None
     if isinstance(meta, dict):
         pdf_version = meta.get("version")
 
@@ -2086,6 +2197,17 @@ def cba_guide_shared_pdf(request, token: str):
     if not _shared_guide_has_access(request, link):
         raise Http404("No autorizado")
 
+    doc = _get_guide_doc()
+    if doc and doc.cloudinary_public_id:
+        return _stream_pdf_from_cloudinary_public_id(
+            request,
+            doc.cloudinary_public_id,
+            resource_type=(doc.cloudinary_resource_type or "raw"),
+            delivery_type=(doc.cloudinary_type or "upload"),
+            filename="guia.pdf",
+            as_attachment=False,
+        )
+
     storage_name = _get_guide_storage_name() or "guides/guia.pdf"
     if not _get_guide_storage_name() and not _safe_storage_exists(storage_name):
         raise Http404("No hay guía disponible.")
@@ -2099,18 +2221,40 @@ def cba_guide_shared_download(request, token: str):
     if not _shared_guide_has_access(request, link):
         raise Http404("No autorizado")
 
+    safe_title = slugify(link.title.strip()) if (link.title or "").strip() else "guia"
+    filename = f"{safe_title}.pdf"
+
+    doc = _get_guide_doc()
+    if doc and doc.cloudinary_public_id:
+        return _stream_pdf_from_cloudinary_public_id(
+            request,
+            doc.cloudinary_public_id,
+            resource_type=(doc.cloudinary_resource_type or "raw"),
+            delivery_type=(doc.cloudinary_type or "upload"),
+            filename=filename,
+            as_attachment=True,
+        )
+
     storage_name = _get_guide_storage_name() or "guides/guia.pdf"
     if not _get_guide_storage_name() and not _safe_storage_exists(storage_name):
         raise Http404("No hay guía disponible.")
-
-    safe_title = slugify(link.title.strip()) if (link.title or "").strip() else "guia"
-    filename = f"{safe_title}.pdf"
 
     return _stream_pdf_from_storage(request, storage_name, as_attachment=True, filename=filename)
 
 
 @login_required
 def cba_guide_download(request):
+    doc = _get_guide_doc()
+    if doc and doc.cloudinary_public_id:
+        return _stream_pdf_from_cloudinary_public_id(
+            request,
+            doc.cloudinary_public_id,
+            resource_type=(doc.cloudinary_resource_type or "raw"),
+            delivery_type=(doc.cloudinary_type or "upload"),
+            filename="guia.pdf",
+            as_attachment=True,
+        )
+
     storage_name = _get_guide_storage_name() or "guides/guia.pdf"
     if not _get_guide_storage_name() and not _safe_storage_exists(storage_name):
         raise Http404("No hay guía disponible.")
