@@ -1532,6 +1532,7 @@ def cba_saved_results(request):
         {
             "results": results,
             "powerbi_dashboard_url": _get_powerbi_dashboard_url(),
+            "powerbi_edit": (request.GET.get("edit_powerbi") == "1"),
         },
     )
 

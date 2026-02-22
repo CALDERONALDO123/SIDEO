@@ -18,29 +18,50 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <form method="post" action="{% url 'cba_saved_results' %}" class="mb-3">
-                        {% csrf_token %}
-                        <label for="id_powerbi_dashboard_url" class="text-muted text-sm mb-1">Link global de Power BI</label>
-                        <div class="input-group">
-                            <input
-                                id="id_powerbi_dashboard_url"
-                                name="powerbi_dashboard_url"
-                                type="url"
-                                class="form-control"
-                                placeholder="Pega aquí el link único de Power BI"
-                                value="{{ powerbi_dashboard_url|default:'' }}"
-                            />
-                            <div class="input-group-append">
-                                <button type="submit" class="btn btn-outline-secondary">Agregar link</button>
+                    <div class="mb-3">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between" style="gap: 10px;">
+                            <div>
+                                <div class="text-muted text-sm">Power BI</div>
+                                {% if powerbi_dashboard_url %}
+                                    <div class="font-weight-bold">Link global configurado</div>
+                                {% else %}
+                                    <div class="font-weight-bold">Sin link configurado</div>
+                                {% endif %}
                             </div>
-                            {% if powerbi_dashboard_url %}
-                                <div class="input-group-append">
-                                    <a class="btn btn-outline-primary" href="{{ powerbi_dashboard_url }}" target="_blank" rel="noopener">Ver agregado</a>
-                                </div>
-                            {% endif %}
+                            <div class="d-flex flex-wrap" style="gap: 6px;">
+                                {% if powerbi_dashboard_url %}
+                                    <a class="btn btn-outline-primary" href="{{ powerbi_dashboard_url }}" target="_blank" rel="noopener">Ir a Power BI</a>
+                                    <a class="btn btn-outline-secondary" href="{% url 'cba_saved_results' %}?edit_powerbi=1">Editar link</a>
+                                {% else %}
+                                    <a class="btn btn-outline-secondary" href="{% url 'cba_saved_results' %}?edit_powerbi=1">Agregar link</a>
+                                {% endif %}
+                            </div>
                         </div>
-                        <div class="text-muted text-sm mt-1">Se usa para todos los resultados (se agrega <code>result_id</code> automáticamente al abrir Power BI).</div>
-                    </form>
+
+                        {% if powerbi_edit %}
+                            <form method="post" action="{% url 'cba_saved_results' %}" class="mt-2">
+                                {% csrf_token %}
+                                <label for="id_powerbi_dashboard_url" class="text-muted text-sm mb-1">Link global de Power BI</label>
+                                <div class="input-group">
+                                    <input
+                                        id="id_powerbi_dashboard_url"
+                                        name="powerbi_dashboard_url"
+                                        type="url"
+                                        class="form-control"
+                                        placeholder="Pega aquí el link único de Power BI"
+                                        value=""
+                                    />
+                                    <div class="input-group-append">
+                                        <button type="submit" class="btn btn-outline-success">Guardar</button>
+                                    </div>
+                                    <div class="input-group-append">
+                                        <a class="btn btn-outline-dark" href="{% url 'cba_saved_results' %}">Cancelar</a>
+                                    </div>
+                                </div>
+                                <div class="text-muted text-sm mt-1">Se usa para todos los resultados (se agrega <code>result_id</code> automáticamente al abrir Power BI).</div>
+                            </form>
+                        {% endif %}
+                    </div>
 
                     <div class="table-responsive">
                         <table id="savedResultsTable" class="table table-bordered table-striped table-sm dt-responsive nowrap" style="width:100%">
@@ -75,7 +96,9 @@
                                         <td data-order="{% if r.winner_ratio is not None %}{{ r.winner_ratio }}{% endif %}">{% if r.winner_ratio is not None %}S/ {{ r.winner_ratio|floatformat:4 }}{% else %}-{% endif %}</td>
                                         <td class="text-center" style="white-space:nowrap;">
                                             <a class="btn btn-outline-primary btn-sm" href="{% url 'cba_saved_result_detail' r.id %}" title="Ver">Ver</a>
-                                            <a class="btn btn-outline-success btn-sm" href="{% url 'cba_saved_result_powerbi' r.id %}" title="Power BI">Power BI</a>
+                                            {% if powerbi_dashboard_url %}
+                                                <a class="btn btn-outline-success btn-sm" href="{% url 'cba_saved_result_powerbi' r.id %}" title="Power BI">Power BI</a>
+                                            {% endif %}
                                             <form method="post" action="{% url 'cba_saved_result_delete' r.id %}" style="display:inline; margin:0;">
                                                 {% csrf_token %}
                                                 <button type="submit" class="btn btn-outline-danger btn-sm" title="Eliminar">Eliminar</button>
