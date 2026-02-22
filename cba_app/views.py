@@ -2146,12 +2146,30 @@ def cba_guide(request):
     download_url = reverse("cba_guide_download") if pdf_url else None
     pdf_version = None
     if pdf_url:
-        try:
-            meta = ensure_guide_meta(pdf_storage_name=storage_name)
-        except Exception:
-            meta = None
-        if isinstance(meta, dict):
-            pdf_version = meta.get("version")
+        # Si el PDF vive en Cloudinary (subido vía API uploader), default_storage no conoce el archivo,
+        # así que `guide_meta` no aplica. Usamos updated_at como versión estable para activar el cache
+        # del visor (IndexedDB) y evitar re-render en cada recarga.
+        if doc and (doc.cloudinary_public_id or doc.cloudinary_type or doc.cloudinary_resource_type):
+            try:
+                if doc.updated_at:
+                    pdf_version = str(int(doc.updated_at.timestamp()))
+            except Exception:
+                pdf_version = None
+
+        if not pdf_version:
+            try:
+                meta = ensure_guide_meta(pdf_storage_name=storage_name)
+            except Exception:
+                meta = None
+            if isinstance(meta, dict):
+                pdf_version = meta.get("version")
+
+        # Añadir versión en querystring ayuda a coherencia de caché en el navegador.
+        if pdf_version:
+            try:
+                pdf_url = pdf_url + "?" + urlencode({"v": pdf_version})
+            except Exception:
+                pass
 
     page_raw = request.GET.get("page", "1")
     try:
@@ -2437,12 +2455,27 @@ def cba_guide_shared(request, token: str):
     protected_pdf_url = reverse("cba_guide_shared_pdf", args=[link.token])
     download_url = reverse("cba_guide_shared_download", args=[link.token])
     pdf_version = None
-    try:
-        meta = ensure_guide_meta(pdf_storage_name=storage_name)
-    except Exception:
-        meta = None
-    if isinstance(meta, dict):
-        pdf_version = meta.get("version")
+    doc = _get_guide_doc()
+    if doc and (doc.cloudinary_public_id or doc.cloudinary_type or doc.cloudinary_resource_type):
+        try:
+            if doc.updated_at:
+                pdf_version = str(int(doc.updated_at.timestamp()))
+        except Exception:
+            pdf_version = None
+
+    if not pdf_version:
+        try:
+            meta = ensure_guide_meta(pdf_storage_name=storage_name)
+        except Exception:
+            meta = None
+        if isinstance(meta, dict):
+            pdf_version = meta.get("version")
+
+    if pdf_version:
+        try:
+            protected_pdf_url = protected_pdf_url + "?" + urlencode({"v": pdf_version})
+        except Exception:
+            pass
 
     return render(
         request,
