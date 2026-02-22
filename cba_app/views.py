@@ -52,7 +52,10 @@ def healthz(request):
 
 def _normalize_cloudinary_public_id(value: str) -> str:
     public_id = (value or "").strip()
-    return public_id
+        import re
+        public_id = (value or "").strip()
+        # Elimina .pdf al final, si existe (case-insensitive)
+        return re.sub(r"\.pdf$", "", public_id, flags=re.IGNORECASE)
 
 
 def _build_guide_cloudinary_public_id(uploaded_filename: str) -> str:
@@ -2271,14 +2274,15 @@ def cba_guide_pdf(request):
 
     doc = _get_guide_doc()
     if doc and doc.cloudinary_public_id:
-        return _stream_pdf_from_cloudinary_public_id(
-            request,
-            doc.cloudinary_public_id,
-            resource_type=(doc.cloudinary_resource_type or "raw"),
-            delivery_type=(doc.cloudinary_type or "upload"),
-            filename="guia.pdf",
-            as_attachment=False,
-        )
+            normalized_id = _normalize_cloudinary_public_id(doc.cloudinary_public_id)
+            return _stream_pdf_from_cloudinary_public_id(
+                request,
+                normalized_id,
+                resource_type=(doc.cloudinary_resource_type or "raw"),
+                delivery_type=(doc.cloudinary_type or "upload"),
+                filename="guia.pdf",
+                as_attachment=False,
+            )
 
     storage_name = _get_guide_storage_name() or "guides/guia.pdf"
     if not _get_guide_storage_name() and not _safe_storage_exists(storage_name):
