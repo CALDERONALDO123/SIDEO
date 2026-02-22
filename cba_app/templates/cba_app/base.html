@@ -93,6 +93,20 @@
         <main class="sideo-main">
     {% endif %}
 
+        {% if messages %}
+            <div class="notices" aria-label="Mensajes">
+                {% for message in messages %}
+                    {% if 'success' in message.tags %}
+                        <div class="notice notice--success">{{ message }}</div>
+                    {% elif 'error' in message.tags or 'warning' in message.tags %}
+                        <div class="notice notice--error">{{ message }}</div>
+                    {% else %}
+                        <div class="notice notice--info">{{ message }}</div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% endif %}
+
         {% block content %}{% endblock %}
 
     {% if user.is_authenticated and url_name and url_name != 'cba_login' and url_name != 'cba_signup' and url_name != 'powerbi_feed_results' and url_name != 'powerbi_feed_dashboard_rows' and url_name != 'cba_saved_result_public' and url_name != 'cba_saved_result_public_json' and url_name != 'cba_saved_result_powerbi' and url_name != 'cba_saved_result_powerbi_config' and url_name != 'cba_guide_shared' and url_name != 'cba_guide_shared_pdf' and url_name != 'cba_guide_shared_download' %}

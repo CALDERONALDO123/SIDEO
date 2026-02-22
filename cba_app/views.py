@@ -2367,6 +2367,17 @@ def cba_guide(request):
             try:
                 uploaded = form.cleaned_data["pdf_file"]
 
+                uploaded_size = None
+                try:
+                    uploaded_size = int(getattr(uploaded, "size", None))
+                except Exception:
+                    uploaded_size = None
+
+                def _fmt_mb(n: int | None) -> str:
+                    if not n:
+                        return ""
+                    return f"{(n / (1024 * 1024)):.1f} MB"
+
                 # Preferido: subir a Cloudinary como RAW con public_id fijo.
                 if cloudinary_uploader is not None:
                     previous_doc = _get_guide_doc()
@@ -2384,19 +2395,46 @@ def cba_guide(request):
                     # Subimos como `raw` para que quede como archivo/documento PDF.
                     # Nota: en Cloudinary Media Library, los `raw` suelen verse como ícono de documento.
                     # El visor en la web funciona igual porque hacemos proxy de bytes.
-                    res = cloudinary_uploader.upload(
-                        uploaded,
-                        resource_type="raw",
-                        type="upload",
-                        access_mode="public",
-                        folder="guides",
+                    upload_opts = {
+                        "resource_type": "raw",
+                        "type": "upload",
+                        "access_mode": "public",
+                        "folder": "guides",
                         # Importante: NO incluir extensión en public_id.
                         # Cloudinary usa `format` (o el tipo detectado) para servir la extensión.
-                        public_id="guia",
-                        overwrite=True,
-                        unique_filename=False,
-                        invalidate=True,
-                    )
+                        "public_id": "guia",
+                        "overwrite": True,
+                        "unique_filename": False,
+                        "invalidate": True,
+                    }
+
+                    # Para PDFs algo grandes, Cloudinary puede requerir/chancear mejor con subida por chunks.
+                    threshold_mb = int(os.environ.get("GUIDE_PDF_LARGE_THRESHOLD_MB", "10"))
+                    threshold_bytes = threshold_mb * 1024 * 1024
+                    upload_large = getattr(cloudinary_uploader, "upload_large", None)
+
+                    try:
+                        if uploaded_size and uploaded_size >= threshold_bytes and callable(upload_large):
+                            # 6MB es un tamaño de chunk conservador.
+                            res = upload_large(uploaded, chunk_size=6 * 1024 * 1024, **upload_opts)
+                        else:
+                            res = cloudinary_uploader.upload(uploaded, **upload_opts)
+                    except Exception as exc:
+                        msg = str(exc) or ""
+                        lowered = msg.lower()
+                        size_hint = _fmt_mb(uploaded_size)
+                        if "file size" in lowered and ("too large" in lowered or "exceed" in lowered):
+                            messages.error(
+                                request,
+                                f"No se pudo subir el PDF: el archivo{' (' + size_hint + ')' if size_hint else ''} supera el límite del almacenamiento."
+                            )
+                        else:
+                            messages.error(
+                                request,
+                                f"No se pudo subir el PDF{' (' + size_hint + ')' if size_hint else ''}. Intenta de nuevo o reduce el tamaño."
+                            )
+                        logger.exception("Error subiendo guía a Cloudinary")
+                        return redirect("cba_guide")
 
                     # Warm-up: Cloudinary/CDN puede devolver 404 por unos segundos tras overwrite/invalidate.
                     # Hacemos una lectura mínima para mejorar la consistencia antes del redirect.
@@ -2490,7 +2528,12 @@ def cba_guide(request):
                 # Si falla el hash/metadata, el visor sigue funcionando sin cache persistente
                 pass
             return redirect(reverse("cba_guide") + "?" + urlencode({"uploaded": "1"}))
-        error_message = "Revisa el archivo e inténtalo de nuevo."
+        try:
+            # Mostrar el primer error real del formulario.
+            first_error_list = next(iter(form.errors.values()))
+            error_message = first_error_list[0] if first_error_list else "Revisa el archivo e inténtalo de nuevo."
+        except Exception:
+            error_message = "Revisa el archivo e inténtalo de nuevo."
     else:
         form = GuidePdfUploadForm()
 

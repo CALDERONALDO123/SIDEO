@@ -400,6 +400,17 @@ if not DEBUG:
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# Límites de subida
+# Algunos despliegues/proxies pueden manejar tamaños mayores, pero Django por defecto puede ser
+# conservador en cuanto a cuánto cuerpo de request mantiene en memoria.
+# Ajustable por variables de entorno para no hardcodear un único valor.
+DATA_UPLOAD_MAX_MEMORY_SIZE = int(
+    os.environ.get("DJANGO_DATA_UPLOAD_MAX_MEMORY_SIZE", str(25 * 1024 * 1024))
+)
+FILE_UPLOAD_MAX_MEMORY_SIZE = int(
+    os.environ.get("DJANGO_FILE_UPLOAD_MAX_MEMORY_SIZE", str(5 * 1024 * 1024))
+)
+
 if os.environ.get("CLOUDINARY_URL"):
     # Cloudinary obligatorio: usar storage remoto para media.
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
