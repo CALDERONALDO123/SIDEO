@@ -4299,17 +4299,20 @@ table th {
 }
 
 .attr-bueno {
-    background: #eab308;
+    /* Amarillo claro/brillante */
+    background: #ffeb3b;
     color: #111827;
 }
 
 .attr-regular {
-    background: #f97316;
+    /* Rojo claro/brillante */
+    background: #ff6b6b;
     color: #111827;
 }
 
 .attr-cumple {
-    background: #9ca3af;
+    /* Gris */
+    background: #d1d5db;
     color: #111827;
 }
 

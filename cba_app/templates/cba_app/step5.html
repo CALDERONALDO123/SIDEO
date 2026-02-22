@@ -9,8 +9,8 @@
                 <div class="card-header">
                     <div class="d-flex flex-column">
                         <div class="text-muted text-uppercase text-sm">CBA · Paso 5</div>
-                        <h3 class="m-0">Atributo menos preferido</h3>
-                        <div class="text-muted text-sm mt-2">Se calcula automáticamente desde el Paso 4: por factor se marca el valor menos preferido.</div>
+                        <h3 class="m-0">Atributos por factor</h3>
+                        <div class="text-muted text-sm mt-2">Se muestra el atributo seleccionado en el Paso 4 para cada factor y postor.</div>
                     </div>
                     <div class="mt-2">
                         {% include "cba_app/_step_progress.html" with current=5 total=10 percent=50 %}
@@ -42,7 +42,6 @@
                     <td class="attr-cell attr-cell--least {% if value %}{% with val=value|lower %}{% if val == 'excelente' %}attr-excelente{% elif val == 'bueno' %}attr-bueno{% elif val == 'regular' %}attr-regular{% elif val == 'cumple' %}attr-cumple{% elif val == 'no cumple' %}attr-no-cumple{% endif %}{% endwith %}{% endif %}">
                         {% if value %}
                             <span class="least-pill">{{ value }}</span>
-                            <small class="least-note">Menos preferido</small>
                         {% else %}
                             <span class="least-empty">-</span>
                         {% endif %}
