@@ -159,6 +159,36 @@
     home.init = function init() {
         home.initAboutToggle();
         home.initCharts();
+
+        (function initNotebookLast() {
+            const winnerNode = document.getElementById('homeNotebookWinner');
+            const textNode = document.getElementById('homeNotebookText');
+            if (!winnerNode || !textNode) return;
+
+            let winner = '';
+            let text = '';
+            try {
+                winner = String(global.localStorage.getItem('cba.notebook.last.winner') || '').trim();
+                text = String(global.localStorage.getItem('cba.notebook.last.text') || '');
+            } catch (e) {
+                winner = '';
+                text = '';
+            }
+
+            winnerNode.textContent = winner || '-';
+
+            const trimmed = String(text || '').trim();
+            if (!trimmed) {
+                textNode.innerHTML = '<span class="text-muted">Aún no hay texto guardado en la libreta.</span>';
+                return;
+            }
+
+            if (global.SIDEO && SIDEO.utils && typeof SIDEO.utils.renderAIMarkup === 'function') {
+                textNode.innerHTML = SIDEO.utils.renderAIMarkup(trimmed);
+            } else {
+                textNode.textContent = trimmed;
+            }
+        })();
     };
 
     document.addEventListener('DOMContentLoaded', home.init);

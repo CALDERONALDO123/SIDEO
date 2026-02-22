@@ -21,6 +21,15 @@
                 <div class="col-sm-5 text-sm-right mt-3 mt-sm-0">
                     <a class="btn btn-info" href="{% url 'cba_step1' %}">Nuevo análisis</a>
                     <a class="btn btn-outline-secondary" href="{% url 'cba_saved_results' %}">Ver guardados</a>
+                    {% if powerbi_dashboard_url %}
+                        {% if latest_result %}
+                            <a class="btn btn-outline-secondary" href="{% url 'cba_saved_result_powerbi' latest_result.id %}" target="_blank" rel="noopener">Ir a Power BI</a>
+                        {% else %}
+                            <a class="btn btn-outline-secondary" href="{{ powerbi_dashboard_url }}" target="_blank" rel="noopener">Ir a Power BI</a>
+                        {% endif %}
+                    {% else %}
+                        <a class="btn btn-outline-secondary" href="{% url 'cba_saved_results' %}?edit_powerbi=1">Configurar Power BI</a>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -38,6 +47,20 @@
 
                     <div class="card mt-3" style="border-radius: 12px;">
                         <div class="card-header">
+                            <h3 class="card-title">Libreta (último análisis)</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="text-muted text-sm">Ganador</div>
+                            <div id="homeNotebookWinner" class="font-weight-bold">-</div>
+                            <div class="text-muted text-sm mt-3">Análisis</div>
+                            <div id="homeNotebookText" class="cba-ai__output" aria-label="Último análisis guardado en libreta">
+                                <span class="text-muted">Aún no hay texto guardado en la libreta.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mt-3" style="border-radius: 12px;">
+                        <div class="card-header">
                             <h3 class="card-title">Actividad reciente</h3>
                         </div>
                         <div class="card-body">
@@ -48,7 +71,6 @@
                                     <li>Aún no hay resultados guardados.</li>
                                 {% endif %}
                                 <li>{% if total_results|default:0 > 0 %}Histórico disponible para consulta y auditoría.{% else %}Aún no se ha registrado historial de análisis.{% endif %}</li>
-                                <li>{% if guide_pdf_available %}Guía PDF disponible para el equipo.{% else %}Guía PDF pendiente de carga.{% endif %}</li>
                             </ul>
                         </div>
                     </div>

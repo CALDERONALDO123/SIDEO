@@ -200,7 +200,12 @@
                         <div class="card-header d-flex align-items-center justify-content-between">
                             <h3 class="card-title m-0">Resumen IA</h3>
                             {% if not saved_result %}
-                                <button type="button" class="btn btn-outline-secondary btn-sm" id="aiDecisionBtn">Generar análisis IA</button>
+                                <div class="d-flex flex-wrap" style="gap:8px;">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="aiDecisionBtn">Generar análisis IA</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="aiDecisionEditBtn" title="Editar análisis" aria-label="Editar análisis">
+                                        <i class="fas fa-pen mr-1"></i> Editar
+                                    </button>
+                                </div>
                             {% endif %}
                         </div>
                         <div class="card-body">
@@ -215,11 +220,12 @@
                                 </div>
                             {% else %}
                                 <div id="aiDecisionStatus" class="cba-ai__status text-muted" style="display:none;"></div>
-                                <textarea id="aiDecisionOutput" class="cba-ai__output" aria-label="Editor del análisis IA" style="width:100%; min-height:220px; white-space:pre-wrap;">{{ prefill_summary_text|default_if_none:'' }}</textarea>
+                                <div id="aiDecisionPreview" class="cba-ai__output" aria-label="Vista previa del análisis IA"></div>
+                                <textarea id="aiDecisionOutput" class="cba-ai__output" aria-label="Editor del análisis IA" style="display:none; width:100%; min-height:220px; white-space:pre-wrap;">{{ prefill_summary_text|default_if_none:'' }}</textarea>
                                 <div class="text-muted text-sm" style="margin-top:8px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
                                     <label class="mb-0" style="display:flex; gap:6px; align-items:center;">
-                                        <input type="checkbox" id="aiDecisionUseEdited" checked>
-                                        Guardar texto editado
+                                        <input type="checkbox" id="aiDecisionReady">
+                                        Análisis listo para guardar
                                     </label>
                                 </div>
                             {% endif %}
@@ -508,14 +514,16 @@
                                         </div>
                                         <div class="cba-card__segment-actions">
                                             <button type="button" class="button button--ghost" id="aiDecisionBtn">Generar análisis IA</button>
+                                            <button type="button" class="button button--ghost" id="aiDecisionEditBtn" aria-label="Editar análisis">Editar</button>
                                         </div>
                                     </div>
                                     <div id="aiDecisionStatus" class="cba-ai__status text-muted" style="margin-top:8px; display:none;"></div>
-                                    <textarea id="aiDecisionOutput" class="cba-ai__output" aria-label="Editor del análisis IA" style="width:100%; min-height:220px; white-space:pre-wrap;">{{ prefill_summary_text|default_if_none:'' }}</textarea>
+                                    <div id="aiDecisionPreview" class="cba-ai__output" aria-label="Vista previa del análisis IA"></div>
+                                    <textarea id="aiDecisionOutput" class="cba-ai__output" aria-label="Editor del análisis IA" style="display:none; width:100%; min-height:220px; white-space:pre-wrap;">{{ prefill_summary_text|default_if_none:'' }}</textarea>
                                     <div class="text-muted" style="margin-top:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; font-size:13px;">
                                         <label style="display:flex; gap:6px; align-items:center; margin:0;">
-                                            <input type="checkbox" id="aiDecisionUseEdited" checked>
-                                            Guardar texto editado
+                                            <input type="checkbox" id="aiDecisionReady">
+                                            Análisis listo para guardar
                                         </label>
                                     </div>
                                 </article>
@@ -570,12 +578,31 @@
 {% endif %}
 
 {{ setup|json_script:"cbaSetupJson" }}
+{% if best_row %}
+    {{ best_row.alternative.name|json_script:"cbaWinnerNameJson" }}
+{% else %}
+    <script id="cbaWinnerNameJson" type="application/json">""</script>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
 <script>
     (function () {
         const dashboardPayload = JSON.parse("{{ dashboard_json|escapejs }}");
+
+        function _storageKey(suffix) {
+            let project = 'default';
+            try {
+                const s = setupJson();
+                project = (s && s.project_name) ? String(s.project_name).trim() : 'default';
+            } catch (e) {
+                project = 'default';
+            }
+            project = project || 'default';
+            // Evitar caracteres raros en la key
+            project = project.replace(/\s+/g, '_').slice(0, 60);
+            return `cba.dashboard.${project}.${suffix}.v1`;
+        }
 
         function setupJson() {
             try {
@@ -602,9 +629,139 @@
             // IA (solo si existe la sección)
             (function bindDecisionEditor() {
                 const btn = document.getElementById('aiDecisionBtn');
+                const editBtn = document.getElementById('aiDecisionEditBtn');
                 const out = document.getElementById('aiDecisionOutput');
+                const preview = document.getElementById('aiDecisionPreview');
                 const status = document.getElementById('aiDecisionStatus');
-                if (!btn || !out) return;
+
+                const ready = document.getElementById('aiDecisionReady');
+                const saveButtons = Array.from(document.querySelectorAll('button[name="save_result"], button[name="save_to_powerbi"]'));
+
+                if (!btn || !out || !preview) return;
+
+                function getText() {
+                    return ('value' in out) ? (out.value || '') : (out.textContent || '');
+                }
+
+                function setText(text) {
+                    const v = String(text || '');
+                    if ('value' in out) out.value = v;
+                    else out.textContent = v;
+                    try {
+                        localStorage.setItem(_storageKey('aiDecision.text'), v);
+                    } catch (e) {
+                        // no-op
+                    }
+
+                    // Libreta global (último)
+                    try {
+                        const winnerNode = document.getElementById('cbaWinnerNameJson');
+                        let winnerName = '';
+                        try {
+                            winnerName = JSON.parse(winnerNode?.textContent || '""') || '';
+                        } catch (e) {
+                            winnerName = '';
+                        }
+                        const s = setupJson();
+                        const projectName = (s && s.project_name) ? String(s.project_name).trim() : '';
+                        localStorage.setItem('cba.notebook.last.project', projectName);
+                        localStorage.setItem('cba.notebook.last.winner', winnerName);
+                        localStorage.setItem('cba.notebook.last.text', v);
+                    } catch (e) {
+                        // no-op
+                    }
+                    if (window.SIDEO && SIDEO.utils) {
+                        preview.innerHTML = v.trim() ? SIDEO.utils.renderAIMarkup(v) : '<span class="text-muted">Aún no hay análisis IA. Usa “Generar análisis IA”.</span>';
+                    } else {
+                        preview.textContent = v.trim() ? v : 'Aún no hay análisis IA. Usa “Generar análisis IA”.';
+                    }
+                }
+
+                function setEditing(isEditing) {
+                    out.style.display = isEditing ? 'block' : 'none';
+                    preview.style.display = isEditing ? 'none' : 'block';
+                    if (editBtn) {
+                        try {
+                            editBtn.setAttribute('aria-pressed', isEditing ? 'true' : 'false');
+                        } catch (e) {
+                            // no-op
+                        }
+                    }
+                    if (isEditing) {
+                        try { out.focus(); } catch (e) {}
+                    }
+                }
+
+                function setReady(isReady) {
+                    if (ready) {
+                        ready.checked = !!isReady;
+                    }
+                    try {
+                        localStorage.setItem(_storageKey('aiDecision.ready'), (!!isReady) ? '1' : '0');
+                    } catch (e) {
+                        // no-op
+                    }
+
+                    // Libreta global (último): flag listo
+                    try {
+                        localStorage.setItem('cba.notebook.last.ready', (!!isReady) ? '1' : '0');
+                    } catch (e) {
+                        // no-op
+                    }
+                }
+
+                function isReady() {
+                    return !!(ready && ready.checked);
+                }
+
+                function updateSaveButtons() {
+                    const hasText = !!String(getText() || '').trim();
+                    const ok = hasText && isReady();
+                    saveButtons.forEach((b) => { b.disabled = !ok; });
+                }
+
+                // Hidratar desde localStorage (evita que se borre al recargar/volver)
+                try {
+                    const cached = localStorage.getItem(_storageKey('aiDecision.text'));
+                    const cachedReady = localStorage.getItem(_storageKey('aiDecision.ready'));
+                    const initial = String(getText() || '').trim();
+                    if (!initial && cached) {
+                        setText(cached);
+                    } else {
+                        setText(getText());
+                    }
+                    if (cachedReady === '1') setReady(true);
+                } catch (e) {
+                    setText(getText());
+                }
+
+                // Por defecto: vista previa (no edición)
+                setEditing(false);
+                updateSaveButtons();
+
+                if (editBtn) {
+                    editBtn.addEventListener('click', function () {
+                        const isCurrentlyEditing = out.style.display !== 'none';
+                        setEditing(!isCurrentlyEditing);
+                    });
+                }
+
+                out.addEventListener('input', function () {
+                    setText(getText());
+                    setReady(false);
+                    if (status) {
+                        status.style.display = 'block';
+                        status.textContent = 'Editado. Marca “Análisis listo para guardar” para habilitar Guardar.';
+                    }
+                    updateSaveButtons();
+                });
+
+                if (ready) {
+                    ready.addEventListener('change', function () {
+                        setReady(ready.checked);
+                        updateSaveButtons();
+                    });
+                }
 
                 btn.addEventListener('click', async function () {
                     btn.disabled = true;
@@ -626,13 +783,12 @@
                         const data = await resp.json();
                         if (!data.ok) throw new Error(data.error || 'No se pudo generar el análisis IA.');
 
-                        // Editor: guardamos texto plano (editable)
-                        if ('value' in out) {
-                            out.value = String(data.content || '');
-                        } else {
-                            out.textContent = String(data.content || '');
-                        }
-                        if (status) status.textContent = 'Listo. Puedes editar antes de guardar.';
+                        // Guardamos texto plano (editable) + persistimos
+                        setText(String(data.content || ''));
+                        setEditing(false);
+                        setReady(false);
+                        updateSaveButtons();
+                        if (status) status.textContent = 'Listo. Si está correcto, marca “Análisis listo para guardar”. Si no, edita con “Editar”.';
                     } catch (e) {
                         if (status) status.textContent = (e && e.message) ? e.message : 'Error generando análisis IA.';
                     } finally {
@@ -643,7 +799,7 @@
 
             (function bindSaveEditedText() {
                 const editor = document.getElementById('aiDecisionOutput');
-                const useEdited = document.getElementById('aiDecisionUseEdited');
+                const ready = document.getElementById('aiDecisionReady');
                 const status = document.getElementById('aiDecisionStatus');
                 if (!editor) return;
 
@@ -657,6 +813,8 @@
 
                     const editedText = ('value' in editor) ? editor.value : (editor.textContent || '');
                     const editedTextTrim = String(editedText || '').trim();
+
+                    const isReady = !!(ready && ready.checked);
 
                     if (!editedTextTrim) {
                         evt.preventDefault();
@@ -673,13 +831,26 @@
                         return;
                     }
 
+                    if (!isReady) {
+                        evt.preventDefault();
+                        if (status) {
+                            status.style.display = 'block';
+                            status.textContent = 'Antes de guardar, marca “Análisis listo para guardar”.';
+                        }
+                        try {
+                            ready.focus();
+                            ready.scrollIntoView({ block: 'center' });
+                        } catch (e) {
+                            // no-op
+                        }
+                        return;
+                    }
+
                     // Evitar duplicados
                     const existingEdited = form.querySelector('input[name="edited_summary_text"]');
-                    const existingUse = form.querySelector('input[name="use_edited_summary"]');
+                    const existingReady = form.querySelector('input[name="analysis_ready"]');
                     if (existingEdited) existingEdited.remove();
-                    if (existingUse) existingUse.remove();
-
-                    const useFlag = (useEdited && useEdited.checked) ? '1' : '0';
+                    if (existingReady) existingReady.remove();
 
                     const h1 = document.createElement('input');
                     h1.type = 'hidden';
@@ -688,8 +859,8 @@
 
                     const h2 = document.createElement('input');
                     h2.type = 'hidden';
-                    h2.name = 'use_edited_summary';
-                    h2.value = useFlag;
+                    h2.name = 'analysis_ready';
+                    h2.value = '1';
 
                     form.appendChild(h1);
                     form.appendChild(h2);

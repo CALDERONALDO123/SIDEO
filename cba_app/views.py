@@ -656,6 +656,8 @@ def cba_home(request):
     total_results = CBAResult.objects.count()
     guide_pdf_available = _safe_storage_exists("guides/guia.pdf")
 
+    powerbi_dashboard_url = _get_powerbi_dashboard_url()
+
     latest_result = CBAResult.objects.order_by("-created_at").first()
     latest_setup = None
     latest_items_raw = []
@@ -738,6 +740,7 @@ def cba_home(request):
     context = {
         "total_results": total_results,
         "guide_pdf_available": guide_pdf_available,
+        "powerbi_dashboard_url": powerbi_dashboard_url,
         "latest_result": latest_result,
         "latest_setup": latest_setup,
         "latest_items": normalized_items,
@@ -1949,6 +1952,8 @@ def cba_dashboard(request):
         edited_summary_text = request.POST.get("edited_summary_text")
         edited_summary_text = (edited_summary_text or "").strip()
 
+        analysis_ready = (request.POST.get("analysis_ready") or "").strip() == "1"
+
         if not edited_summary_text:
             messages.error(
                 request,
@@ -1970,6 +1975,30 @@ def cba_dashboard(request):
                 "public_view": False,
                 "allow_powerbi_form": False,
                 "prefill_summary_text": "",
+            }
+            return render(request, "cba_app/dashboard.html", context)
+
+        if not analysis_ready:
+            messages.error(
+                request,
+                "Antes de guardar, marca “Análisis listo para guardar”.",
+            )
+            context = {
+                "setup": setup,
+                "best_row": best_row,
+                "best_item": best_item,
+                "second_item": second_item,
+                "delta_ratio": delta_ratio,
+                "delta_pct": delta_pct,
+                "table_rows": dashboard_payload,
+                "dashboard_json": json.dumps(dashboard_payload, ensure_ascii=False),
+                "winner_main_advantage": winner_main_advantage,
+                "winner_disadvantage": winner_disadvantage,
+                "winner_least_attributes": winner_least_attributes,
+                "saved_result": None,
+                "public_view": False,
+                "allow_powerbi_form": False,
+                "prefill_summary_text": edited_summary_text,
             }
             return render(request, "cba_app/dashboard.html", context)
 

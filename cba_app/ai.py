@@ -2658,12 +2658,13 @@ def _build_cba_decision_prompts(*, setup: dict | None, dashboard: list[dict]) ->
             delta_ratio = None
             delta_pct = None
 
-    # --- Contexto desde BD (ventaja principal y desventaja por criterio) ---
+    # --- Contexto desde BD (ventaja principal y desventaja) ---
     winner_main_adv = None
     winner_main_adv_points = None
     winner_main_adv_criterion = None
 
     winner_disadvantage = None
+    winner_least_preferred: list[dict] = []
 
     names = [x["name"] for x in normalized]
     alt_by_name = {}
@@ -2671,7 +2672,7 @@ def _build_cba_decision_prompts(*, setup: dict | None, dashboard: list[dict]) ->
         # Prefetch ventajas para análisis comparativo
         for alt in (
             Alternative.objects.filter(name__in=names)
-            .prefetch_related("advantages__criterion")
+            .prefetch_related("advantages__criterion", "attributes__criterion")
             .all()
         ):
             alt_by_name[alt.name] = alt
@@ -2679,6 +2680,20 @@ def _build_cba_decision_prompts(*, setup: dict | None, dashboard: list[dict]) ->
     if winner and winner.get("name") in alt_by_name:
         win_alt = alt_by_name[winner["name"]]
         win_advs = list(win_alt.advantages.all())
+
+        # Desventaja (Paso 5): atributos marcados como menos preferidos del ganador
+        try:
+            least_attrs = [a for a in win_alt.attributes.all() if getattr(a, "is_least_preferred", False)]
+            least_attrs.sort(key=lambda a: (getattr(getattr(a, "criterion", None), "name", "") or "").lower())
+            for a in least_attrs[:3]:
+                winner_least_preferred.append(
+                    {
+                        "criterion": getattr(getattr(a, "criterion", None), "name", None),
+                        "description": getattr(a, "description", None),
+                    }
+                )
+        except Exception:
+            winner_least_preferred = []
 
         # Ventaja principal: marcada como is_main, si no, la de mayor importancia
         main = next((a for a in win_advs if getattr(a, "is_main", False)), None)
@@ -2790,21 +2805,24 @@ def _build_cba_decision_prompts(*, setup: dict | None, dashboard: list[dict]) ->
             if winner_main_adv is not None
             else None,
             "winner_disadvantage": winner_disadvantage,
+            "winner_least_preferred": winner_least_preferred,
         },
     }
 
     user_prompt = (
-        "Redacta UNA SOLA ORACIÓN completa (una sola línea, sin saltos de línea), clara para cualquier lector, usando SOLO el JSON.\n"
+        "Redacta un texto MUY BREVE de 2 oraciones (una sola línea, sin saltos de línea), claro para cualquier lector, usando SOLO el JSON.\n"
         "Requisitos de estilo (obligatorio):\n"
         "- No uses etiquetas tipo 'Recomendación:' ni formato de campos 'ratio:', 'total:', 'costo:' ni nombres de variables ('delta_pct').\n"
         "- Usa conectores: 'por lo que', 'porque', 'frente a', 'aunque', 'además'.\n"
         "- No inventes: si un dato no está, omítelo.\n"
+        "- Incluye literalmente las frases 'objetivo', 'ventaja principal' y 'desventaja' en el texto final.\n"
         "Requisitos de contenido (si existe):\n"
-        "- Proyecto y objetivo.\n"
+        "- Proyecto y objetivo (si setup.objective está vacío, dilo como 'objetivo no registrado').\n"
         "- Alternativa recomendada (EXACTAMENTE computed.winner.name) y por qué (menor costo por unidad de ventaja), incorporando costo/unidad, ventaja total y costo en texto natural.\n"
         "- Comparación frente a la segunda alternativa usando computed.delta_ratio y computed.delta_pct (si existen).\n"
-        "- Ventaja principal del ganador (computed.winner_main_advantage) y la principal desventaja (computed.winner_disadvantage) si existe.\n"
-        "Longitud: 1 oración, máximo 420 caracteres.\n\n"
+        "- Ventaja principal del ganador: usa computed.winner_main_advantage.description si existe; si es null, escribe 'ventaja principal no registrada'.\n"
+        "- Desventaja del ganador: prioriza computed.winner_least_preferred[0] (Paso 5) si existe; si no, usa computed.winner_disadvantage; si ambos faltan, escribe 'desventaja no registrada'.\n"
+        "Longitud: 2 oraciones, máximo 750 caracteres.\n\n"
         f"JSON:\n{json.dumps(user_payload, ensure_ascii=False)}"
     )
 
@@ -2884,6 +2902,8 @@ def _build_decision_assistant_fallback(*, setup: dict | None, dashboard: list[di
 
     if objective:
         parts.append(f"cuyo objetivo es \"{objective}\" ")
+    else:
+        parts.append("con objetivo no registrado ")
 
     if not winner:
         parts.append(
@@ -2929,7 +2949,7 @@ def _build_decision_assistant_fallback(*, setup: dict | None, dashboard: list[di
                 f", lo que implica un ahorro de {_format_soles(delta_ratio, decimals=2)}{pct_part} por unidad{ratio_clause}"
             )
 
-    # Ventaja principal y desventaja: reutilizamos la lógica DB ya existente, con un cálculo mínimo aquí
+    # Ventaja principal y desventaja: ventaja (Paso 6-9) + desventaja (Paso 5 y/o brecha por criterio)
     try:
         # Reuso del bloque ya implementado en _build_cba_decision_prompts (consultas) vía Alternative/advantages
         names = [x["name"] for x in normalized if x.get("name")]
@@ -2937,13 +2957,14 @@ def _build_decision_assistant_fallback(*, setup: dict | None, dashboard: list[di
             alt.name: alt
             for alt in (
                 Alternative.objects.filter(name__in=names)
-                .prefetch_related("advantages__criterion")
+                .prefetch_related("advantages__criterion", "attributes__criterion")
                 .all()
             )
         }
         win_alt = alt_by_name.get(winner_name)
         if win_alt:
             win_advs = list(win_alt.advantages.all())
+            disadvantage_added = False
             main = next((a for a in win_advs if getattr(a, "is_main", False)), None)
             if main is None and win_advs:
                 main = max(win_advs, key=lambda a: getattr(a, "importance", 0) or 0)
@@ -2962,6 +2983,23 @@ def _build_decision_assistant_fallback(*, setup: dict | None, dashboard: list[di
                     if suffix:
                         suffix_txt = suffix.strip()
                     parts.append(f"; su ventaja principal es \"{desc}\"{suffix_txt}")
+
+            # Desventaja (Paso 5): atributo menos preferido del ganador (si existe)
+            try:
+                least_attrs = [a for a in win_alt.attributes.all() if getattr(a, "is_least_preferred", False)]
+                least_attrs.sort(key=lambda a: (getattr(getattr(a, "criterion", None), "name", "") or "").lower())
+                if least_attrs:
+                    a0 = least_attrs[0]
+                    crit = getattr(getattr(a0, "criterion", None), "name", None)
+                    desc = getattr(a0, "description", None)
+                    if desc:
+                        if crit:
+                            parts.append(f"; su desventaja principal es \"{desc}\" (Factor: {crit})")
+                        else:
+                            parts.append(f"; su desventaja principal es \"{desc}\"")
+                        disadvantage_added = True
+            except Exception:
+                pass
 
             # Desventaja principal por criterio (si existe)
             crit_ids = set(a.criterion_id for a in win_advs)
@@ -2995,6 +3033,10 @@ def _build_decision_assistant_fallback(*, setup: dict | None, dashboard: list[di
                     parts.append(
                         f", y aunque en {d0['criterion']} queda {d0['deficit']} punto(s) por debajo de {d0['best_other']}, mantiene la mejor eficiencia costo/unidad"
                     )
+                    disadvantage_added = True
+            elif not disadvantage_added:
+                # Si no hay brecha clara por criterio y no hubo Paso 5, lo declaramos sin inventar.
+                parts.append("; su desventaja no está registrada con los datos actuales")
     except Exception:
         pass
 
@@ -3034,6 +3076,15 @@ def generate_decision_assistant_text(*, setup: dict | None, dashboard: list[dict
         return fallback
 
     if "recomend" not in lowered:
+        return fallback
+
+    # Requisitos mínimos de contenido (según UX): objetivo + ventaja principal + desventaja.
+    # Si el modelo omite alguno, usamos el fallback (determinista, sin inventar).
+    if "objetivo" not in lowered:
+        return fallback
+    if "ventaja principal" not in lowered:
+        return fallback
+    if "desventaja" not in lowered:
         return fallback
 
     return content_stripped
