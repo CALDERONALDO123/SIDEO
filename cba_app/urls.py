@@ -5,6 +5,7 @@ from . import views
 from . import ai
 
 urlpatterns = [
+    path("healthz", views.healthz, name="healthz"),
     path("powerbi/feed/results/", views.powerbi_feed_results, name="powerbi_feed_results"),
     path(
         "powerbi/feed/dashboard/",

@@ -9,6 +9,7 @@ services:
     name: sideo
     env: python
     plan: free
+    healthCheckPath: /healthz
     buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
     # Render expone el puerto en la variable de entorno PORT. Si no se hace bind a ese puerto,
     # el healthcheck falla y Render muestra HTTP 502.

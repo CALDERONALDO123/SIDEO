@@ -46,6 +46,10 @@ import json
 logger = logging.getLogger(__name__)
 
 
+def healthz(request):
+    return JsonResponse({"ok": True})
+
+
 def _normalize_cloudinary_public_id(value: str) -> str:
     public_id = (value or "").strip()
     return public_id
