@@ -39,6 +39,9 @@
                             <button type="submit" name="save_result" class="btn btn-primary btn-sm">
                                 <i class="fas fa-save mr-1"></i> Guardar resultado
                             </button>
+                            <button type="submit" name="save_to_powerbi" class="btn btn-outline-success btn-sm">
+                                <i class="fas fa-chart-bar mr-1"></i> Guardar e ir a Power BI
+                            </button>
                         </form>
                     {% endif %}
                 </div>
@@ -182,8 +185,10 @@
                             <div class="text-muted text-sm mt-2">Cada línea sale del origen (0,0) hacia el punto (Costo, Ventaja).</div>
                         </div>
                         <div class="card-body">
-                            <canvas id="scatterChart" width="520" height="280" class="w-100"></canvas>
-                            <div id="scatterTooltip" class="cba-tooltip" role="status" aria-live="polite"></div>
+                            <div class="cba-chartwrap">
+                                <canvas id="scatterChart" width="520" height="280" class="w-100"></canvas>
+                                <div id="scatterTooltip" class="cba-tooltip" role="status" aria-live="polite"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -484,6 +489,7 @@
                                     <form method="post" class="form-inline" style="justify-content:flex-end;">
                                         {% csrf_token %}
                                         <button type="submit" name="save_result" class="button">Guardar resultado</button>
+                                        <button type="submit" name="save_to_powerbi" class="button">Guardar e ir a Power BI</button>
                                     </form>
                                 {% endif %}
                             </div>
@@ -632,6 +638,7 @@
                 xLabel: 'Costo (S/)',
                 yLabel: 'Ventaja total',
                 tooltipElement: document.getElementById('scatterTooltip'),
+                tooltipTrigger: 'hover-line',
             });
         }
 
