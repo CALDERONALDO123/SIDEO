@@ -180,6 +180,31 @@
                 var progressBar = uploadForm ? uploadForm.querySelector('.guide-upload__progressbar') : null;
                 var pickBtn = uploadForm ? uploadForm.querySelector('[data-role="file-pick"]') : null;
 
+                function setUploadNotice(kind, text) {
+                    if (!uploadForm) return;
+                    var wrap = uploadForm.closest('.guide-upload');
+                    if (!wrap) return;
+
+                    var prev = wrap.querySelector('[data-role="upload-notice"]');
+                    if (prev) prev.remove();
+
+                    var div = document.createElement('div');
+                    div.setAttribute('data-role', 'upload-notice');
+                    div.className = 'notice ' + (kind === 'success' ? 'notice--success' : 'notice--error');
+                    div.textContent = text || '';
+
+                    // Insertar arriba del formulario para que sea visible.
+                    wrap.insertBefore(div, uploadForm);
+                }
+
+                function resetSubmit() {
+                    if (!submitBtn) return;
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('is-loading');
+                    submitBtn.removeAttribute('aria-busy');
+                    submitBtn.setAttribute('title', 'Cargar');
+                }
+
                 function setProgress(pct) {
                     var n = Math.max(0, Math.min(100, Math.round(pct)));
                     if (progressWrap) progressWrap.style.display = 'block';
@@ -219,6 +244,9 @@
                         var xhr = new XMLHttpRequest();
                         xhr.open('POST', uploadForm.getAttribute('action') || window.location.href);
 
+                        // Evita cargas infinitas si el servidor/proxy corta la conexión.
+                        xhr.timeout = 180000;
+
                         // CSRF desde el input hidden
                         var csrfInput = uploadForm.querySelector('input[name="csrfmiddlewaretoken"]');
                         if (csrfInput && csrfInput.value) {
@@ -233,6 +261,14 @@
                         });
 
                         xhr.addEventListener('load', function () {
+                            // Si hay error HTTP, no hay redirect: liberar UI y mostrar aviso.
+                            if (xhr.status >= 400) {
+                                resetSubmit();
+                                setProgress(0);
+                                setUploadNotice('error', 'No se pudo subir el PDF. El servidor rechazó la carga (' + xhr.status + ').');
+                                return;
+                            }
+
                             setProgress(100);
                             // Django redirige; usar responseURL para ir al destino final
                             window.setTimeout(function () {
@@ -242,10 +278,15 @@
                         });
 
                         xhr.addEventListener('error', function () {
-                            submitBtn.disabled = false;
-                            submitBtn.classList.remove('is-loading');
-                            submitBtn.removeAttribute('aria-busy');
-                            submitBtn.setAttribute('title', 'Cargar');
+                            resetSubmit();
+                            setProgress(0);
+                            setUploadNotice('error', 'No se pudo subir el PDF. Revisa tu conexión e inténtalo de nuevo.');
+                        });
+
+                        xhr.addEventListener('timeout', function () {
+                            resetSubmit();
+                            setProgress(0);
+                            setUploadNotice('error', 'La carga tardó demasiado y se canceló. Intenta de nuevo.');
                         });
 
                         var data = new FormData(uploadForm);

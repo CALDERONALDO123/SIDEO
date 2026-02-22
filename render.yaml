@@ -14,7 +14,7 @@ services:
     # Render expone el puerto en la variable de entorno PORT. Si no se hace bind a ese puerto,
     # el healthcheck falla y Render muestra HTTP 502.
     # Arranque directo: evita comportamientos del shell script y asegura bind al PORT.
-    startCommand: python manage.py migrate --noinput ; gunicorn cba_project.wsgi:application --bind 0.0.0.0:$PORT --access-logfile - --error-logfile - --log-level info
+    startCommand: python manage.py migrate --noinput ; gunicorn cba_project.wsgi:application --bind 0.0.0.0:$PORT --access-logfile - --error-logfile - --log-level info --timeout 180 --graceful-timeout 180
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.11
