@@ -244,7 +244,9 @@ def _stream_pdf_from_cloudinary_public_id(request, public_id: str, *, resource_t
 
     # Cloudinary puede almacenar PDFs como raw o como image, y puede ser upload/private/authenticated.
     # Para que el visor funcione incluso con recursos "viejos" o con políticas de cuenta,
-    # generamos una lista de candidatos y probamos hasta que uno responda 200/206.
+    # generamos variantes del public_id y probamos hasta que uno responda 200/206.
+    # Importante: no asumimos que ".pdf" sea siempre "formato"; algunos uploads legacy pueden
+    # haber guardado el punto dentro del public_id.
     public_id_variants: list[str] = []
     _add_unique(public_id_variants, public_id)
     if public_id.lower().endswith(".pdf"):
@@ -285,19 +287,24 @@ def _stream_pdf_from_cloudinary_public_id(request, public_id: str, *, resource_t
     # 2) Fallback robusto: URL firmada al endpoint API /download.
     if private_download_url is not None:
         for pid in public_id_variants:
-            base_public_id = pid[:-4] if pid.lower().endswith(".pdf") else pid
-            for rt, typ in combos:
-                try:
-                    api_url = private_download_url(
-                        base_public_id,
-                        "pdf",
-                        resource_type=rt,
-                        type=typ,
-                        attachment=bool(as_attachment),
-                    )
-                    _add_unique(url_candidates, api_url)
-                except Exception:
-                    continue
+            candidate_base_ids: list[str] = []
+            _add_unique(candidate_base_ids, pid)
+            if pid.lower().endswith(".pdf"):
+                _add_unique(candidate_base_ids, pid[:-4])
+
+            for base_public_id in candidate_base_ids:
+                for rt, typ in combos:
+                    try:
+                        api_url = private_download_url(
+                            base_public_id,
+                            "pdf",
+                            resource_type=rt,
+                            type=typ,
+                            attachment=bool(as_attachment),
+                        )
+                        _add_unique(url_candidates, api_url)
+                    except Exception:
+                        continue
 
     if not url_candidates:
         raise Http404("No hay guía disponible.")
@@ -346,14 +353,19 @@ def _stream_pdf_from_cloudinary_public_id(request, public_id: str, *, resource_t
     if upstream is None and cloudinary_api is not None:
         resolved_urls: list[str] = []
         for pid in public_id_variants:
-            base_pid = pid[:-4] if pid.lower().endswith(".pdf") else pid
-            for rt, typ in combos:
-                try:
-                    info = cloudinary_api.resource(base_pid, resource_type=rt, type=typ)
-                except Exception:
-                    continue
-                if isinstance(info, dict):
-                    _add_unique(resolved_urls, info.get("secure_url") or info.get("url"))
+            candidate_ids: list[str] = []
+            _add_unique(candidate_ids, pid)
+            if pid.lower().endswith(".pdf"):
+                _add_unique(candidate_ids, pid[:-4])
+
+            for candidate_id in candidate_ids:
+                for rt, typ in combos:
+                    try:
+                        info = cloudinary_api.resource(candidate_id, resource_type=rt, type=typ)
+                    except Exception:
+                        continue
+                    if isinstance(info, dict):
+                        _add_unique(resolved_urls, info.get("secure_url") or info.get("url"))
             if resolved_urls:
                 break
         if resolved_urls:
@@ -2150,8 +2162,6 @@ def cba_guide(request):
 
                 # Preferido: subir a Cloudinary como RAW con public_id fijo.
                 if cloudinary_uploader is not None:
-                    canonical_public_id = "guides/guia.pdf"
-
                     previous_doc = _get_guide_doc()
                     if previous_doc and previous_doc.cloudinary_public_id:
                         try:
@@ -2171,7 +2181,9 @@ def cba_guide(request):
                         uploaded,
                         resource_type="raw",
                         folder="guides",
-                        public_id="guia.pdf",
+                        # Importante: NO incluir extensión en public_id.
+                        # Cloudinary usa `format` (o el tipo detectado) para servir la extensión.
+                        public_id="guia",
                         overwrite=True,
                         unique_filename=False,
                         invalidate=True,
@@ -2274,15 +2286,14 @@ def cba_guide_pdf(request):
 
     doc = _get_guide_doc()
     if doc and doc.cloudinary_public_id:
-            normalized_id = _normalize_cloudinary_public_id(doc.cloudinary_public_id)
-            return _stream_pdf_from_cloudinary_public_id(
-                request,
-                normalized_id,
-                resource_type=(doc.cloudinary_resource_type or "raw"),
-                delivery_type=(doc.cloudinary_type or "upload"),
-                filename="guia.pdf",
-                as_attachment=False,
-            )
+        return _stream_pdf_from_cloudinary_public_id(
+            request,
+            doc.cloudinary_public_id,
+            resource_type=(doc.cloudinary_resource_type or "raw"),
+            delivery_type=(doc.cloudinary_type or "upload"),
+            filename="guia.pdf",
+            as_attachment=False,
+        )
 
     storage_name = _get_guide_storage_name() or "guides/guia.pdf"
     if not _get_guide_storage_name() and not _safe_storage_exists(storage_name):
