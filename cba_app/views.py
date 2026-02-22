@@ -73,6 +73,7 @@ from .models import (
     Advantage,
     CBAResult,
     ResultadoCBA,
+    ResultadoCBARecomendado,
     GraficaCostoVentaja,
     SharedGuideLink,
     UserProfile,
@@ -1399,6 +1400,7 @@ def cba_step10(request):
                 return None
 
         flat_rows = []
+        winner_rows = []
         chart_rows = []
         for item in chart_data or []:
             if not isinstance(item, dict):
@@ -1407,6 +1409,7 @@ def cba_step10(request):
 
             costo_dec = _to_decimal(item.get("cost"))
             ventaja_dec = _to_decimal(item.get("total"))
+            is_recommended = bool(best_row and candidato == winner_name)
             flat_rows.append(
                 ResultadoCBA(
                     result=saved,
@@ -1416,10 +1419,26 @@ def cba_step10(request):
                     costo=costo_dec,
                     ventaja=ventaja_dec,
                     costo_ventaja=_to_decimal(item.get("ratio")),
-                    recomendado=bool(winner_name and candidato == winner_name),
+                    recomendado=is_recommended,
                     fecha=saved.created_at or timezone.now(),
                 )
             )
+
+            if is_recommended:
+                winner_rows.append(
+                    ResultadoCBARecomendado(
+                        result=saved,
+                        proyecto=proyecto,
+                        puesto=puesto,
+                        candidato=candidato,
+                        costo=costo_dec,
+                        ventaja=ventaja_dec,
+                        costo_ventaja=_to_decimal(item.get("ratio")),
+                        recomendado=True,
+                        fecha=saved.created_at or timezone.now(),
+                        resumen_ia=(saved.summary_text or ""),
+                    )
+                )
 
             # Tabla para Power BI: fila base 0/0 + fila valor
             chart_rows.append(
@@ -1445,6 +1464,9 @@ def cba_step10(request):
 
         if flat_rows:
             ResultadoCBA.objects.bulk_create(flat_rows, batch_size=200)
+
+        if winner_rows:
+            ResultadoCBARecomendado.objects.bulk_create(winner_rows, batch_size=50)
 
         if chart_rows:
             GraficaCostoVentaja.objects.bulk_create(chart_rows, batch_size=400)
@@ -1523,10 +1545,26 @@ def cba_saved_result_delete(request, result_id: int):
     except Exception:
         pass
 
+    try:
+        ResultadoCBARecomendado.objects.filter(result=result).delete()
+    except Exception:
+        pass
+
     if candidatos:
         try:
             # ResultadoCBA sí tiene fecha; esto lo hace más exacto en legacy.
             ResultadoCBA.objects.filter(
+                result__isnull=True,
+                proyecto=proyecto,
+                puesto=puesto,
+                candidato__in=candidatos,
+                fecha=result.created_at,
+            ).delete()
+        except Exception:
+            pass
+
+        try:
+            ResultadoCBARecomendado.objects.filter(
                 result__isnull=True,
                 proyecto=proyecto,
                 puesto=puesto,
@@ -1920,6 +1958,7 @@ def cba_dashboard(request):
         winner_alt = (best_row["alternative"].name if best_row else "")
 
         flat_rows = []
+        winner_rows = []
         chart_rows = []
         for item in dashboard_payload or []:
             if not isinstance(item, dict):
@@ -1943,6 +1982,8 @@ def cba_dashboard(request):
             ventaja = _to_decimal(raw_total)
             costo_ventaja = _to_decimal(raw_ratio)
 
+            is_recommended = bool(winner_alt and candidato == winner_alt)
+
             flat_rows.append(
                 ResultadoCBA(
                     result=saved,
@@ -1952,10 +1993,26 @@ def cba_dashboard(request):
                     costo=costo,
                     ventaja=ventaja,
                     costo_ventaja=costo_ventaja,
-                    recomendado=bool(winner_alt and candidato == winner_alt),
+                    recomendado=is_recommended,
                     fecha=saved.created_at or timezone.now(),
                 )
             )
+
+            if is_recommended:
+                winner_rows.append(
+                    ResultadoCBARecomendado(
+                        result=saved,
+                        proyecto=proyecto,
+                        puesto=puesto,
+                        candidato=candidato,
+                        costo=costo,
+                        ventaja=ventaja,
+                        costo_ventaja=costo_ventaja,
+                        recomendado=True,
+                        fecha=saved.created_at or timezone.now(),
+                        resumen_ia=(saved.summary_text or ""),
+                    )
+                )
 
             chart_rows.append(
                 GraficaCostoVentaja(
@@ -1980,6 +2037,9 @@ def cba_dashboard(request):
 
         if flat_rows:
             ResultadoCBA.objects.bulk_create(flat_rows, batch_size=200)
+
+        if winner_rows:
+            ResultadoCBARecomendado.objects.bulk_create(winner_rows, batch_size=50)
 
         if chart_rows:
             GraficaCostoVentaja.objects.bulk_create(chart_rows, batch_size=400)

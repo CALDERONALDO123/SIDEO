@@ -150,6 +150,45 @@ class ResultadoCBA(models.Model):
         ]
 
 
+class ResultadoCBARecomendado(models.Model):
+    """Tabla Power BI: solo filas recomendadas/ganadoras + Resumen IA."""
+
+    id = models.AutoField(primary_key=True)
+
+    result = models.ForeignKey(
+        CBAResult,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="powerbi_resultados_recomendados",
+    )
+
+    proyecto = models.CharField(max_length=255)
+    puesto = models.CharField(max_length=150, null=True, blank=True)
+    candidato = models.CharField(max_length=150)
+
+    costo = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    ventaja = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    costo_ventaja = models.DecimalField(max_digits=14, decimal_places=6, null=True, blank=True)
+
+    recomendado = models.BooleanField(default=True)
+    fecha = models.DateTimeField(default=timezone.now)
+
+    resumen_ia = models.TextField(blank=True)
+
+    class Meta:
+        db_table = "resultados_cba_recomendados"
+        verbose_name = "Resultado CBA Recomendado (Power BI)"
+        verbose_name_plural = "Resultados CBA Recomendados (Power BI)"
+        indexes = [
+            models.Index(fields=["result"], name="cba_rec_result_idx"),
+            models.Index(fields=["proyecto"], name="cba_rec_proyecto_idx"),
+            models.Index(fields=["puesto"], name="cba_rec_puesto_idx"),
+            models.Index(fields=["candidato"], name="cba_rec_candidato_idx"),
+            models.Index(fields=["fecha"], name="cba_rec_fecha_idx"),
+        ]
+
+
 class GraficaCostoVentaja(models.Model):
     """Tabla para Power BI: 2 filas por candidato (0/0 y valor) para graficar Costo vs Ventaja."""
 
