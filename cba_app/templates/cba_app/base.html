@@ -53,8 +53,10 @@
                     {% with active='step' %}{% include 'cba_app/_panel_sidebar.html' with active=active about_anchor=0 %}{% endwith %}
                 {% elif url_name == 'cba_saved_results' or url_name|slice:':15' == 'cba_saved_result' %}
                     {% with active='saved' %}{% include 'cba_app/_panel_sidebar.html' with active=active about_anchor=0 %}{% endwith %}
-                {% elif url_name|slice:':8' == 'cba_guide' %}
+                {% elif url_name|slice:':9' == 'cba_guide' %}
                     {% with active='guide' %}{% include 'cba_app/_panel_sidebar.html' with active=active about_anchor=0 %}{% endwith %}
+                {% elif url_name == 'cba_about' %}
+                    {% with active='about' %}{% include 'cba_app/_panel_sidebar.html' with active=active about_anchor=0 %}{% endwith %}
                 {% else %}
                     {% include 'cba_app/_panel_sidebar.html' with active=active about_anchor=1 %}
                 {% endif %}

@@ -746,6 +746,11 @@ def cba_home(request):
     return render(request, "cba_app/home.html", context)
 
 
+@login_required
+def cba_about(request):
+    return render(request, "cba_app/about.html")
+
+
 # Paso 1: Identificación de alternativas
 
 

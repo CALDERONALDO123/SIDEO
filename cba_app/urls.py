@@ -31,6 +31,7 @@ urlpatterns = [
     path("cuentas/perfil/", views.cba_profile, name="cba_profile"),
     path("cuentas/salir/", views.cba_logout, name="cba_logout"),
     path("", views.cba_home, name="cba_home"),
+    path("acerca/", views.cba_about, name="cba_about"),
     path("ai/decision/", ai.cba_ai_decision_assistant, name="cba_ai_decision_assistant"),
     path(
         "ai/suggest-scores/",

@@ -38,7 +38,7 @@
                 </li>
 
                 <li class="nav-item">
-                    <a href="{% url 'cba_home' %}#about-sideo" class="nav-link">
+                    <a href="{% url 'cba_about' %}" class="nav-link {% if active == 'about' %}active{% endif %}" {% if active == 'about' %}aria-current="page"{% endif %}>
                         <i class="nav-icon fas fa-info-circle"></i>
                         <p>Acerca de SIDEO</p>
                     </a>

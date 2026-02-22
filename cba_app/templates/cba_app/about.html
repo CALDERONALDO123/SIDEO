@@ -1,0 +1,35 @@
+{% extends "cba_app/base.html" %}
+
+{% block body_class %}layout--home adminlte-home{% endblock %}
+
+{% block content %}
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2 align-items-center">
+                <div class="col-sm-7">
+                    <h1 class="m-0">Acerca de SIDEO</h1>
+                    <small class="text-muted">Información del sistema</small>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="card" style="border-radius: 12px;">
+                <div class="card-body">
+                    <p class="text-muted" style="margin-bottom: 12px;">
+                        SIDEO es un asistente para la toma de decisiones basado en la metodología Choosing By Advantages (CBA).
+                        Está pensado para equipos de proyectos, compras, logística y cualquier área que requiera comparar alternativas
+                        de manera transparente y trazable.
+                    </p>
+                    <ul class="text-muted" style="padding-left: 18px; margin: 0;">
+                        <li>Registra postores, factores de decisión y todos los pasos de CBA en un solo flujo guiado.</li>
+                        <li>Conserva un historial de análisis para auditar decisiones pasadas y reutilizar configuraciones.</li>
+                        <li>Presenta los resultados en tablas y gráficos claros para apoyar comités y presentaciones técnicas.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}
