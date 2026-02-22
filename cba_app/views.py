@@ -327,9 +327,10 @@ def _stream_pdf_from_cloudinary_public_id(request, public_id: str, *, resource_t
     upstream = None
     last_status = None
 
-    def _fetch_first_ok(candidates: list[str]):
+    def _fetch_first_ok(candidates: list[str], *, max_urls: int | None = None):
         nonlocal last_status
-        for candidate_url in candidates:
+        subset = candidates[:max_urls] if (max_urls is not None and max_urls > 0) else candidates
+        for candidate_url in subset:
             try:
                 resp = requests.get(candidate_url, stream=True, headers=headers, timeout=(5, 30))
                 last_status = resp.status_code
@@ -346,7 +347,19 @@ def _stream_pdf_from_cloudinary_public_id(request, public_id: str, *, resource_t
                 pass
         return None
 
-    upstream = _fetch_first_ok(url_candidates)
+    # Intento rápido: probamos unas cuantas URLs (las primeras suelen ser las más probables).
+    # En algunos despliegues Cloudinary puede tardar ~sub-segundos en propagar el recurso.
+    # Reintentamos un par de veces para evitar 404 intermitentes justo después de subir.
+    upstream = None
+    for attempt in range(3):
+        upstream = _fetch_first_ok(url_candidates, max_urls=10)
+        if upstream is not None:
+            break
+        if attempt < 2:
+            try:
+                time.sleep(0.6 * (attempt + 1))
+            except Exception:
+                pass
 
     # Último fallback: si todas las URLs construidas fallan, intentamos resolver por API
     # (por ejemplo, si el recurso existe pero está guardado como image/private/authenticated).
@@ -369,7 +382,7 @@ def _stream_pdf_from_cloudinary_public_id(request, public_id: str, *, resource_t
             if resolved_urls:
                 break
         if resolved_urls:
-            upstream = _fetch_first_ok(resolved_urls)
+            upstream = _fetch_first_ok(resolved_urls, max_urls=10)
 
     if upstream is None:
         try:
@@ -2188,6 +2201,33 @@ def cba_guide(request):
                         unique_filename=False,
                         invalidate=True,
                     )
+
+                    # Warm-up: Cloudinary/CDN puede devolver 404 por unos segundos tras overwrite/invalidate.
+                    # Hacemos una lectura mínima para mejorar la consistencia antes del redirect.
+                    try:
+                        warm_url = (res.get("secure_url") or res.get("url") or "").strip()
+                        if warm_url:
+                            warm_headers = {
+                                "Range": "bytes=0-0",
+                                "User-Agent": "Mozilla/5.0",
+                                "Accept": "application/pdf,*/*;q=0.8",
+                            }
+                            for attempt in range(3):
+                                try:
+                                    warm_resp = requests.get(warm_url, stream=True, headers=warm_headers, timeout=(5, 15))
+                                    ok = warm_resp.status_code in (200, 206)
+                                    try:
+                                        warm_resp.close()
+                                    except Exception:
+                                        pass
+                                    if ok:
+                                        break
+                                except Exception:
+                                    pass
+                                if attempt < 2:
+                                    time.sleep(0.6 * (attempt + 1))
+                    except Exception:
+                        pass
 
                     saved_public_id = (res.get("public_id") or "").strip()
                     if not saved_public_id:
