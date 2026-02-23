@@ -24,6 +24,12 @@ mkdir -p staticfiles
 echo "[render_start] migrate (non-fatal)"
 python manage.py migrate --noinput || echo "[render_start] WARNING: migrate failed (continuing)"
 
+# Backfill automático para Power BI (no-fatal). Importante si existían resultados guardados
+# antes de que se empezaran a poblar estas tablas planas.
+POWERBI_BACKFILL_LIMIT_VALUE="${POWERBI_BACKFILL_LIMIT:-200}"
+echo "[render_start] ensure_resultados_cba (non-fatal) limit=${POWERBI_BACKFILL_LIMIT_VALUE}"
+python manage.py ensure_resultados_cba --limit "${POWERBI_BACKFILL_LIMIT_VALUE}" || echo "[render_start] WARNING: ensure_resultados_cba failed (continuing)"
+
 echo "[render_start] Launching gunicorn (foreground)"
 exec python -m gunicorn cba_project.wsgi:application \
 	--bind "0.0.0.0:${PORT_VALUE}" \
