@@ -669,9 +669,38 @@ def powerbi_feed_grafica_costo_ventaja(request):
     return JsonResponse(rows, safe=False)
 
 
-@login_required
 def cba_home(request):
-    """Panel principal con las opciones generales."""
+    """Panel principal con las opciones generales.
+
+    Nota operativa: Render puede marcar "No open HTTP ports detected" si no obtiene
+    una respuesta HTTP rápida en la ruta raíz durante el arranque. Para evitarlo,
+    cuando el usuario NO está autenticado respondemos 200 inmediatamente con una
+    mini-landing y links a ingresar/registrar.
+    """
+    if not getattr(request, "user", None) or not request.user.is_authenticated:
+        login_url = reverse("account_login")
+        signup_url = reverse("account_signup")
+        return HttpResponse(
+            """<!doctype html>
+<html lang=\"es\">
+    <head>
+        <meta charset=\"utf-8\" />
+        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
+        <title>SIDEO</title>
+    </head>
+    <body>
+        <h1>SIDEO</h1>
+        <p><a href=\"{login}\">Ingresar</a> | <a href=\"{signup}\">Registrar</a></p>
+    </body>
+</html>
+            """.format(
+                login=login_url,
+                signup=signup_url,
+            ),
+            content_type="text/html; charset=utf-8",
+            status=200,
+        )
+
     import json
 
     total_results = CBAResult.objects.count()
