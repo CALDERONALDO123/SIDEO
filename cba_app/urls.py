@@ -6,6 +6,7 @@ from . import ai
 
 urlpatterns = [
     path("healthz", views.healthz, name="healthz"),
+    path("ping/", views.ping, name="ping"),
     path("powerbi/feed/results/", views.powerbi_feed_results, name="powerbi_feed_results"),
     path(
         "powerbi/feed/dashboard/",

@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.conf import settings
 from django.core.files.storage import default_storage
-from django.http import FileResponse, Http404
+from django.http import FileResponse, Http404, HttpResponse
 from django.http import JsonResponse
 from django.http import StreamingHttpResponse
 from django.utils.http import urlencode
@@ -63,6 +63,10 @@ def _get_powerbi_dashboard_url() -> str:
 
 def healthz(request):
     return JsonResponse({"ok": True})
+
+
+def ping(request):
+    return HttpResponse("OK", content_type="text/plain")
 
 
 def _normalize_cloudinary_public_id(value: str) -> str:
