@@ -5,6 +5,22 @@ echo "[render_start] Starting Django/Gunicorn"
 echo "[render_start] PORT=${PORT:-}"
 echo "[render_start] RENDER_EXTERNAL_HOSTNAME=${RENDER_EXTERNAL_HOSTNAME:-}"
 
+have_cmd() {
+	command -v "$1" >/dev/null 2>&1
+}
+
+run_with_timeout() {
+	# Uso: run_with_timeout <segundos> <comando> [args...]
+	# Si 'timeout' no está disponible, ejecuta el comando sin límite.
+	local seconds="$1"
+	shift
+	if have_cmd timeout; then
+		timeout "${seconds}" "$@"
+	else
+		"$@"
+	fi
+}
+
 if [[ -z "${PORT:-}" ]]; then
 	echo "[render_start] ERROR: PORT no está definido. En Render (web service) PORT debe venir del sistema."
 	echo "[render_start] Si creaste una variable de entorno PORT manualmente (vacía o distinta), elimínala y redeploya."
@@ -21,14 +37,23 @@ echo "[render_start] Gunicorn timeout=${TIMEOUT_VALUE}s graceful=${GRACEFUL_TIME
 # Evita warning de middleware en runtime cuando el directorio aún no existe.
 mkdir -p staticfiles
 
-echo "[render_start] migrate (non-fatal)"
-python manage.py migrate --noinput || echo "[render_start] WARNING: migrate failed (continuing)"
+MIGRATE_TIMEOUT_VALUE="${MIGRATE_TIMEOUT:-300}"
+echo "[render_start] migrate (timeout=${MIGRATE_TIMEOUT_VALUE}s)"
+run_with_timeout "${MIGRATE_TIMEOUT_VALUE}" python manage.py migrate --noinput
 
 # Backfill automático para Power BI (no-fatal). Importante si existían resultados guardados
 # antes de que se empezaran a poblar estas tablas planas.
 POWERBI_BACKFILL_LIMIT_VALUE="${POWERBI_BACKFILL_LIMIT:-200}"
-echo "[render_start] ensure_resultados_cba (non-fatal) limit=${POWERBI_BACKFILL_LIMIT_VALUE}"
-python manage.py ensure_resultados_cba --limit "${POWERBI_BACKFILL_LIMIT_VALUE}" || echo "[render_start] WARNING: ensure_resultados_cba failed (continuing)"
+POWERBI_BACKFILL_TIMEOUT_VALUE="${POWERBI_BACKFILL_TIMEOUT:-300}"
+echo "[render_start] ensure_resultados_cba (background, non-fatal) limit=${POWERBI_BACKFILL_LIMIT_VALUE} timeout=${POWERBI_BACKFILL_TIMEOUT_VALUE}s"
+(
+	set +e
+	run_with_timeout "${POWERBI_BACKFILL_TIMEOUT_VALUE}" python manage.py ensure_resultados_cba --limit "${POWERBI_BACKFILL_LIMIT_VALUE}"
+	status=$?
+	if [[ $status -ne 0 ]]; then
+		echo "[render_start] WARNING: ensure_resultados_cba failed/timeout (status=${status})" >&2
+	fi
+) &
 
 echo "[render_start] Launching gunicorn (foreground)"
 exec python -m gunicorn cba_project.wsgi:application \
