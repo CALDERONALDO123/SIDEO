@@ -72,7 +72,7 @@ if IS_PRODUCTION and not os.environ.get("CLOUDINARY_URL") and not ALLOW_NO_CLOUD
 
 ALLOWED_HOSTS = _env_list(
     "DJANGO_ALLOWED_HOSTS",
-    default=["localhost", "127.0.0.1", "testserver"],
+    default=["localhost", "127.0.0.1", "0.0.0.0", "testserver"],
 )
 
 # Render expone el hostname externo en esta variable.
