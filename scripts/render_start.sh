@@ -37,9 +37,11 @@ echo "[render_start] Gunicorn timeout=${TIMEOUT_VALUE}s graceful=${GRACEFUL_TIME
 # Evita warning de middleware en runtime cuando el directorio aún no existe.
 mkdir -p staticfiles
 
-MIGRATE_TIMEOUT_VALUE="${MIGRATE_TIMEOUT:-300}"
-echo "[render_start] migrate (timeout=${MIGRATE_TIMEOUT_VALUE}s)"
-run_with_timeout "${MIGRATE_TIMEOUT_VALUE}" python manage.py migrate --noinput
+MIGRATE_TIMEOUT_VALUE="${MIGRATE_TIMEOUT:-120}"
+echo "[render_start] migrate (timeout=${MIGRATE_TIMEOUT_VALUE}s, non-fatal)"
+if ! run_with_timeout "${MIGRATE_TIMEOUT_VALUE}" python manage.py migrate --noinput; then
+	echo "[render_start] WARNING: migrate failed/timeout (continuing)" >&2
+fi
 
 # Backfill automático para Power BI (no-fatal). Importante si existían resultados guardados
 # antes de que se empezaran a poblar estas tablas planas.
