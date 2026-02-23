@@ -5,7 +5,13 @@ echo "[render_start] Starting Django/Gunicorn"
 echo "[render_start] PORT=${PORT:-}"
 echo "[render_start] RENDER_EXTERNAL_HOSTNAME=${RENDER_EXTERNAL_HOSTNAME:-}"
 
-PORT_VALUE="${PORT:-10000}"
+if [[ -z "${PORT:-}" ]]; then
+	echo "[render_start] ERROR: PORT no está definido. En Render (web service) PORT debe venir del sistema."
+	echo "[render_start] Si creaste una variable de entorno PORT manualmente (vacía o distinta), elimínala y redeploya."
+	exit 1
+fi
+
+PORT_VALUE="${PORT}"
 TIMEOUT_VALUE="${GUNICORN_TIMEOUT:-180}"
 GRACEFUL_TIMEOUT_VALUE="${GUNICORN_GRACEFUL_TIMEOUT:-180}"
 WORKERS_VALUE="${WEB_CONCURRENCY:-1}"
