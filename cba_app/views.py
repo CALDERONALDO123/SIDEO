@@ -614,7 +614,11 @@ def powerbi_feed_dashboard_rows(request):
 
 
 def powerbi_feed_grafica_costo_ventaja(request):
-    """Tabla para Power BI (2 filas por candidato: 0/0 y valor) (JSON)."""
+    """Tabla para Power BI (gráfica costo vs ventaja) (JSON).
+
+    Formato requerido (solo estas columnas y en este orden):
+    id, proyectos, puesto, candidatos, costo, ventaja, costo/ventaja, recomendado, resumen_ia
+    """
 
     if not _powerbi_token_ok(request):
         return JsonResponse({"ok": False, "error": "Token inválido"}, status=403)
@@ -639,13 +643,26 @@ def powerbi_feed_grafica_costo_ventaja(request):
 
     rows = []
     for r in qs:
+        costo_val = float(r.costo or 0)
+        ventaja_val = float(r.ventaja or 0)
+        costo_ventaja_val = None
+        if ventaja_val not in (0.0, -0.0):
+            try:
+                costo_ventaja_val = costo_val / ventaja_val
+            except Exception:
+                costo_ventaja_val = None
+
         rows.append(
             {
-                "PROYECTOS": r.proyectos,
-                "PUESTO": r.puesto,
-                "CANDIDATOS": r.candidatos,
-                "COSTO": float(r.costo or 0),
-                "VENTAJA": float(r.ventaja or 0),
+                "id": r.id,
+                "proyectos": r.proyectos,
+                "puesto": r.puesto,
+                "candidatos": r.candidatos,
+                "costo": costo_val,
+                "ventaja": ventaja_val,
+                "costo/ventaja": costo_ventaja_val,
+                "recomendado": False,
+                "resumen_ia": None,
             }
         )
 
