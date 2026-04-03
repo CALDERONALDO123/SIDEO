@@ -4,143 +4,19 @@
 {% load widget_tweaks %}
 
 {% block content %}
-<div class="min-h-[calc(100vh-200px)] flex items-center justify-center py-8 px-4">
-  <div class="w-full max-w-md">
-    
-    <!-- Card Principal -->
-    <div class="card bg-base-100 shadow-xl border border-base-200">
-      <div class="card-body">
-        
-        <!-- Header -->
-        <div class="text-center mb-6">
-          <h2 class="card-title text-2xl md:text-3xl justify-center font-bold mb-2">
-            Crear Cuenta
-          </h2>
-          <p class="text-sm opacity-70">
-            Únete a SIDEO y comienza a optimizar tus decisiones
-          </p>
-        </div>
-        
-        <!-- Divider -->
-        <div class="divider my-2"></div>
+  {% blocktranslate asvar subheading %}¿Ya tienes cuenta? Entonces <a href="{{ login_url }}" class="link">ingresa</a>.{% endblocktranslate %}
 
-        {% if not SOCIALACCOUNT_ONLY %}
-          <!-- Formulario de Signup -->
-          <form method="post" action="{% url 'account_signup' %}" class="space-y-4">
-            {% csrf_token %}
-            {{ redirect_field }}
+  {% #container heading="Crear cuenta" subheading=subheading %}
+    {% if not SOCIALACCOUNT_ONLY %}
+      {% url 'account_signup' as action_url %}
+      {% #form form=form url=action_url button_text="Crear cuenta" %}
+        {{ redirect_field }}
+        {% csrf_token %}
+      {% /form %}
+    {% endif %}
 
-            <!-- Email -->
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text font-semibold">Correo Electrónico</span>
-              </label>
-              {% if form.email.errors %}
-                {% render_field form.email class="input input-bordered input-error" placeholder="correo@ejemplo.com" type="email" %}
-                <label class="label">
-                  <span class="label-text-alt text-error">{{ form.email.errors|join:", " }}</span>
-                </label>
-              {% else %}
-                {% render_field form.email class="input input-bordered focus:input-primary" placeholder="correo@ejemplo.com" type="email" %}
-              {% endif %}
-            </div>
-
-            <!-- Username -->
-            {% if form.username %}
-              <div class="form-control">
-                <label class="label">
-                  <span class="label-text font-semibold">Usuario</span>
-                </label>
-                {% if form.username.errors %}
-                  {% render_field form.username class="input input-bordered input-error" placeholder="tu_usuario" %}
-                  <label class="label">
-                    <span class="label-text-alt text-error">{{ form.username.errors|join:", " }}</span>
-                  </label>
-                {% else %}
-                  {% render_field form.username class="input input-bordered focus:input-primary" placeholder="tu_usuario" %}
-                {% endif %}
-              </div>
-            {% endif %}
-
-            <!-- Password 1 -->
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text font-semibold">Contraseña</span>
-              </label>
-              {% if form.password1.errors %}
-                {% render_field form.password1 class="input input-bordered input-error" placeholder="••••••••" id="id_password1" %}
-                <label class="label">
-                  <span class="label-text-alt text-error">{{ form.password1.errors|join:", " }}</span>
-                </label>
-              {% else %}
-                {% render_field form.password1 class="input input-bordered focus:input-primary" placeholder="••••••••" id="id_password1" %}
-              {% endif %}
-            </div>
-
-            <!-- Password 2 -->
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text font-semibold">Confirmar Contraseña</span>
-              </label>
-              {% if form.password2.errors %}
-                {% render_field form.password2 class="input input-bordered input-error" placeholder="••••••••" id="id_password2" %}
-                <label class="label">
-                  <span class="label-text-alt text-error">{{ form.password2.errors|join:", " }}</span>
-                </label>
-              {% else %}
-                {% render_field form.password2 class="input input-bordered focus:input-primary" placeholder="••••••••" id="id_password2" %}
-              {% endif %}
-            </div>
-
-            <!-- Botón Submit -->
-            <button type="submit" class="btn btn-primary w-full btn-md">
-              <span>Crear Cuenta</span>
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-              </svg>
-            </button>
-          </form>
-        {% endif %}
-
-        <!-- Divider -->
-        <div class="divider my-2"></div>
-
-        <!-- Login Link -->
-        <div class="text-center py-2">
-          <p class="text-sm opacity-75">
-            ¿Ya tienes cuenta?
-            <a href="{{ login_url }}" class="link link-primary font-semibold">
-              Inicia sesión aquí
-            </a>
-          </p>
-        </div>
-
-        <!-- Social Login -->
-        {% if SOCIALACCOUNT_ENABLED %}
-          <div class="divider my-2"></div>
-          <div class="space-y-3">
-            {% include "socialaccount/snippets/login.html" with page_layout="entrance" %}
-          </div>
-        {% endif %}
-
-      </div>
-    </div>
-
-    <!-- Info Footer -->
-    <div class="text-center text-xs opacity-60 mt-6">
-      <p>🔒 Tu información está protegida y encriptada</p>
-    </div>
-
-  </div>
-</div>
-
-<style>
-  .btn-primary {
-    gap: 0.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-</style>
-
+    {% if SOCIALACCOUNT_ENABLED %}
+      {% include "socialaccount/snippets/login.html" with page_layout="entrance" %}
+    {% endif %}
+  {% /container %}
 {% endblock %}
