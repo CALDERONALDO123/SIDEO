@@ -374,7 +374,8 @@ if _google_client_id and _google_client_secret:
     }
 
 # django-axes (anti brute force)
-AXES_ENABLED = _env_bool("AXES_ENABLED", True)
+# Deshabilitado por defecto - puede causar bloqueos no deseados
+AXES_ENABLED = _env_bool("AXES_ENABLED", False)
 AXES_FAILURE_LIMIT = int(os.environ.get("AXES_FAILURE_LIMIT", "5"))
 AXES_COOLOFF_TIME = timedelta(
     minutes=int(os.environ.get("AXES_COOLOFF_MINUTES", "30"))
