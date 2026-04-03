@@ -305,15 +305,14 @@ ACCOUNT_EMAIL_VERIFICATION = (
     or ("mandatory" if EMAIL_REQUIRED_FOR_SIGNUP else "optional")
 )
 
-ACCOUNT_UNIQUE_EMAIL = True if EMAIL_REQUIRED_FOR_SIGNUP else False
+ACCOUNT_UNIQUE_EMAIL = True
 
 # allauth (nueva API)
-ACCOUNT_LOGIN_METHODS = {"username"}
-if ACCOUNT_UNIQUE_EMAIL:
-    ACCOUNT_LOGIN_METHODS.add("email")
+# Login directo por correo para todos los entornos.
+ACCOUNT_LOGIN_METHODS = {"email"}
 
 ACCOUNT_SIGNUP_FIELDS = [
-    "email*" if EMAIL_REQUIRED_FOR_SIGNUP else "email",
+    "email*",
     "username*",
     "password1*",
     "password2*",
@@ -322,6 +321,8 @@ ACCOUNT_SIGNUP_FIELDS = [
 ACCOUNT_SESSION_REMEMBER = True
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 ACCOUNT_ADAPTER = "cba_app.allauth_adapter.SideoAccountAdapter"
+SOCIALACCOUNT_ADAPTER = "cba_app.allauth_social_adapter.SideoSocialAccountAdapter"
+SOCIALACCOUNT_AUTO_SIGNUP = True
 ACCOUNT_FORMS = {
     "login": "cba_app.allauth_forms.AllauthLoginForm",
     "signup": "cba_app.allauth_forms.AllauthSignupForm",
@@ -358,13 +359,21 @@ if IS_PRODUCTION and not ALLOW_NO_EMAIL_IN_PROD:
         )
 
 # Social login (Google). Activo solo si se setean estas variables.
-_google_client_id = (os.environ.get("GOOGLE_CLIENT_ID") or "").strip()
-_google_client_secret = (os.environ.get("GOOGLE_CLIENT_SECRET") or "").strip()
+_google_client_id = (
+    os.environ.get("GOOGLE_CLIENT_ID")
+    or os.environ.get("GOOGLE_OAUTH_CLIENT_ID")
+    or ""
+).strip()
+_google_client_secret = (
+    os.environ.get("GOOGLE_CLIENT_SECRET")
+    or os.environ.get("GOOGLE_OAUTH_CLIENT_SECRET")
+    or ""
+).strip()
 if _google_client_id and _google_client_secret:
     SOCIALACCOUNT_PROVIDERS = {
         "google": {
             "SCOPE": ["profile", "email"],
-            "AUTH_PARAMS": {"access_type": "online"},
+            "AUTH_PARAMS": {"access_type": "online", "prompt": "select_account"},
             "APP": {
                 "client_id": _google_client_id,
                 "secret": _google_client_secret,

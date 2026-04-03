@@ -65,9 +65,9 @@ class AllauthLoginForm(LoginForm):
 
         login_field = self.fields.get("login")
         if login_field is not None:
-            login_field.label = "Usuario o correo"
-            login_field.widget.attrs.setdefault("placeholder", "Tu usuario o correo")
-            login_field.help_text = "Puedes ingresar con tu usuario o con tu correo."
+            login_field.label = "Correo electronico"
+            login_field.widget.attrs.setdefault("placeholder", "nombre@dominio.com")
+            login_field.help_text = "Ingresa el correo con el que te registraste."
 
         password_field = self.fields.get("password")
         if password_field is not None:
