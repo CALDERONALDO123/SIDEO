@@ -24,12 +24,6 @@ services:
         value: ""
       - key: DJANGO_CSRF_TRUSTED_ORIGINS
         value: ""
-      - key: DJANGO_SUPERUSER_USERNAME
-        value: admin
-      - key: DJANGO_SUPERUSER_EMAIL
-        value: admin@sideo.com
-      - key: DJANGO_SUPERUSER_PASSWORD
-        generateValue: true
       - key: DATABASE_URL
         fromDatabase:
           name: sideo-db

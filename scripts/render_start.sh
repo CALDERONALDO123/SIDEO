@@ -43,6 +43,13 @@ if ! run_with_timeout "${MIGRATE_TIMEOUT_VALUE}" python manage.py migrate --noin
 	echo "[render_start] WARNING: migrate failed/timeout (continuing)" >&2
 fi
 
+# Crea o actualiza el superusuario si las variables de entorno estan presentes.
+SUPERUSER_TIMEOUT_VALUE="${SUPERUSER_TIMEOUT:-30}"
+echo "[render_start] ensure_superuser (timeout=${SUPERUSER_TIMEOUT_VALUE}s, non-fatal)"
+if ! run_with_timeout "${SUPERUSER_TIMEOUT_VALUE}" python manage.py ensure_superuser; then
+	echo "[render_start] WARNING: ensure_superuser failed/timeout (continuing)" >&2
+fi
+
 # Backfill automático para Power BI (no-fatal). Importante si existían resultados guardados
 # antes de que se empezaran a poblar estas tablas planas.
 POWERBI_BACKFILL_LIMIT_VALUE="${POWERBI_BACKFILL_LIMIT:-200}"
