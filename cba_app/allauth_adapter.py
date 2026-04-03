@@ -2,6 +2,8 @@ import logging
 
 from allauth.account.adapter import DefaultAccountAdapter
 from django.conf import settings
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
 
 import requests
 
@@ -9,10 +11,40 @@ logger = logging.getLogger(__name__)
 
 
 class SideoAccountAdapter(DefaultAccountAdapter):
+    def render_mail(self, template_prefix, email, context):
+        """
+        Sobrescribe para forzar HTML multipart.
+        Carga tanto .txt como .html y crea un mensaje multipart/alternative
+        donde HTML es la parte preferida.
+        """
+        subject = render_to_string(f"{template_prefix}_subject.txt", context).strip()
+        text_body = render_to_string(f"{template_prefix}_message.txt", context)
+        
+        # Intentar cargar HTML
+        try:
+            html_body = render_to_string(f"{template_prefix}_message.html", context)
+        except Exception:
+            html_body = None
+        
+        from_email = getattr(settings, "DEFAULT_FROM_EMAIL", None)
+        
+        # Crear mensaje con HTML como alternativa preferida
+        msg = EmailMultiAlternatives(
+            subject=subject,
+            body=text_body,
+            from_email=from_email,
+            to=[email],
+        )
+        
+        # Agregar HTML como alternativa (multipart/alternative)
+        if html_body:
+            msg.attach_alternative(html_body, "text/html")
+        
+        return msg
+
     def send_mail(self, template_prefix, email, context):
         try:
-            # Renderizamos el email con Allauth (subject + body + html si aplica)
-            # pero en producción preferimos enviar por la API HTTP de SendGrid.
+            # Renderizamos el email con nuestro método mejorado
             msg = self.render_mail(template_prefix, email, context)
 
             use_sendgrid_http = bool(getattr(settings, "SENDGRID_API_KEY", "")) and bool(
