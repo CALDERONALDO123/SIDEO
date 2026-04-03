@@ -10,7 +10,7 @@ services:
     env: python
     plan: free
     healthCheckPath: /healthz
-    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py clear_axes_lockout
     # Arranque centralizado en script para mantener una sola fuente de verdad.
     startCommand: bash scripts/render_start.sh
     envVars:
