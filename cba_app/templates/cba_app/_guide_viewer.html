@@ -1,23 +1,5 @@
 {% if pdf_url %}
     <div class="guide-viewer table-wrapper" data-pdf-url="{{ pdf_url|escape }}" data-page="{{ page }}" data-pdf-version="{{ pdf_version|default:''|escape }}">
-        <div class="guide-viewer__topbar">
-            <div class="guide-viewer__topbar-actions">
-                <button type="button" class="guide-viewer__icon" data-action="fullscreen" aria-label="Pantalla completa" title="Pantalla completa">
-                    <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false">
-                        <path fill="currentColor" d="M3 7a1 1 0 0 0 1-1V4h2a1 1 0 1 0 0-2H3a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1zm13-5h-3a1 1 0 1 0 0 2h2v2a1 1 0 1 0 2 0V3a1 1 0 0 0-1-1zM4 14v-2a1 1 0 1 0-2 0v3a1 1 0 0 0 1 1h3a1 1 0 1 0 0-2H4zm14-2a1 1 0 1 0-2 0v2h-2a1 1 0 1 0 0 2h3a1 1 0 0 0 1-1v-3z"/>
-                    </svg>
-                </button>
-                {% if download_url %}
-                    <a class="guide-viewer__icon" href="{{ download_url }}" aria-label="Descargar" title="Descargar">
-                        <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false">
-                            <path fill="currentColor" d="M10 2a1 1 0 0 1 1 1v7.6l2.3-2.3a1 1 0 1 1 1.4 1.4l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.4L9 10.6V3a1 1 0 0 1 1-1z"/>
-                            <path fill="currentColor" d="M4 14a1 1 0 0 1 1 1v1h10v-1a1 1 0 1 1 2 0v2a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1z"/>
-                        </svg>
-                    </a>
-                {% endif %}
-            </div>
-        </div>
-
         <div class="notice notice--error" data-role="pdf-error" style="display:none;">
             No se pudo cargar el visor del libro. Usa “Abrir PDF” o verifica tu conexión.
         </div>
@@ -43,11 +25,45 @@
                 <span class="text-muted" data-role="page-count">/ —</span>
             </div>
 
+            <div class="guide-viewer__slider" aria-label="Navegación rápida por páginas">
+                <label for="guidePageSlider" class="text-muted">Página</label>
+                <input id="guidePageSlider" type="range" min="1" max="1" value="1" step="1" data-role="page-slider" aria-label="Deslizar para ir a página">
+            </div>
+
             <button type="button" class="guide-viewer__icon" data-action="next" aria-label="Páginas siguientes" title="Siguiente">
                 <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false">
                     <path fill="currentColor" d="M7.3 15.7a1 1 0 0 1 0-1.4L10.6 11H3a1 1 0 1 1 0-2h7.6L7.3 5.7a1 1 0 1 1 1.4-1.4l5 5a1 1 0 0 1 0 1.4l-5 5a1 1 0 0 1-1.4 0z"/>
                 </svg>
             </button>
+
+        </div>
+
+        <div
+            class="guide-viewer__actions-inline"
+            aria-label="Acciones del visor"
+            style="position:absolute; top:12px; right:12px; z-index:46; display:inline-flex; gap:8px; align-items:center; padding:6px 8px; border-radius:10px; border:1px solid rgba(15,23,42,.12); background:rgba(255,255,255,.9);"
+        >
+            <button type="button" class="guide-viewer__icon" data-action="fullscreen" aria-label="Pantalla completa" title="Pantalla completa">
+                <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false">
+                    <path fill="currentColor" d="M3 7a1 1 0 0 0 1-1V4h2a1 1 0 1 0 0-2H3a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1zm13-5h-3a1 1 0 1 0 0 2h2v2a1 1 0 1 0 2 0V3a1 1 0 0 0-1-1zM4 14v-2a1 1 0 1 0-2 0v3a1 1 0 0 0 1 1h3a1 1 0 1 0 0-2H4zm14-2a1 1 0 1 0-2 0v2h-2a1 1 0 1 0 0 2h3a1 1 0 0 0 1-1v-3z"/>
+                </svg>
+            </button>
+            {% if open_url %}
+                <a class="guide-viewer__icon" href="{{ open_url }}" target="_blank" rel="noopener" aria-label="Abrir PDF" title="Abrir PDF">
+                    <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false">
+                        <path fill="currentColor" d="M11 3a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v5a1 1 0 1 1-2 0V5.4l-6.3 6.3a1 1 0 0 1-1.4-1.4L14.6 4H12a1 1 0 0 1-1-1z"/>
+                        <path fill="currentColor" d="M4 4h5a1 1 0 1 1 0 2H5v10h10v-4a1 1 0 1 1 2 0v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/>
+                    </svg>
+                </a>
+            {% endif %}
+            {% if download_url %}
+                <a class="guide-viewer__icon" href="{{ download_url }}" aria-label="Descargar" title="Descargar">
+                    <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false">
+                        <path fill="currentColor" d="M10 2a1 1 0 0 1 1 1v7.6l2.3-2.3a1 1 0 1 1 1.4 1.4l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.4L9 10.6V3a1 1 0 0 1 1-1z"/>
+                        <path fill="currentColor" d="M4 14a1 1 0 0 1 1 1v1h10v-1a1 1 0 1 1 2 0v2a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1z"/>
+                    </svg>
+                </a>
+            {% endif %}
         </div>
 
         <p class="guide-viewer__hint text-muted">Tip: clic en página izquierda/derecha o usa ← →. Home/End para inicio/fin.</p>
@@ -93,12 +109,15 @@
                 var book = root.querySelector('[data-role="flipbook"]');
                 var errorBox = root.querySelector('[data-role="pdf-error"]');
                 var loadingBox = root.querySelector('[data-role="pdf-loading"]');
+                var bottomBarEl = root.querySelector('.guide-viewer__bottombar');
 
                 var prevBtn = root.querySelector('[data-action="prev"]');
                 var nextBtn = root.querySelector('[data-action="next"]');
                 var pageInputEl = root.querySelector('[data-role="page-input"]');
                 var pageCountEl = root.querySelector('[data-role="page-count"]');
                 var pageIndicatorEl = root.querySelector('[data-role="page-indicator"]');
+                var pageSliderEl = root.querySelector('[data-role="page-slider"]');
+                var actionsInlineEl = root.querySelector('.guide-viewer__actions-inline');
 
                 if (!book) return;
                 if (!pdfUrl) {
@@ -107,12 +126,198 @@
                 }
 
                 var pdfDoc = null;
+
+                function pinActionsTopRight() {
+                    if (!actionsInlineEl) return;
+                    actionsInlineEl.style.position = 'absolute';
+                    actionsInlineEl.style.top = '12px';
+                    actionsInlineEl.style.right = '12px';
+                    actionsInlineEl.style.left = 'auto';
+                    actionsInlineEl.style.bottom = 'auto';
+                    actionsInlineEl.style.transform = 'none';
+                    actionsInlineEl.style.zIndex = '46';
+                    actionsInlineEl.style.display = 'inline-flex';
+                    actionsInlineEl.style.flexDirection = 'row';
+                }
+
+                function applyBottomBarDocking() {
+                    if (!bottomBarEl) return;
+                    var wide = false;
+                    try {
+                        wide = !!(window.matchMedia && window.matchMedia('(min-width: 900px)').matches);
+                    } catch (e) {
+                        wide = false;
+                    }
+                    var fsActive = false;
+                    try { fsActive = isFullscreenActive(); } catch (e) { fsActive = false; }
+
+                    if (fsActive) {
+                        // Fullscreen: barra compacta full-width pegada abajo
+                        bottomBarEl.style.position = 'absolute';
+                        bottomBarEl.style.left = '0';
+                        bottomBarEl.style.right = '0';
+                        bottomBarEl.style.bottom = '0';
+                        bottomBarEl.style.zIndex = '40';
+                        bottomBarEl.style.margin = '0';
+                        bottomBarEl.style.padding = '3px 12px';
+                        bottomBarEl.style.borderTop = '0';
+                        bottomBarEl.style.borderRadius = '0';
+                        bottomBarEl.style.background = 'rgba(255,255,255,.08)';
+                        bottomBarEl.style.backdropFilter = 'none';
+                    } else if (wide) {
+                        bottomBarEl.style.position = 'absolute';
+                        bottomBarEl.style.left = '10px';
+                        bottomBarEl.style.right = '10px';
+                        bottomBarEl.style.bottom = '6px';
+                        bottomBarEl.style.zIndex = '40';
+                        bottomBarEl.style.margin = '0';
+                        bottomBarEl.style.padding = '8px 8px';
+                        bottomBarEl.style.borderTop = '0';
+                        bottomBarEl.style.borderRadius = '14px';
+                        bottomBarEl.style.background = 'rgba(255,255,255,.82)';
+                        bottomBarEl.style.backdropFilter = 'blur(4px)';
+                    } else {
+                        bottomBarEl.style.position = '';
+                        bottomBarEl.style.left = '';
+                        bottomBarEl.style.right = '';
+                        bottomBarEl.style.bottom = '';
+                        bottomBarEl.style.zIndex = '';
+                        bottomBarEl.style.margin = '';
+                        bottomBarEl.style.padding = '';
+                        bottomBarEl.style.borderTop = '';
+                        bottomBarEl.style.borderRadius = '';
+                        bottomBarEl.style.background = '';
+                        bottomBarEl.style.backdropFilter = '';
+                    }
+                }
+
+                function scaleBookToFit() {
+                    var stfParent = book ? book.querySelector('.stf__parent') : null;
+                    if (!stfParent) return;
+                    if (!isFullscreenActive()) {
+                        stfParent.style.transform = '';
+                        stfParent.style.transformOrigin = '';
+                        return;
+                    }
+                    // Resetear transform antes de medir para obtener tamaño real
+                    stfParent.style.transform = 'none';
+                    // Forzar reflow
+                    void stfParent.offsetWidth;
+                    // Medir tamaño real que StPageFlip le asignó al wrapper
+                    var stfWrapper = stfParent.querySelector('.stf__wrapper') || stfParent;
+                    var pw = stfWrapper.offsetWidth || stfWrapper.clientWidth || 0;
+                    var ph = stfWrapper.offsetHeight || stfWrapper.clientHeight || 0;
+                    // Si wrapper no tiene tamaño, probar style inline de stf__parent
+                    if (pw < 10 || ph < 10) {
+                        pw = parseInt(stfParent.style.width, 10) || stfParent.offsetWidth || 0;
+                        ph = parseInt(stfParent.style.height, 10) || stfParent.offsetHeight || 0;
+                    }
+                    console.log('[scaleBookToFit] pw=' + pw + ' ph=' + ph);
+                    if (pw < 10 || ph < 10) { stfParent.style.transform = ''; return; }
+                    // Espacio disponible: viewport menos margen para la barra inferior
+                    var vw = window.innerWidth || document.documentElement.clientWidth || 0;
+                    var vh = window.innerHeight || document.documentElement.clientHeight || 0;
+                    var barH = 0;
+                    if (bottomBarEl) {
+                        barH = bottomBarEl.offsetHeight || bottomBarEl.clientHeight || 0;
+                    }
+                    var bottomMargin = Math.max(barH + 6, 36); // barra compacta en fs
+                    var availH = vh - bottomMargin;
+                    console.log('[scaleBookToFit] vw=' + vw + ' availH=' + availH + ' barH=' + barH);
+                    if (availH < 100 || vw < 100) { stfParent.style.transform = ''; return; }
+                    var scaleX = vw / pw;
+                    var scaleY = availH / ph;
+                    var s = Math.min(scaleX, scaleY);
+                    console.log('[scaleBookToFit] scaleX=' + scaleX.toFixed(3) + ' scaleY=' + scaleY.toFixed(3) + ' => s=' + s.toFixed(3));
+                    if (s > 1.02) {
+                        stfParent.style.transformOrigin = 'top center';
+                        stfParent.style.transform = 'scale(' + s.toFixed(4) + ')';
+                    } else {
+                        stfParent.style.transform = '';
+                        stfParent.style.transformOrigin = '';
+                    }
+                }
+
+                pinActionsTopRight();
+                applyBottomBarDocking();
                 var numPages = 0; // páginas del libro (puede incluir una página en blanco)
                 var pdfPages = 0; // páginas reales del PDF
                 var indexToPdfPage = [];
                 var pageFlip = null;
                 var isAnimating = false;
                 var objectUrls = [];
+                var controlsBound = false;
+                var lastFlipImages = null;
+                var lastFlipRatio = null;
+                var hideUiTimer = null;
+                var savedPageKey = 'cba:guide:last-page:' + (pdfVersion || 'noversion');
+
+                function getSavedPage() {
+                    try {
+                        var raw = window.localStorage.getItem(savedPageKey) || '';
+                        var n = parseInt(raw, 10);
+                        if (!Number.isFinite(n) || n < 1) return null;
+                        return n;
+                    } catch (e) {
+                        return null;
+                    }
+                }
+
+                function savePage(pageNum) {
+                    var n = parseInt(String(pageNum || ''), 10);
+                    if (!Number.isFinite(n) || n < 1) return;
+                    try {
+                        window.localStorage.setItem(savedPageKey, String(n));
+                    } catch (e) {
+                        // ignore
+                    }
+                }
+
+                function isFullscreenActive() {
+                    return !!document.fullscreenElement;
+                }
+
+                function clearUiAutohide() {
+                    if (hideUiTimer) {
+                        window.clearTimeout(hideUiTimer);
+                        hideUiTimer = null;
+                    }
+                }
+
+                function setUiHidden(hidden) {
+                    root.classList.toggle('is-fs-ui-hidden', !!hidden && isFullscreenActive());
+                }
+
+                function scheduleUiAutohide() {
+                    clearUiAutohide();
+                    if (!isFullscreenActive()) {
+                        setUiHidden(false);
+                        return;
+                    }
+                    hideUiTimer = window.setTimeout(function () {
+                        setUiHidden(true);
+                    }, 2400);
+                }
+
+                function bumpUiVisibility() {
+                    setUiHidden(false);
+                    scheduleUiAutohide();
+                }
+
+                try {
+                    var hasPageQuery = false;
+                    try {
+                        hasPageQuery = !!(new URL(window.location.href)).searchParams.has('page');
+                    } catch (e) {
+                        hasPageQuery = false;
+                    }
+                    if (!hasPageQuery) {
+                        var savedPage = getSavedPage();
+                        if (savedPage) startPageFromServer = savedPage;
+                    }
+                } catch (e) {
+                    // ignore
+                }
 
                 // Sonido de pasar página (Web Audio, sin assets externos)
                 var audioCtx = null;
@@ -314,20 +519,45 @@
 
                 function currentPageNumber() {
                     if (!pageFlip) return clampPage(startPageFromServer);
-                    return pageFlip.getCurrentPageIndex() + 1;
+                    var idx = 0;
+                    try { idx = pageFlip.getCurrentPageIndex() || 0; } catch (e) { idx = 0; }
+                    var orientation = getFlipOrientation();
+                    if (orientation === 'landscape') {
+                        // En spreads, normalizamos al índice izquierdo para estabilidad.
+                        // Con `showCover`, los spreads empiezan en 1 (0 es tapa). Con o sin showCover,
+                        // devolvemos el índice de la página izquierda del spread.
+                        if (USE_SHOW_COVER) {
+                            if (idx > 1 && idx < (numPages ? numPages - 1 : idx + 1) && (idx % 2 === 0)) {
+                                idx = Math.max(1, idx - 1);
+                            }
+                        } else {
+                            if (idx % 2 === 1) idx = Math.max(0, idx - 1);
+                        }
+                    }
+                    return idx + 1;
                 }
 
                 function updateControls() {
                     var n = currentPageNumber();
                     var pdfN = (indexToPdfPage && indexToPdfPage.length) ? indexToPdfPage[n - 1] : n;
-                    setButtonDisabled(prevBtn, !pageFlip || isAnimating || n <= 1);
-                    setButtonDisabled(nextBtn, !pageFlip || isAnimating || (numPages ? n >= numPages : false));
+                    var idxNow = 0;
+                    if (pageFlip) {
+                        try { idxNow = pageFlip.getCurrentPageIndex() || 0; } catch (e) { idxNow = 0; }
+                    }
+                    setButtonDisabled(prevBtn, !pageFlip || isAnimating || idxNow <= 0);
+                    setButtonDisabled(nextBtn, !pageFlip || isAnimating || (numPages ? idxNow >= (numPages - 1) : false));
 
                     if (pageCountEl) pageCountEl.textContent = pdfPages ? '/ ' + String(pdfPages) : (numPages ? '/ ' + String(numPages) : '/ —');
                     if (pageInputEl) {
                         if (pdfPages) pageInputEl.max = String(pdfPages);
                         else if (numPages) pageInputEl.max = String(numPages);
                         pageInputEl.value = String(pdfN || 1);
+                    }
+                    if (pageSliderEl) {
+                        var maxPage = (pdfPages || numPages || 1);
+                        pageSliderEl.max = String(maxPage);
+                        pageSliderEl.value = String(pdfN || 1);
+                        pageSliderEl.disabled = maxPage <= 1;
                     }
                     if (pageIndicatorEl) {
                         if (!numPages) pageIndicatorEl.textContent = 'Cargando…';
@@ -336,10 +566,23 @@
                         else pageIndicatorEl.textContent = 'Página ' + pdfN + ' de ' + pdfPages;
                     }
 
+                    if (pdfN) savePage(pdfN);
+
                     updateCoverClasses();
                 }
 
+                // Tapa/contratapa: solo primera y última como página simple en landscape.
+                // Nota: el agrandamiento anterior se debía a que el spread se escalaba hacia abajo,
+                // pero la tapa (página simple) no. Lo evitamos calculando `width` como ~mitad del
+                // contenedor en layouts anchos.
+                var USE_SHOW_COVER = true;
+
                 function updateCoverClasses() {
+                    // Dejar que StPageFlip maneje cover/spreads. Evitamos shifts manuales
+                    // que pueden desalinear o recortar portada/contraportada.
+                    root.classList.remove('is-cover-front', 'is-cover-back', 'is-cover-shift-front', 'is-cover-shift-back');
+                    if (!USE_SHOW_COVER) return;
+
                     var isLandscape = false;
                     try { isLandscape = getFlipOrientation() === 'landscape'; } catch (e) { isLandscape = false; }
 
@@ -353,11 +596,6 @@
 
                     root.classList.toggle('is-cover-front', isFront);
                     root.classList.toggle('is-cover-back', isBack);
-
-                    // "Shift" solo cuando no está animando, para evitar el efecto de corte.
-                    root.classList.toggle('is-cover-shift-front', isFront && !isAnimating);
-                    root.classList.toggle('is-cover-shift-back', isBack && !isAnimating);
-
                 }
 
                 function clampPdfPage(p) {
@@ -428,10 +666,6 @@
                     startPageFromServer = clampPdfPage(startPageFromServer);
                     updateControls();
 
-                    var rect = book.getBoundingClientRect();
-                    var baseW = Math.min(1000, Math.max(360, Math.floor(rect.width || 900)));
-                    var baseH = Math.min(1200, Math.max(460, Math.floor(baseW * ratio)));
-
                     var images = (pdfImageUrls || []).slice();
 
                     // Si el PDF tiene páginas impares, insertamos una página en blanco antes de la última
@@ -462,47 +696,197 @@
                     // En modo canvas la librería no usa nodos HTML por página.
                     book.innerHTML = '';
 
-                    pageFlip = new window.St.PageFlip(book, {
-                        width: baseW,
-                        height: baseH,
-                        size: 'stretch',
-                        minWidth: 320,
-                        maxWidth: 1400,
-                        minHeight: 420,
-                        maxHeight: 1200,
-                        drawShadow: true,
-                        maxShadowOpacity: 0.45,
-                        showCover: true,
-                        useMouseEvents: true,
-                        mobileScrollSupport: true,
-                        flippingTime: 780,
-                        autoSize: true
-                    });
+                    lastFlipImages = images.slice();
+                    lastFlipRatio = ratio;
 
-                    pageFlip.on('flip', function () {
-                        playPageFlipSound();
-                        updateControls();
+                    createOrRecreateFlipbook({
+                        images: images,
+                        ratio: ratio,
+                        initialPdfPage: startPageFromServer
                     });
+                }
 
-                    pageFlip.on('changeState', function (e) {
-                        var s = String(e && e.data ? e.data : '');
-                        isAnimating = (s === 'flipping');
-                        updateControls();
-                    });
+                function computeBaseSize(ratio) {
+                    var rect = book.getBoundingClientRect();
+                    var isWideLayout = false;
+                    try {
+                        isWideLayout = !!(window.matchMedia && window.matchMedia('(min-width: 980px)').matches);
+                    } catch (e) {
+                        isWideLayout = false;
+                    }
 
-                    pageFlip.on('changeOrientation', function () {
-                        updateControls();
-                    });
+                    var isLandscapeBox = false;
+                    try {
+                        var rw = rect.width || 0;
+                        var rh = rect.height || 0;
+                        isLandscapeBox = !!(rw && rh && (rw / rh) > 1.05);
+                    } catch (e) {
+                        isLandscapeBox = false;
+                    }
 
-                    pageFlip.loadFromImages(images);
-                    bindControls();
-                    flipToPdfPage(startPageFromServer);
-                    updateControls();
+                    var fsActive = false;
+                    try { fsActive = isFullscreenActive(); } catch (e) { fsActive = false; }
+
+                    var denom = (isWideLayout && isLandscapeBox) ? (fsActive ? 1.46 : 1.72) : 1;
+                    var availW = Math.floor((rect.width || 900) / denom);
+                    var availH = Math.floor(rect.height || 0);
+                    var wByH = 0;
+                    if (availH > 0 && ratio > 0) wByH = Math.floor(availH / ratio);
+
+                    var desiredW = availW;
+                    if (wByH > 0) desiredW = Math.min(desiredW, wByH);
+
+                    var baseW = Math.min(2600, Math.max(320, desiredW));
+                    var baseH = Math.min(3600, Math.max(420, Math.floor(baseW * ratio)));
+
+                    // Zoom proporcional: mismo factor para ancho/alto (sin estirar).
+                    var zoom = fsActive ? 1.22 : 1.14;
+                    baseW = Math.min(2800, Math.floor(baseW * zoom));
+                    baseH = Math.min(4000, Math.floor(baseH * zoom));
+
+                    return { w: baseW, h: baseH };
+                }
+
+                function createOrRecreateFlipbook(opts) {
+                    if (!opts || !opts.images || !opts.images.length || !opts.ratio) {
+                        showError();
+                        return;
+                    }
+
+                    function initInstance(width, height, images, targetPdf, keepIndex) {
+                        pageFlip = new window.St.PageFlip(book, {
+                            width: width,
+                            height: height,
+                            size: 'stretch',
+                            minWidth: 320,
+                            maxWidth: 2200,
+                            minHeight: 360,
+                            maxHeight: 2800,
+                            drawShadow: true,
+                            maxShadowOpacity: 0.45,
+                            showCover: USE_SHOW_COVER,
+                            usePortrait: true,
+                            useMouseEvents: true,
+                            mobileScrollSupport: true,
+                            flippingTime: 620,
+                            autoSize: true
+                        });
+
+                        pageFlip.on('flip', function () {
+                            playPageFlipSound();
+                            updateControls();
+                        });
+
+                        pageFlip.on('changeState', function (e) {
+                            var s = String(e && e.data ? e.data : '');
+                            isAnimating = (s === 'flipping');
+                            updateControls();
+                        });
+
+                        pageFlip.on('changeOrientation', function () {
+                            updateControls();
+                        });
+
+                        try {
+                            pageFlip.loadFromImages(images);
+                        } catch (e) {
+                            // Si falla el load, mostramos error y abortamos esta instancia.
+                            showError();
+                            return;
+                        }
+
+                        if (!controlsBound) {
+                            bindControls();
+                            controlsBound = true;
+                        }
+
+                        // Restaurar posición en el siguiente tick para evitar estado intermedio
+                        // (en algunos navegadores `loadFromImages` aún no terminó de montar).
+                        setTimeout(function () {
+                            try {
+                                if (targetPdf != null) {
+                                    flipToPdfPage(targetPdf);
+                                } else {
+                                    try { pageFlip.turnToPage(keepIndex); } catch (e) {
+                                        try { pageFlip.flip(keepIndex, 'top'); } catch (e2) {}
+                                    }
+                                }
+                            } catch (e3) {
+                                // no-op
+                            }
+                            updateControls();
+                        }, 0);
+                    }
+
+                    function initFallbackSimple(images, ratio, targetPdf, keepIndex) {
+                        var rect = book.getBoundingClientRect();
+                        var isWideLayout = false;
+                        try {
+                            isWideLayout = !!(window.matchMedia && window.matchMedia('(min-width: 980px)').matches);
+                        } catch (e) {
+                            isWideLayout = false;
+                        }
+                        var fsActive = false;
+                        try { fsActive = isFullscreenActive(); } catch (e) { fsActive = false; }
+                        var denom = isWideLayout ? (fsActive ? 1.46 : 1.72) : 1;
+                        var w = Math.min(2600, Math.max(360, Math.floor((rect.width || 900) / denom)));
+                        var h = Math.min(3600, Math.max(460, Math.floor(w * ratio)));
+                        var zoom = fsActive ? 1.22 : 1.14;
+                        w = Math.min(2800, Math.floor(w * zoom));
+                        h = Math.min(4000, Math.floor(h * zoom));
+                        initInstance(w, h, images, targetPdf, keepIndex);
+                    }
+
+                    var keepIndex = 0;
+                    if (pageFlip && pageFlip.getCurrentPageIndex) {
+                        try { keepIndex = pageFlip.getCurrentPageIndex() || 0; } catch (e) { keepIndex = 0; }
+                    }
+
+                    // Si viene una página PDF explícita, esa manda.
+                    var targetPdf = null;
+                    if (typeof opts.initialPdfPage === 'number' && Number.isFinite(opts.initialPdfPage)) {
+                        targetPdf = clampPdfPage(opts.initialPdfPage);
+                    }
+
+                    try {
+                        // Intentar destruir instancia anterior si existe.
+                        try { if (pageFlip && pageFlip.destroy) pageFlip.destroy(); } catch (e) {}
+                        pageFlip = null;
+                        isAnimating = false;
+
+                        // Limpiar canvas anterior.
+                        book.innerHTML = '';
+
+                        var size = computeBaseSize(opts.ratio);
+                        initInstance(size.w, size.h, opts.images, targetPdf, keepIndex);
+                    } catch (e) {
+                        // Fallback al método anterior (basado en ancho) para no dejar el visor en blanco.
+                        try {
+                            pageFlip = null;
+                            isAnimating = false;
+                            book.innerHTML = '';
+                            initFallbackSimple(opts.images, opts.ratio, targetPdf, keepIndex);
+                        } catch (e2) {
+                            showError();
+                        }
+                    }
                 }
 
                 function flipTo(pageNumber) {
                     if (!pageFlip) return;
                     var idx = clampPage(pageNumber) - 1;
+                    var orientation = getFlipOrientation();
+                    if (orientation === 'landscape') {
+                        if (USE_SHOW_COVER) {
+                            // Con showCover: 0 tapa, spreads empiezan en 1 (impares), y la contratapa es la última.
+                            if (numPages && idx > 1 && idx < (numPages - 1) && (idx % 2 === 0)) {
+                                idx = Math.max(1, idx - 1);
+                            }
+                        } else {
+                            // Sin showCover: spreads empiezan en 0 (pares).
+                            if (idx % 2 === 1) idx = Math.max(0, idx - 1);
+                        }
+                    }
                     try {
                         pageFlip.flip(idx, 'top');
                     } catch (e) {
@@ -523,15 +907,24 @@
                     if (!pageFlip) return 0;
                     var idx = pageFlip.getCurrentPageIndex ? pageFlip.getCurrentPageIndex() : 0;
                     var orientation = getFlipOrientation();
-                    var step = orientation === 'landscape' ? 2 : 1;
+                    if (orientation !== 'landscape') {
+                        var next1 = idx + 1;
+                        // Si hay una página en blanco insertada (pdfNum=null), saltarla en portrait.
+                        if (indexToPdfPage && indexToPdfPage.length && next1 < indexToPdfPage.length) {
+                            if (indexToPdfPage[next1] == null && (next1 + 1) < indexToPdfPage.length) next1 += 1;
+                        }
+                        if (numPages) next1 = Math.min(numPages - 1, next1);
+                        return Math.max(0, next1);
+                    }
 
-                    // Con showCover=true, la tapa (idx 0) y la contratapa (última) se tratan como página simple.
-                    if (orientation === 'landscape') {
+                    // En landscape avanzamos por spreads. Con showCover, tapa/contratapa son simples.
+                    if (USE_SHOW_COVER) {
                         if (idx <= 0) return 1;
                         if (numPages && idx >= numPages - 2) return Math.max(0, numPages - 1);
                     }
 
-                    var next = idx + step;
+                    var left = (idx % 2 === 0) ? Math.max(USE_SHOW_COVER ? 1 : 0, idx - 1) : idx;
+                    var next = left + 2;
                     if (numPages) next = Math.min(numPages - 1, next);
                     return Math.max(0, next);
                 }
@@ -540,14 +933,22 @@
                     if (!pageFlip) return 0;
                     var idx = pageFlip.getCurrentPageIndex ? pageFlip.getCurrentPageIndex() : 0;
                     var orientation = getFlipOrientation();
-                    var step = orientation === 'landscape' ? 2 : 1;
+                    if (orientation !== 'landscape') {
+                        var prev1 = Math.max(0, idx - 1);
+                        // Si hay una página en blanco insertada (pdfNum=null), saltarla en portrait.
+                        if (indexToPdfPage && indexToPdfPage.length && prev1 >= 0) {
+                            if (indexToPdfPage[prev1] == null && (prev1 - 1) >= 0) prev1 -= 1;
+                        }
+                        return Math.max(0, prev1);
+                    }
 
-                    if (orientation === 'landscape') {
+                    if (USE_SHOW_COVER) {
                         if (idx <= 0) return 0;
                         if (idx === 1) return 0;
                     }
 
-                    var prev = idx - step;
+                    var left = (idx % 2 === 0) ? Math.max(USE_SHOW_COVER ? 1 : 0, idx - 1) : idx;
+                    var prev = left - 2;
                     return Math.max(0, prev);
                 }
 
@@ -583,13 +984,18 @@
                         });
                     }
 
-                    function isFullscreen() {
-                        return !!document.fullscreenElement;
+                    if (pageSliderEl) {
+                        pageSliderEl.addEventListener('input', function () {
+                            flipToPdfPage(parseInt(pageSliderEl.value || '1', 10) || 1);
+                        });
+                        pageSliderEl.addEventListener('change', function () {
+                            flipToPdfPage(parseInt(pageSliderEl.value || '1', 10) || 1);
+                        });
                     }
 
                     function updateFullscreenButton() {
                         if (!fullscreenBtn) return;
-                        var active = isFullscreen();
+                        var active = isFullscreenActive();
                         fullscreenBtn.setAttribute('aria-label', active ? 'Salir de pantalla completa' : 'Pantalla completa');
                         fullscreenBtn.setAttribute('title', active ? 'Salir' : 'Pantalla completa');
                     }
@@ -597,8 +1003,10 @@
                     if (fullscreenBtn) {
                         fullscreenBtn.addEventListener('click', function () {
                             try {
-                                if (!isFullscreen()) {
-                                    var host = root.closest('.guide-main') || root;
+                                if (!isFullscreenActive()) {
+                                    // Usar el propio contenedor del visor evita depender de wrappers
+                                    // (por ejemplo en la guía compartida no existe `.guide-main`).
+                                    var host = root;
                                     if (host.requestFullscreen) host.requestFullscreen();
                                 } else {
                                     if (document.exitFullscreen) document.exitFullscreen();
@@ -611,13 +1019,78 @@
 
                     document.addEventListener('fullscreenchange', function () {
                         updateFullscreenButton();
+                        setUiHidden(true);
+                        pinActionsTopRight();
+                        applyBottomBarDocking();
+
+                        // Forzar fondo oscuro via inline styles (CSS no logra ganar a .table-wrapper)
+                        if (isFullscreenActive()) {
+                            root.style.background = '#1a1a1a';
+                            root.style.border = 'none';
+                            root.style.boxShadow = 'none';
+                            root.style.padding = '0';
+                            if (book) {
+                                book.style.background = 'transparent';
+                                book.style.border = 'none';
+                                book.style.boxShadow = 'none';
+                            }
+                        } else {
+                            root.style.background = '';
+                            root.style.border = '';
+                            root.style.boxShadow = '';
+                            root.style.padding = '';
+                            if (book) {
+                                book.style.background = '';
+                                book.style.border = '';
+                                book.style.boxShadow = '';
+                            }
+                        }
+
+                        // Reset scale before StPageFlip recalculates
+                        scaleBookToFit();
+
+                        function _looksInvisible() {
+                            try {
+                                var rect = book ? book.getBoundingClientRect() : null;
+                                if (!rect || !rect.width || !rect.height) return true;
+                                var c = book.querySelector('canvas');
+                                if (c && ((c.width || 0) < 4 || (c.height || 0) < 4)) return true;
+                            } catch (e) {
+                                return true;
+                            }
+                            return false;
+                        }
+
                         setTimeout(function () {
-                            if (!pageFlip) return;
-                            try { pageFlip.update(); } catch (e) {}
+                            // Primero intentar actualizar la instancia existente (más estable que destruir).
+                            var updated = false;
+                            try {
+                                if (pageFlip && pageFlip.update) {
+                                    pageFlip.update();
+                                    updated = true;
+                                }
+                            } catch (e) {
+                                updated = false;
+                            }
+
+                            // Si aun así el libro queda en blanco, recrear como plan B.
+                            if ((!updated || _looksInvisible()) && lastFlipImages && lastFlipRatio) {
+                                createOrRecreateFlipbook({ images: lastFlipImages, ratio: lastFlipRatio });
+                            }
                             updateControls();
-                        }, 80);
+                            // Escalar para llenar pantalla completa (múltiples intentos para dar tiempo a StPageFlip)
+                            setTimeout(scaleBookToFit, 100);
+                            setTimeout(scaleBookToFit, 350);
+                            setTimeout(scaleBookToFit, 700);
+                        }, 120);
                     });
                     updateFullscreenButton();
+
+                    ['mousemove', 'touchmove'].forEach(function (evtName) {
+                        root.addEventListener(evtName, function () {
+                            bumpUiVisibility();
+                        }, { passive: true });
+                    });
 
                     var resizeTimer = null;
                     window.addEventListener('resize', function () {
@@ -625,7 +1098,10 @@
                         if (resizeTimer) window.clearTimeout(resizeTimer);
                         resizeTimer = window.setTimeout(function () {
                             try { pageFlip.update(); } catch (e) {}
+                            pinActionsTopRight();
+                            applyBottomBarDocking();
                             updateControls();
+                            scaleBookToFit();
                         }, 180);
                     });
 
@@ -668,6 +1144,22 @@
                 ]).then(function () {
                     try { setupPdfWorker(); } catch (e) {}
 
+                    function loadPdfWithFallback(url) {
+                        // Si el worker (CDN) está bloqueado o falla, PDF.js puede explotar.
+                        // Reintentamos sin worker para que el “libro” siga funcionando.
+                        try {
+                            return window.pdfjsLib.getDocument({ url: url }).promise.catch(function () {
+                                return window.pdfjsLib.getDocument({ url: url, disableWorker: true }).promise;
+                            });
+                        } catch (e) {
+                            try {
+                                return window.pdfjsLib.getDocument({ url: url, disableWorker: true }).promise;
+                            } catch (e2) {
+                                return Promise.reject(e2);
+                            }
+                        }
+                    }
+
                     // 1) Intentar cargar desde cache (IndexedDB)
                     return openCacheDb().then(function (db) {
                         return cacheMetaGet(db).then(function (meta) {
@@ -700,7 +1192,7 @@
                             if (usedCache) return;
 
                             // 2) Si no hay cache, renderizar con PDF.js y guardar blobs
-                            return window.pdfjsLib.getDocument({ url: pdfUrl }).promise.then(function (doc) {
+                            return loadPdfWithFallback(pdfUrl).then(function (doc) {
                                 pdfDoc = doc;
                                 pdfPages = doc.numPages || 0;
                                 startPageFromServer = clampPdfPage(startPageFromServer);
@@ -717,8 +1209,8 @@
                                     return openCacheDb().then(function (db2) {
                                         var meta = { id: cacheId, pdfPages: pdfPages, ratio: ratio, savedAt: Date.now() };
                                         return cacheMetaPut(db2, meta).then(function () {
-                                            var imgW = 1400;
-                                            var maxH = 2200;
+                                            var imgW = 2200;
+                                            var maxH = 3200;
                                             var urls = [];
 
                                             var seq = Promise.resolve();

@@ -1,44 +1,66 @@
-<div class="table-wrapper dashboard-metrics" aria-label="Indicadores">
-    <div class="dashboard-section-head">
-        <p class="dashboard-section-head__eyebrow">Resumen</p>
-        <h3 class="dashboard-section-head__title">Estado del sistema</h3>
-    </div>
+{# KPIs — AdminLTE info-box nativo #}
+<div class="row mb-1 sideo-home-kpis" aria-label="Indicadores clave">
 
-    <div class="row" style="margin:0;">
-        <div class="col-lg-4 col-12" style="padding:0 6px;">
-            <div class="small-box bg-info" style="border-radius:12px;">
-                <div class="inner">
-                    <h3 style="margin:0;">{{ total_results|default:0 }}</h3>
-                    <p style="margin:6px 0 0;">Análisis guardados</p>
-                </div>
-                <div class="icon" aria-hidden="true"><i class="fas fa-chart-pie"></i></div>
-            </div>
-        </div>
-
-        <div class="col-lg-4 col-12" style="padding:0 6px;">
-            <div class="small-box bg-success" style="border-radius:12px;">
-                <div class="inner">
-                    <h3 style="margin:0;">
-                        {% if latest_result %}
-                            {{ latest_result.created_at|date:"d/m/Y" }}
-                        {% else %}
-                            -
-                        {% endif %}
-                    </h3>
-                    <p style="margin:6px 0 0;">Último guardado</p>
-                </div>
-                <div class="icon" aria-hidden="true"><i class="far fa-clock"></i></div>
-            </div>
-        </div>
-
-        <div class="col-lg-4 col-12" style="padding:0 6px;">
-            <div class="small-box bg-warning" style="border-radius:12px;">
-                <div class="inner">
-                    <h3 style="margin:0;">{% if guide_pdf_available %}OK{% else %}--{% endif %}</h3>
-                    <p style="margin:6px 0 0;">Guía PDF</p>
-                </div>
-                <div class="icon" aria-hidden="true"><i class="far fa-file-pdf"></i></div>
+    <div class="col-sm-6 col-xl-4">
+        <div class="info-box elevation-1">
+            <span class="info-box-icon sideo-ib-icon--teal">
+                <i class="fas fa-calendar-check"></i>
+            </span>
+            <div class="info-box-content">
+                <span class="info-box-text text-uppercase font-weight-bold">Último análisis</span>
+                <span class="info-box-number" style="font-size:1.4rem;">
+                    {% if latest_result %}{{ latest_result.created_at|date:"d/m/Y" }}{% else %}—{% endif %}
+                </span>
+                <div class="progress"><div class="progress-bar sideo-progress--teal" style="width:100%"></div></div>
+                <span class="progress-description">Fecha de guardado</span>
             </div>
         </div>
     </div>
+
+    <div class="col-sm-6 col-xl-4">
+        {% if latest_result %}
+            <a class="sideo-info-box-link" href="{% url 'cba_saved_result_detail' latest_result.id %}" aria-label="Ver dashboard del último resultado">
+                <div class="info-box elevation-1">
+                    <span class="info-box-icon sideo-ib-icon--navy">
+                        <i class="fas fa-eye"></i>
+                    </span>
+                    <div class="info-box-content">
+                        <span class="info-box-text text-uppercase font-weight-bold">Ver dashboard</span>
+                        <span class="info-box-number">Abrir</span>
+                        <div class="progress"><div class="progress-bar sideo-progress--navy" style="width:100%"></div></div>
+                        <span class="progress-description">Último resultado guardado</span>
+                    </div>
+                </div>
+            </a>
+        {% else %}
+            <div class="info-box elevation-1" aria-label="Ver dashboard (sin resultados)">
+                <span class="info-box-icon sideo-ib-icon--navy">
+                    <i class="fas fa-eye"></i>
+                </span>
+                <div class="info-box-content">
+                    <span class="info-box-text text-uppercase font-weight-bold">Ver dashboard</span>
+                    <span class="info-box-number">—</span>
+                    <div class="progress"><div class="progress-bar sideo-progress--navy" style="width:100%"></div></div>
+                    <span class="progress-description">Aún no hay resultados</span>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="col-sm-6 col-xl-4">
+        <div class="info-box elevation-1">
+            <span class="info-box-icon sideo-ib-icon--gold">
+                <i class="fas fa-trophy"></i>
+            </span>
+            <div class="info-box-content">
+                <span class="info-box-text text-uppercase font-weight-bold">Alternativa ganadora</span>
+                <span class="info-box-number" style="font-size:1rem; word-break:break-word;">
+                    {% if latest_result and latest_result.winner_name %}{{ latest_result.winner_name }}{% else %}—{% endif %}
+                </span>
+                <div class="progress"><div class="progress-bar sideo-progress--gold" style="width:100%"></div></div>
+                <span class="progress-description">Último análisis guardado</span>
+            </div>
+        </div>
+    </div>
+
 </div>

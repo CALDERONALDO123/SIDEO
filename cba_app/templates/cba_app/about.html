@@ -16,20 +16,57 @@
 
     <section class="content">
         <div class="container-fluid">
+
+            <!-- Descripción principal -->
             <div class="card" style="border-radius: 12px;">
+                <div class="card-header" style="border-bottom: 1px solid rgba(15,23,42,.08);">
+                    <h5 class="card-title m-0">¿Qué es SIDEO?</h5>
+                </div>
                 <div class="card-body">
-                    <p class="text-muted" style="margin-bottom: 12px;">
-                        SIDEO es un asistente para la toma de decisiones basado en la metodología Choosing By Advantages (CBA).
-                        Está pensado para equipos de proyectos, compras, logística y cualquier área que requiera comparar alternativas
-                        de manera transparente y trazable.
-                    </p>
-                    <ul class="text-muted" style="padding-left: 18px; margin: 0;">
-                        <li>Registra postores, factores de decisión y todos los pasos de CBA en un solo flujo guiado.</li>
-                        <li>Conserva un historial de análisis para auditar decisiones pasadas y reutilizar configuraciones.</li>
-                        <li>Presenta los resultados en tablas y gráficos claros para apoyar comités y presentaciones técnicas.</li>
+                    <p><strong>SIDEO</strong> — <em>Sistema Inteligente de Decisión basado en la Evaluación de Opciones</em> — es una plataforma web diseñada para facilitar la toma de decisiones multicriterio de manera estructurada, transparente y trazable.</p>
+                    <p>La plataforma implementa la metodología <strong>Choosing By Advantages (CBA)</strong>, un enfoque desarrollado por Jim Suhr que se centra en comparar las <em>ventajas</em> de cada alternativa en lugar de ponderar pros y contras de forma subjetiva. CBA es ampliamente reconocida en el ámbito de la construcción Lean (<em>Lean Construction</em>) y la gestión de proyectos bajo estándares PMBOK.</p>
+                </div>
+            </div>
+
+            <!-- Metodología CBA -->
+            <div class="card" style="border-radius: 12px;">
+                <div class="card-header" style="border-bottom: 1px solid rgba(15,23,42,.08);">
+                    <h5 class="card-title m-0">Metodología CBA: los 10 pasos</h5>
+                </div>
+                <div class="card-body">
+                    <p>SIDEO automatiza y guía al usuario a través de los <strong>10 pasos</strong> del método CBA:</p>
+                    <ol style="padding-left: 20px;">
+                        <li><strong>Identificar alternativas</strong> — Definir las opciones a comparar (ej. proveedores, PMO, diseños).</li>
+                        <li><strong>Definir factores</strong> — Establecer los criterios relevantes para la decisión.</li>
+                        <li><strong>Definir criterios "Debe Tener" y "Desea Tener"</strong> — Distinguir requisitos obligatorios de complementarios.</li>
+                        <li><strong>Describir atributos</strong> — Registrar el desempeño de cada alternativa en cada factor.</li>
+                        <li><strong>Decidir las ventajas</strong> — Identificar las ventajas comparativas de cada alternativa respecto a las demás.</li>
+                        <li><strong>Subrayar el atributo menos preferido</strong> — Identificar las desventajas relativas de cada opción.</li>
+                        <li><strong>Definir la ventaja principal (PA)</strong> — Identificar la ventaja más significativa de cada alternativa.</li>
+                        <li><strong>Decidir la importancia de cada ventaja</strong> — Asignar puntajes ponderados a cada ventaja.</li>
+                        <li><strong>Calcular la importancia total</strong> — Sumar los puntajes de ventajas de cada alternativa.</li>
+                        <li><strong>Evaluar los datos de costo</strong> — Comparar el costo de cada alternativa con su puntaje total, generando la gráfica de costo-beneficio.</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Público objetivo -->
+            <div class="card" style="border-radius: 12px;">
+                <div class="card-header" style="border-bottom: 1px solid rgba(15,23,42,.08);">
+                    <h5 class="card-title m-0">¿Para quién es SIDEO?</h5>
+                </div>
+                <div class="card-body">
+                    <p>SIDEO está pensado para cualquier profesional o equipo que necesite tomar decisiones comparativas de forma objetiva:</p>
+                    <ul style="padding-left: 18px; margin: 0;">
+                        <li>Gerentes de proyectos y oficinas de gestión de proyectos (PMO).</li>
+                        <li>Equipos de compras, adquisiciones y logística.</li>
+                        <li>Profesionales de la construcción que aplican Lean Construction.</li>
+                        <li>Investigadores y académicos en gestión de proyectos.</li>
+                        <li>Comités de evaluación y selección de proveedores o contratistas.</li>
                     </ul>
                 </div>
             </div>
+
         </div>
     </section>
 {% endblock %}

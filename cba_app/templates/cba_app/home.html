@@ -3,86 +3,59 @@
 
 {% block body_class %}layout--home adminlte-home{% endblock %}
 
-{% block content %}
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2 align-items-center">
-                <div class="col-sm-7">
-                    <h1 class="m-0">Panel principal</h1>
-                    <small class="text-muted">
-                        Hola,
-                        {% if user.first_name or user.last_name %}
-                            {{ user.first_name }} {{ user.last_name }}
-                        {% else %}
-                            {{ user.username }}
-                        {% endif %}
-                    </small>
-                </div>
-                <div class="col-sm-5 text-sm-right mt-3 mt-sm-0">
-                    <a class="btn btn-info" href="{% url 'cba_step1' %}">Nuevo análisis</a>
-                    <a class="btn btn-outline-secondary" href="{% url 'cba_saved_results' %}">Ver guardados</a>
-                    {% if powerbi_dashboard_url %}
-                        {% if latest_result %}
-                            <a class="btn btn-outline-secondary" href="{% url 'cba_saved_result_powerbi' latest_result.id %}" target="_blank" rel="noopener">Ir a Power BI</a>
-                        {% else %}
-                            <a class="btn btn-outline-secondary" href="{{ powerbi_dashboard_url }}" target="_blank" rel="noopener">Ir a Power BI</a>
-                        {% endif %}
-                    {% else %}
-                        <a class="btn btn-outline-secondary" href="{% url 'cba_saved_results' %}?edit_powerbi=1">Configurar Power BI</a>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </section>
+{% block navbar_actions %}
+    <div class="sideo-navbar-actions">
+        <span class="navbar-text sideo-navbar-actions__greeting">
+            Bienvenido, <strong>{% if user.first_name %}{{ user.first_name }}{% else %}{{ user.username }}{% endif %}</strong>
+        </span>
+    </div>
+{% endblock %}
 
-    <section class="content">
+{% block content %}
+    <section class="content pt-0">
         <div class="container-fluid">
+
+            {% include "cba_app/home/_metrics.html" %}
+
             <div class="row">
-                <div class="col-lg-8 col-12">
+                <div class="col-lg-9 col-12">
                     {% include "cba_app/home/_last_result.html" %}
                 </div>
 
-                <div class="col-lg-4 col-12">
-                    {% include "cba_app/home/_metrics.html" %}
-
-                    <div class="card mt-3" style="border-radius: 12px;">
+                <div class="col-lg-3 col-12">
+                    <div class="card card-outline" style="border-top-color:#1B3A6B;">
                         <div class="card-header">
-                            <h3 class="card-title">Libreta (último análisis)</h3>
+                            <h3 class="card-title">
+                                <i class="fas fa-th mr-2" style="color:#1B3A6B;"></i>Accesos rápidos
+                            </h3>
                         </div>
-                        <div class="card-body">
-                            <div class="text-muted text-sm">Ganador</div>
-                            <div id="homeNotebookWinner" class="font-weight-bold">-</div>
-                            <div class="text-muted text-sm mt-3">Análisis</div>
-                            <div id="homeNotebookText" class="cba-ai__output" aria-label="Último análisis guardado en libreta">
-                                <span class="text-muted">Aún no hay texto guardado en la libreta.</span>
+                        <div class="card-body p-1">
+                            <div class="d-flex flex-column" style="gap:6px;">
+                                <a href="{% url 'cba_step1' %}" class="btn btn-block btn-outline-primary btn-sm text-left py-1">
+                                        <i class="fas fa-plus-circle mr-1"></i>Nuevo análisis
+                                    </a>
+                                <a href="{% url 'cba_saved_results' %}" class="btn btn-block btn-outline-secondary btn-sm text-left py-1">
+                                        <i class="fas fa-folder-open mr-1"></i>Ver guardados
+                                    </a>
+                                {% if powerbi_dashboard_url %}
+                                    {% if latest_result %}
+                                        <a href="{% url 'cba_saved_result_powerbi' latest_result.id %}" target="_blank" rel="noopener" class="btn btn-block btn-outline-secondary btn-sm text-left py-1">
+                                            <i class="fas fa-chart-bar mr-1"></i>Power BI
+                                        </a>
+                                    {% else %}
+                                        <a href="{{ powerbi_dashboard_url }}" target="_blank" rel="noopener" class="btn btn-block btn-outline-secondary btn-sm text-left py-1">
+                                            <i class="fas fa-chart-bar mr-1"></i>Power BI
+                                        </a>
+                                    {% endif %}
+                                {% else %}
+                                    <a href="{% url 'cba_saved_results' %}?edit_powerbi=1" class="btn btn-block btn-outline-secondary btn-sm text-left py-1">
+                                        <i class="fas fa-cog mr-1"></i>Configurar Power BI
+                                    </a>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
-
-                    <div class="card mt-3" style="border-radius: 12px;">
-                        <div class="card-header">
-                            <h3 class="card-title">Actividad reciente</h3>
-                        </div>
-                        <div class="card-body">
-                            <ul class="text-muted" style="padding-left: 18px; margin: 0;">
-                                {% if latest_result %}
-                                    <li>Resultado guardado el {{ latest_result.created_at|date:"d/m/Y H:i" }}.</li>
-                                {% else %}
-                                    <li>Aún no hay resultados guardados.</li>
-                                {% endif %}
-                                <li>{% if total_results|default:0 > 0 %}Histórico disponible para consulta y auditoría.{% else %}Aún no se ha registrado historial de análisis.{% endif %}</li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <div class="mt-3">
-                        {# Acerca de SIDEO se muestra en una página separada. #}
-                    </div>
                 </div>
-            </div>
-
-            <div class="text-muted" style="font-size: 12px; padding: 10px 2px 0;">
-                SIDEO v1.0 · Sistema de decisión CBA
             </div>
         </div>
     </section>
@@ -90,5 +63,5 @@
 
 {% block extra_js %}
     {{ latest_items|json_script:"homeDashboardPayload" }}
-    <script src="{% static 'cba_app/home.js' %}?v=20260220" defer></script>
+    <script src="{% static 'cba_app/home.js' %}?v=20260305_2" defer></script>
 {% endblock %}

@@ -1,19 +1,21 @@
 {% extends "cba_app/base.html" %}
 
-{% block body_class %}page-step page-step8{% endblock %}
+{% block body_class %}layout--panel page-step page-step8{% endblock %}
 
 {% block content %}
     <section class="content pt-3">
         <div class="container-fluid">
             <div class="card">
                 <div class="card-header">
-                    <div class="d-flex flex-column">
-                        <div class="text-muted text-uppercase text-sm">CBA · Paso 8</div>
-                        <h3 class="m-0">Importancia de cada ventaja</h3>
-                        <div class="text-muted text-sm mt-2">Asigna un puntaje de importancia solo donde exista la mayor ventaja (base: Paso 6).</div>
-                    </div>
-                    <div class="mt-2">
-                        {% include "cba_app/_step_progress.html" with current=8 total=10 percent=80 %}
+                    <div class="step-head">
+                        <div>
+                            <p class="step-head__eyebrow">CBA · Paso 8</p>
+                            <h3 class="step-head__title m-0">Importancia de cada ventaja</h3>
+                            <p class="step-head__lede">Asigna un puntaje de importancia solo donde exista la mayor ventaja (base: Paso 6).</p>
+                        </div>
+                        <div class="step-head__actions">
+                            {% include "cba_app/_step_progress.html" with current=8 total=10 percent=80 %}
+                        </div>
                     </div>
                 </div>
 
@@ -40,33 +42,41 @@
         {% csrf_token %}
 
         <div class="table-wrapper table-wrapper--step" style="margin-top:16px;">
-        <div class="table-responsive">
-        <table class="table table-bordered table-striped table-sm mb-0">
-            <tr>
-                <th>FACTORES</th>
-                {% for alt in alternatives %}
-                    <th>{{ alt.name }}</th>
-                {% endfor %}
-            </tr>
+        <div class="step-section-head">
+            <div>
+                <div class="step-section-title">Matriz de importancia</div>
+                <div class="text-muted text-sm">Factores: {{ rows|length }} · Postores: {{ alternatives|length }}</div>
+            </div>
+        </div>
 
+        <div class="table-responsive">
+        <table id="cbaImportanceMatrixStep8" class="table table-bordered table-striped table-sm mb-0 cba-matrix" style="width:100%">
+            <thead>
+                <tr>
+                    <th class="cba-matrix__head cba-matrix__head--row">Factor</th>
+                    {% for alt in alternatives %}
+                        <th class="cba-matrix__head">{{ alt.name }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
             {% for row in rows %}
-            <tr>
-                <td>{{ row.criterion.name }}</td>
-                {% for cell in row.cells %}
-                <td>
-                    {% if cell.has_advantage %}
-                        <input type="number" class="form-control form-control-sm" name="{{ cell.name }}" value="{{ cell.value }}" min="0">
-                    {% else %}
-                        <!-- Sin ventaja principal: celda bloqueada -->
-                    {% endif %}
-                </td>
-                {% endfor %}
-            </tr>
+                <tr>
+                    <td class="cba-matrix__rowhead">{{ row.criterion.name }}</td>
+                    {% for cell in row.cells %}
+                    <td class="cba-matrix__cell">
+                        {% if cell.has_advantage %}
+                            <input type="number" class="form-control form-control-sm" name="{{ cell.name }}" value="{{ cell.value }}" min="0" aria-label="{{ row.criterion.name }} - {{ cell.alternative.name }}">
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
             {% empty %}
-            <tr>
-                <td colspan="{{ alternatives|length|add:'1' }}">No hay ventajas disponibles desde el Paso 6.</td>
-            </tr>
+                <tr>
+                    <td colspan="{{ alternatives|length|add:'1' }}">No hay ventajas disponibles desde el Paso 6.</td>
+                </tr>
             {% endfor %}
+            </tbody>
         </table>
         </div>
         </div>

@@ -1,0 +1,62 @@
+{% extends "cba_app/base.html" %}
+
+{% block body_class %}layout--home adminlte-home{% endblock %}
+
+{% block content %}
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2 align-items-center">
+                <div class="col-sm-7">
+                    <h1 class="m-0">Política de Privacidad</h1>
+                    <small class="text-muted">SIDEO — Sistema Inteligente de Decisión basado en la Evaluación de Opciones</small>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="card" style="border-radius: 12px;">
+                <div class="card-body">
+                    <p class="text-muted" style="font-size: .85rem;">Última actualización: 7 de marzo de 2026</p>
+
+                    <h6><strong>1. Datos que recopilamos</strong></h6>
+                    <p>Al registrarse y utilizar SIDEO, recopilamos únicamente la información necesaria para el funcionamiento del servicio:</p>
+                    <ul style="padding-left: 18px;">
+                        <li>Nombre de usuario y dirección de correo electrónico proporcionados durante el registro.</li>
+                        <li>Datos de los análisis CBA que el usuario crea dentro de la plataforma (alternativas, factores, puntajes, resultados).</li>
+                        <li>Imagen de perfil (avatar), si el usuario decide cargar una.</li>
+                    </ul>
+
+                    <h6><strong>2. Uso de la información</strong></h6>
+                    <p>Los datos recopilados se utilizan exclusivamente para:</p>
+                    <ul style="padding-left: 18px;">
+                        <li>Proveer y mantener las funcionalidades de la plataforma.</li>
+                        <li>Permitir al usuario acceder a su historial de análisis.</li>
+                        <li>Generar recomendaciones y textos asistidos por IA cuando el usuario lo solicite.</li>
+                    </ul>
+                    <p>No vendemos, alquilamos ni compartimos datos personales con terceros con fines comerciales.</p>
+
+                    <h6><strong>3. Servicios de terceros</strong></h6>
+                    <p>SIDEO puede enviar datos del análisis CBA a proveedores de inteligencia artificial (por ejemplo, OpenRouter) con el único fin de generar recomendaciones solicitadas por el usuario. Estos envíos se limitan a los datos del análisis y no incluyen información de identificación personal.</p>
+
+                    <h6><strong>4. Almacenamiento y seguridad</strong></h6>
+                    <p>Los datos se almacenan en servidores protegidos. Aplicamos medidas de seguridad razonables para prevenir el acceso no autorizado, la alteración o la pérdida de información. Las contraseñas se almacenan de forma cifrada y nunca en texto plano.</p>
+
+                    <h6><strong>5. Derechos del usuario</strong></h6>
+                    <p>El usuario puede en cualquier momento:</p>
+                    <ul style="padding-left: 18px;">
+                        <li>Acceder, corregir o eliminar sus datos personales desde su perfil.</li>
+                        <li>Solicitar la eliminación completa de su cuenta y datos asociados contactando al administrador.</li>
+                    </ul>
+
+                    <h6><strong>6. Cookies</strong></h6>
+                    <p>SIDEO utiliza cookies estrictamente necesarias para el funcionamiento de la sesión y la autenticación. No utilizamos cookies de seguimiento ni de publicidad.</p>
+
+                    <h6><strong>7. Cambios en esta política</strong></h6>
+                    <p>Nos reservamos el derecho de actualizar esta política. Cualquier cambio será publicado en esta misma página con la fecha de actualización correspondiente.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}

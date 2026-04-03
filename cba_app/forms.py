@@ -19,6 +19,7 @@ class AlternativeForm(forms.ModelForm):
             "name": forms.TextInput(attrs={
                 "class": "form-control form-control-sm",
                 "autocomplete": "off",
+                "placeholder": "Ej.: PMO Interna / PMO Externa / Consorcio A...",
             }),
         }
 
@@ -35,6 +36,7 @@ class CriterionForm(forms.ModelForm):
             "name": forms.TextInput(attrs={
                 "class": "form-control form-control-sm",
                 "autocomplete": "off",
+                "placeholder": "Ej.: Plazo de entrega / Experiencia específica / Cumplimiento técnico...",
             }),
         }
 
@@ -298,14 +300,14 @@ class ProfileForm(forms.ModelForm):
         widgets = {
             "first_name": forms.TextInput(
                 attrs={
-                    "class": "form-control",
+                    "class": "block w-full rounded-lg border border-gray-300 bg-gray-50 p-3.5 text-base text-gray-900 focus:border-blue-600 focus:ring-blue-600",
                     "placeholder": "Tu nombre",
                     "autocomplete": "given-name",
                 }
             ),
             "last_name": forms.TextInput(
                 attrs={
-                    "class": "form-control",
+                    "class": "block w-full rounded-lg border border-gray-300 bg-gray-50 p-3.5 text-base text-gray-900 focus:border-blue-600 focus:ring-blue-600",
                     "placeholder": "Tu apellido",
                     "autocomplete": "family-name",
                 }
@@ -317,7 +319,12 @@ class ProfilePhotoForm(forms.ModelForm):
     delete_avatar = forms.BooleanField(
         required=False,
         label="Eliminar foto actual",
-        widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "hidden",
+                "aria-hidden": "true",
+            }
+        ),
     )
 
     class Meta:
@@ -330,7 +337,8 @@ class ProfilePhotoForm(forms.ModelForm):
             "avatar": forms.FileInput(
                 attrs={
                     "accept": "image/*",
-                    "class": "d-none",
+                    "class": "hidden",
+                    "aria-hidden": "true",
                 }
             ),
         }

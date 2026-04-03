@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'cba_app/style.css' %}">
+    <link rel="stylesheet" href="{% static 'cba_app/style.css' %}?v=20260305_2">
 
     {# AdminLTE (solo vistas autenticadas internas) #}
     {% if user.is_authenticated and url_name and url_name != 'cba_login' and url_name != 'cba_signup' and url_name != 'powerbi_feed_results' and url_name != 'powerbi_feed_dashboard_rows' and url_name != 'cba_saved_result_public' and url_name != 'cba_saved_result_public_json' and url_name != 'cba_saved_result_powerbi' and url_name != 'cba_saved_result_powerbi_config' and url_name != 'cba_guide_shared' and url_name != 'cba_guide_shared_pdf' and url_name != 'cba_guide_shared_download' %}
@@ -32,7 +32,14 @@
                     </li>
                 </ul>
 
+                {% block navbar_actions %}{% endblock %}
+
                 <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <button type="button" class="btn btn-link nav-link sideo-theme-toggle" id="sideoThemeToggle" aria-label="Cambiar tema del panel" aria-pressed="false">
+                            <i class="fas fa-adjust"></i>
+                        </button>
+                    </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'cba_profile' %}">
                             <i class="far fa-user mr-1"></i>
@@ -114,6 +121,7 @@
 
             <footer class="main-footer text-sm">
                 <strong>&copy; {% now "Y" %} SIDEO</strong>
+                <span style="float:right;"><a href="{% url 'cba_privacy' %}" style="color:inherit;opacity:.6;">Política de Privacidad</a></span>
             </footer>
         </div>
     {% else %}
@@ -121,11 +129,14 @@
 
         <footer class="sideo-footer">
             <span>&copy; {% now "Y" %} SIDEO</span>
+            <a href="{% url 'cba_privacy' %}" style="color:inherit;opacity:.6;margin-left:12px;">Política de Privacidad</a>
         </footer>
     {% endif %}
 
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <script src="{% static 'cba_app/sideo.js' %}?v=20260220"></script>
+    <script src="{% static 'cba_app/sideo.js' %}?v=20260305_2"></script>
 
     {% if user.is_authenticated and url_name and url_name != 'cba_login' and url_name != 'cba_signup' and url_name != 'powerbi_feed_results' and url_name != 'powerbi_feed_dashboard_rows' and url_name != 'cba_saved_result_public' and url_name != 'cba_saved_result_public_json' and url_name != 'cba_saved_result_powerbi' and url_name != 'cba_saved_result_powerbi_config' and url_name != 'cba_guide_shared' and url_name != 'cba_guide_shared_pdf' and url_name != 'cba_guide_shared_download' %}
         <script src="{% static 'admin-lte/plugins/jquery/jquery.min.js' %}"></script>

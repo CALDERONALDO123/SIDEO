@@ -7,13 +7,15 @@
         <div class="container-fluid">
             <div class="card">
                 <div class="card-header">
-                    <div class="d-flex flex-column">
-                        <div class="text-muted text-uppercase text-sm">CBA · Paso 6</div>
-                        <h3 class="m-0">Ventajas por alternativa</h3>
-                        <div class="text-muted text-sm mt-2">Se muestra, por factor, la mejor valoración de cada postor (base: Paso 4).</div>
-                    </div>
-                    <div class="mt-2">
-                        {% include "cba_app/_step_progress.html" with current=6 total=10 percent=60 %}
+                    <div class="step-head">
+                        <div>
+                            <p class="step-head__eyebrow">CBA · Paso 6</p>
+                            <h3 class="step-head__title m-0">Ventajas por alternativa</h3>
+                            <p class="step-head__lede">Se muestra, por factor, la mejor valoración de cada postor (base: Paso 4).</p>
+                        </div>
+                        <div class="step-head__actions">
+                            {% include "cba_app/_step_progress.html" with current=6 total=10 percent=60 %}
+                        </div>
                     </div>
                 </div>
 
@@ -25,29 +27,41 @@
             {% csrf_token %}
 
             <div class="table-wrapper table-wrapper--step" style="margin-top:16px;">
-            <div class="table-responsive">
-            <table class="table table-bordered table-striped table-sm mb-0">
-                <tr>
-                    <th>FACTORES</th>
-                    {% for alt in alternatives %}
-                        <th>{{ alt.name }}</th>
-                    {% endfor %}
-                </tr>
+            <div class="step-section-head">
+                <div>
+                    <div class="step-section-title">Matriz de ventajas</div>
+                    <div class="text-muted text-sm">Factores: {{ rows|length }} · Postores: {{ alternatives|length }}</div>
+                </div>
+            </div>
 
+            <div class="table-responsive">
+            <table id="cbaAdvantagesMatrixStep6" class="table table-bordered table-striped table-sm mb-0 cba-matrix" style="width:100%">
+                <thead>
+                    <tr>
+                        <th class="cba-matrix__head cba-matrix__head--row">Factor</th>
+                        {% for alt in alternatives %}
+                            <th class="cba-matrix__head">{{ alt.name }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
                 {% for row in rows %}
-                <tr>
-                    <td>{{ row.criterion.name }}</td>
-                    {% for cell in row.cells %}
-                    <td class="{% if cell.value %}{% with val=cell.value|lower %}{% if val == 'excelente' %}attr-cell attr-excelente{% elif val == 'bueno' %}attr-cell attr-bueno{% elif val == 'regular' %}attr-cell attr-regular{% elif val == 'cumple' %}attr-cell attr-cumple{% elif val == 'no cumple' %}attr-cell attr-no-cumple{% endif %}{% endwith %}{% endif %}">
-                        {{ cell.value }}
-                    </td>
-                    {% endfor %}
-                </tr>
+                    <tr>
+                        <td class="cba-matrix__rowhead">{{ row.criterion.name }}</td>
+                        {% for cell in row.cells %}
+                            {% with value=cell.value %}
+                            <td class="cba-matrix__cell {% if value %}{% with val=value|lower %}{% if val == 'excelente' %}attr-cell attr-excelente{% elif val == 'bueno' %}attr-cell attr-bueno{% elif val == 'regular' %}attr-cell attr-regular{% elif val == 'cumple' %}attr-cell attr-cumple{% elif val == 'no cumple' %}attr-cell attr-no-cumple{% endif %}{% endwith %}{% endif %}">
+                                {{ value }}
+                            </td>
+                            {% endwith %}
+                        {% endfor %}
+                    </tr>
                 {% empty %}
-                <tr>
-                    <td colspan="{{ alternatives|length|add:'1' }}">No hay datos provenientes del Paso 4.</td>
-                </tr>
+                    <tr>
+                        <td colspan="{{ alternatives|length|add:'1' }}">No hay datos provenientes del Paso 4.</td>
+                    </tr>
                 {% endfor %}
+                </tbody>
             </table>
             </div>
             </div>

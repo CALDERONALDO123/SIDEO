@@ -1,0 +1,132 @@
+<div class="table-wrapper table-wrapper--step mt-3" id="criteriaPanel" data-step="2">
+    <div class="step-section-head">
+        <div>
+            <div class="step-section-title">Factores de decisión</div>
+            <div class="text-muted text-sm cba-step2-subtitle">Total: {{ criteria|length }} · Agrega y ajusta tus factores antes de pasar al Paso 3.</div>
+        </div>
+        <div class="text-muted text-sm" id="critHtmxStatus" style="min-height:1.2em;"></div>
+    </div>
+
+    <form
+        method="post"
+        class="form-inline form-inline--step cba-step2-addform"
+        hx-post="{% url 'cba_step2' %}"
+        hx-target="#criteriaPanel"
+        hx-swap="outerHTML"
+        hx-indicator="#critHtmxIndicator"
+    >
+        {% csrf_token %}
+        <div class="cba-step2-addform__field">
+            <div class="cba-step2-addform__label">{{ form.name.label_tag }}</div>
+            <div class="cba-step2-addform__row">
+                <div class="input-group input-group-sm cba-step2-inputgroup">
+                    {{ form.name }}
+                    <div class="input-group-append">
+                        <button type="submit" class="btn btn-outline-secondary btn-sm cba-step2-addbtn" title="Agregar factor" aria-label="Agregar factor">
+                            <i class="fas fa-plus mr-1" aria-hidden="true"></i>
+                            Agregar
+                            <span id="critHtmxIndicator" class="htmx-indicator spinner-border spinner-border-sm text-muted" role="status" aria-label="Actualizando" style="margin-left:8px;"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    {% if form.name.errors %}
+        <div class="text-danger text-sm mt-1">{{ form.name.errors }}</div>
+    {% endif %}
+
+    <div class="table-responsive">
+        <table id="cbaCriteriaTable" class="table table-bordered table-striped table-sm dt-responsive nowrap mb-0" style="width:100%">
+            <thead>
+                <tr>
+                    <th style="width:56px; text-align:center;">Ítem</th>
+                    <th>Nombre del factor</th>
+                    <th style="width:120px; text-align:center;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in criteria %}
+                    <tr>
+                        <td class="cba-step2-col-index" style="text-align:center;">{{ forloop.counter }}</td>
+                        <td>
+                            {% if editing_crit and editing_crit.id == c.id %}
+                                <form
+                                    method="post"
+                                    class="form-inline form-inline--step"
+                                    style="gap:6px;"
+                                    hx-post="{% url 'cba_step2' %}"
+                                    hx-target="#criteriaPanel"
+                                    hx-swap="outerHTML"
+                                    hx-indicator="#critHtmxIndicator"
+                                >
+                                    {% csrf_token %}
+                                    <input type="hidden" name="update_id" value="{{ c.id }}">
+                                    <input type="text" name="name" value="{{ c.name }}" class="form-control form-control-sm" autocomplete="off" />
+                                    <button type="submit" class="table-action" title="Guardar cambios" aria-label="Guardar cambios">
+                                        <span class="table-action__icon" aria-hidden="true"><i class="fas fa-check"></i></span>
+                                        Guardar
+                                    </button>
+                                    <a
+                                        href="{% url 'cba_step2' %}"
+                                        hx-get="{% url 'cba_step2' %}"
+                                        hx-target="#criteriaPanel"
+                                        hx-swap="outerHTML"
+                                        hx-push-url="true"
+                                        class="table-action"
+                                        title="Cancelar"
+                                    >
+                                        <span class="table-action__icon" aria-hidden="true"><i class="fas fa-times"></i></span>
+                                        Cancelar
+                                    </a>
+                                </form>
+                            {% else %}
+                                {{ c.name }}
+                            {% endif %}
+                        </td>
+                        <td class="cba-actions-cell">
+                            {% if not editing_crit or editing_crit.id != c.id %}
+                                <a
+                                    href="{% url 'cba_step2' %}?edit={{ c.id }}"
+                                    hx-get="{% url 'cba_step2' %}?edit={{ c.id }}"
+                                    hx-target="#criteriaPanel"
+                                    hx-swap="outerHTML"
+                                    hx-push-url="true"
+                                    class="table-action"
+                                    title="Editar"
+                                    aria-label="Editar"
+                                >
+                                    <span class="table-action__icon" aria-hidden="true"><i class="fas fa-pen"></i></span>
+                                </a>
+                            {% endif %}
+                            <form
+                                method="post"
+                                style="display:inline;"
+                                hx-post="{% url 'cba_step2' %}"
+                                hx-target="#criteriaPanel"
+                                hx-swap="outerHTML"
+                                hx-indicator="#critHtmxIndicator"
+                            >
+                                {% csrf_token %}
+                                <input type="hidden" name="delete_id" value="{{ c.id }}">
+                                <button type="submit" class="table-action table-action--delete" title="Eliminar" aria-label="Eliminar">
+                                    <span class="table-action__icon" aria-hidden="true"><i class="fas fa-trash"></i></span>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="3">No hay factores/criterios registrados aún.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="step-nav">
+        <a href="{% url 'cba_step1' %}" class="btn btn-outline-secondary nav-prev">&larr; Paso anterior</a>
+        <a href="{% url 'cba_step3' %}" class="btn btn-primary nav-next">Siguiente &rsaquo;</a>
+    </div>
+</div>

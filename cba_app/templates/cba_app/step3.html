@@ -7,13 +7,15 @@
         <div class="container-fluid">
             <div class="card">
                 <div class="card-header">
-                    <div class="d-flex flex-column">
-                        <div class="text-muted text-uppercase text-sm">CBA · Paso 3</div>
-                        <h3 class="m-0">MUST / WANT</h3>
-                        <div class="text-muted text-sm mt-2">Marca cada factor como indispensable o deseable, y agrega un comentario breve si aplica.</div>
-                    </div>
-                    <div class="mt-2">
-                        {% include "cba_app/_step_progress.html" with current=3 total=10 percent=30 %}
+                    <div class="step-head">
+                        <div>
+                            <p class="step-head__eyebrow">CBA · Paso 3</p>
+                            <h3 class="step-head__title m-0">Criterios de decisión</h3>
+                            <p class="step-head__lede">Marca cada factor como indispensable o deseable y documenta la regla del criterio para evitar desperdicio (Lean).</p>
+                        </div>
+                        <div class="step-head__actions">
+                            {% include "cba_app/_step_progress.html" with current=3 total=10 percent=30 %}
+                        </div>
                     </div>
                 </div>
 
@@ -25,10 +27,10 @@
             <div class="assistant__head">
                 <div class="assistant__meta">
                     <div class="assistant__title">Asistente SIDEO IA</div>
-                    <div class="assistant__subtitle">Revisa si tu distribución MUST/WANT tiene sentido y si faltan comentarios.</div>
+                        <div class="assistant__subtitle">Revisa si tu distribución indispensable/deseable tiene sentido y si faltan comentarios.</div>
                 </div>
                 <div class="assistant__actions">
-                    <button type="button" class="btn btn-primary btn-sm" id="aiTypeAuditBtn">Revisar MUST/WANT</button>
+                        <button type="button" class="btn btn-primary btn-sm" id="aiTypeAuditBtn">Revisar criterios</button>
                     <button type="button" class="btn btn-outline-secondary btn-sm" id="aiTypeAuditClearBtn">Limpiar</button>
                 </div>
             </div>
@@ -45,13 +47,26 @@
             {% csrf_token %}
 
             <div class="table-wrapper table-wrapper--step" style="margin-top:16px;">
+            <div class="step-section-head">
+                <div>
+                    <div class="step-section-title">Definir criterios de decisión</div>
+                    <div class="text-muted text-sm">Indispensable = requisito mínimo (pasa/no pasa). Deseable = criterio para diferenciar (mientras más/mejor o mientras menos/mejor).</div>
+                </div>
+            </div>
+
+            <div class="text-muted text-sm" style="margin-bottom:10px;">
+                <strong>Indispensable:</strong> escribe una condición verificable (norma, licencia, requisito legal/técnico). Ej.: “Cumple ISO 27001 (Sí/No)” o “Cumple RNE/EESS (Sí/No)”.
+                <br>
+                <strong>Deseable:</strong> escribe la dirección de preferencia para puntuar. Ej.: “A menor plazo de entrega, mejor” o “A mayor experiencia específica, mejor”.
+            </div>
+
             <div class="table-responsive">
             <table class="table table-bordered table-striped table-sm mb-0">
                 <tr>
                     <th>Factor</th>
                     <th>Indispensable</th>
                     <th>Deseable</th>
-                    <th>Explicación / comentario</th>
+                    <th>Criterio</th>
                 </tr>
                 {% for c in criteria %}
                 <tr>
@@ -63,7 +78,7 @@
                         <input class="form-check-input" type="radio" name="type_{{ c.id }}" value="{{ c.TYPE_WANT }}" {% if c.criterion_type == c.TYPE_WANT %}checked{% endif %}>
                     </td>
                     <td>
-                        <textarea class="form-control form-control-sm" name="desc_{{ c.id }}" rows="2">{{ c.description }}</textarea>
+                        <textarea id="crit-desc-{{ c.id }}" class="form-control form-control-sm" name="desc_{{ c.id }}" rows="2" data-crit-id="{{ c.id }}" placeholder="Selecciona indispensable o deseable para ver el formato sugerido.">{{ c.description }}</textarea>
                     </td>
                 </tr>
                 {% empty %}
@@ -195,6 +210,52 @@
                     btn.disabled = false;
                 }
             });
+        })();
+
+        (function initDynamicCriteriaPlaceholders(){
+            function setPlaceholder(critId, selectedValue) {
+                var ta = document.getElementById('crit-desc-' + String(critId));
+                if (!ta) return;
+
+                if (selectedValue === 'MUST') {
+                    ta.placeholder = 'Indispensable: condición mínima (sí/no). Ej.: "Cumple norma X (Sí/No)" o "Licencia vigente (Sí/No)".';
+                    return;
+                }
+                if (selectedValue === 'WANT') {
+                    ta.placeholder = 'Deseable: dirección de preferencia. Ej.: "A menor plazo, mejor" o "A mayor experiencia, mejor".';
+                    return;
+                }
+
+                ta.placeholder = 'Selecciona indispensable o deseable para ver el formato sugerido.';
+            }
+
+            function wireOne(critId) {
+                var radios = document.querySelectorAll('input[name="type_' + String(critId) + '"]');
+                if (!radios || radios.length === 0) return;
+
+                function sync() {
+                    var selected = '';
+                    for (var i = 0; i < radios.length; i++) {
+                        if (radios[i].checked) {
+                            selected = radios[i].value;
+                            break;
+                        }
+                    }
+                    setPlaceholder(critId, selected);
+                }
+
+                for (var i = 0; i < radios.length; i++) {
+                    radios[i].addEventListener('change', sync);
+                }
+                sync();
+            }
+
+            // Wire all textareas that exist on the page
+            var textareas = document.querySelectorAll('textarea[data-crit-id]');
+            for (var i = 0; i < textareas.length; i++) {
+                var id = textareas[i].getAttribute('data-crit-id');
+                if (id) wireOne(id);
+            }
         })();
     </script>
 {% endblock %}

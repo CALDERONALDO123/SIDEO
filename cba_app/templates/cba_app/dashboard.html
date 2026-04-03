@@ -7,43 +7,49 @@
     <section class="content pt-3">
         <div class="container-fluid">
 
-            <div class="d-flex flex-wrap align-items-center justify-content-between" style="gap:10px; margin-bottom:12px;">
-                <div>
-                    <div class="text-muted text-uppercase text-sm">Análisis costo-beneficio</div>
-                    <h1 class="h4 m-0">
-                        {% if setup and setup.project_name %}
-                            {{ setup.project_name }}
-                        {% elif saved_result and saved_result.name %}
-                            {{ saved_result.name }}
-                        {% else %}
-                            Dashboard de Análisis CBA
-                        {% endif %}
-                    </h1>
-                    <div class="text-muted text-sm mt-1">Alternativas: {{ table_rows|length }}</div>
-                </div>
+            <div class="card">
+                <div class="card-header">
+                    <div class="step-head">
+                        <div>
+                            <p class="step-head__eyebrow">Análisis costo-beneficio</p>
+                            <h1 class="step-head__title h4 m-0">
+                                {% if setup and setup.project_name %}
+                                    {{ setup.project_name }}
+                                {% elif saved_result and saved_result.name %}
+                                    {{ saved_result.name }}
+                                {% else %}
+                                    Dashboard de Análisis CBA
+                                {% endif %}
+                            </h1>
+                            <p class="step-head__lede">Alternativas: {{ table_rows|length }}</p>
+                        </div>
 
-                <div class="d-flex flex-wrap" style="gap:8px;">
-                    {% if saved_result and not public_view %}
-                        <a href="{% url 'cba_saved_results' %}" class="btn btn-outline-secondary btn-sm">&larr; Volver a Archivos guardados</a>
-                    {% elif not saved_result %}
-                        <a href="{% url 'cba_step10' %}" class="btn btn-outline-secondary btn-sm">&larr; Volver al Paso 10</a>
-                    {% endif %}
+                        <div class="step-head__actions">
+                            <div class="d-flex flex-wrap" style="gap:8px; justify-content:flex-end;">
+                                {% if saved_result and not public_view %}
+                                    <a href="{% url 'cba_saved_results' %}" class="btn btn-outline-secondary btn-sm">&larr; Volver a Archivos guardados</a>
+                                {% elif not saved_result %}
+                                    <a href="{% url 'cba_step10' %}" class="btn btn-outline-secondary btn-sm">&larr; Volver al Paso 10</a>
+                                {% endif %}
 
-                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.print()" title="Imprimir">
-                        <i class="fas fa-print mr-1"></i> Imprimir
-                    </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.print()" title="Imprimir">
+                                    <i class="fas fa-print mr-1"></i> Imprimir
+                                </button>
 
-                    {% if not saved_result %}
-                        <form method="post" class="m-0">
-                            {% csrf_token %}
-                            <button type="submit" name="save_result" class="btn btn-primary btn-sm">
-                                <i class="fas fa-save mr-1"></i> Guardar resultado
-                            </button>
-                            <button type="submit" name="save_to_powerbi" class="btn btn-outline-success btn-sm">
-                                <i class="fas fa-chart-bar mr-1"></i> Guardar e ir a Power BI
-                            </button>
-                        </form>
-                    {% endif %}
+                                {% if not saved_result %}
+                                    <form method="post" class="m-0 d-inline-flex" style="gap:8px;">
+                                        {% csrf_token %}
+                                        <button type="submit" name="save_result" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-save mr-1"></i> Guardar resultado
+                                        </button>
+                                        <button type="submit" name="save_to_powerbi" class="btn btn-outline-success btn-sm">
+                                            <i class="fas fa-chart-bar mr-1"></i> Guardar e ir a Power BI
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -239,24 +245,24 @@
                     <h3 class="card-title m-0">Tabla de resultados finales</h3>
                 </div>
                 <div class="card-body table-responsive">
-                    <table class="table table-bordered table-striped table-sm mb-0">
+                    <table id="cbaFinalResultsDashboard" class="table table-bordered table-striped table-sm mb-0 cba-matrix" style="width:100%">
                         <thead>
                             <tr>
-                                <th>Alternativa</th>
-                                <th>Ventaja total</th>
-                                <th>Costo (S/)</th>
-                                <th>Costo / Ventaja (S/ por punto)</th>
-                                <th>Recomendación</th>
+                                <th class="cba-matrix__head cba-matrix__head--row">Alternativa</th>
+                                <th class="cba-matrix__head">Ventaja total</th>
+                                <th class="cba-matrix__head">Costo (S/)</th>
+                                <th class="cba-matrix__head">Costo / Ventaja (S/ por punto)</th>
+                                <th class="cba-matrix__head">Recomendación</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for r in table_rows %}
                                 <tr{% if best_row and r.name == best_row.alternative.name %} class="table-success font-weight-bold"{% endif %}>
-                                    <td>{{ r.name }}</td>
-                                    <td>{{ r.total }}</td>
-                                    <td>{% if r.cost != None %}{{ r.cost }}{% else %}-{% endif %}</td>
-                                    <td>{% if r.ratio != None %}S/ {{ r.ratio|floatformat:6 }}{% else %}-{% endif %}</td>
-                                    <td>{% if best_row and r.name == best_row.alternative.name %}Recomendada{% else %}-{% endif %}</td>
+                                    <td class="cba-matrix__rowhead">{{ r.name }}</td>
+                                    <td class="cba-matrix__cell">{{ r.total }}</td>
+                                    <td class="cba-matrix__cell">{% if r.cost != None %}{{ r.cost }}{% else %}-{% endif %}</td>
+                                    <td class="cba-matrix__cell">{% if r.ratio != None %}S/ {{ r.ratio|floatformat:6 }}{% else %}-{% endif %}</td>
+                                    <td class="cba-matrix__cell">{% if best_row and r.name == best_row.alternative.name %}Recomendada{% else %}-{% endif %}</td>
                                 </tr>
                             {% endfor %}
                         </tbody>

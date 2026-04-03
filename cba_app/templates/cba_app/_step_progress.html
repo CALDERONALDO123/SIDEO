@@ -9,14 +9,24 @@
 
     <div class="mt-2" role="navigation" aria-label="Pasos del asistente">
         <div class="d-flex align-items-center justify-content-between" style="gap:12px;">
-            <small class="text-muted">Paso {{ current }} de {{ total }}</small>
-            <small class="text-muted">{% if current < total %}Siguiente: Paso {{ current|add:1 }}{% else %}Completado{% endif %}</small>
+            <small class="text-muted">{% if current|add:0 <= 0 %}Inicio{% else %}Paso {{ current }} de {{ total }}{% endif %}</small>
+            <small class="text-muted">
+                {% if current|add:0 <= 0 %}
+                    Siguiente: Paso 1
+                {% elif current < total %}
+                    Siguiente: Paso {{ current|add:1 }}
+                {% else %}
+                    Completado
+                {% endif %}
+            </small>
         </div>
 
         <ul class="nav nav-pills nav-justified flex-wrap mt-2" style="gap:6px;" aria-label="Stepper CBA">
             <li class="nav-item" role="presentation">
                 <a class="nav-link py-1 px-2 {% if current == 1 %}active{% endif %} {% if current < 1 %}disabled{% endif %}"
                    href="{% if current >= 1 %}{% url 'cba_step1' %}{% else %}#{% endif %}"
+                   title="Paso 1: Alternativas"
+                   aria-label="Paso 1: Alternativas"
                    {% if current < 1 %}tabindex="-1" aria-disabled="true"{% endif %}
                    {% if current == 1 %}aria-current="step"{% endif %}>
                     {% if current > 1 %}<i class="fas fa-check mr-1" aria-hidden="true"></i>{% endif %}1
@@ -25,6 +35,8 @@
             <li class="nav-item" role="presentation">
                 <a class="nav-link py-1 px-2 {% if current == 2 %}active{% endif %} {% if current < 2 %}disabled{% endif %}"
                    href="{% if current >= 2 %}{% url 'cba_step2' %}{% else %}#{% endif %}"
+                   title="Paso 2: Factores"
+                   aria-label="Paso 2: Factores"
                    {% if current < 2 %}tabindex="-1" aria-disabled="true"{% endif %}
                    {% if current == 2 %}aria-current="step"{% endif %}>
                     {% if current > 2 %}<i class="fas fa-check mr-1" aria-hidden="true"></i>{% endif %}2
@@ -33,6 +45,8 @@
             <li class="nav-item" role="presentation">
                 <a class="nav-link py-1 px-2 {% if current == 3 %}active{% endif %} {% if current < 3 %}disabled{% endif %}"
                    href="{% if current >= 3 %}{% url 'cba_step3' %}{% else %}#{% endif %}"
+                   title="Paso 3: Clasificación"
+                   aria-label="Paso 3: Clasificación"
                    {% if current < 3 %}tabindex="-1" aria-disabled="true"{% endif %}
                    {% if current == 3 %}aria-current="step"{% endif %}>
                     {% if current > 3 %}<i class="fas fa-check mr-1" aria-hidden="true"></i>{% endif %}3
@@ -41,6 +55,8 @@
             <li class="nav-item" role="presentation">
                 <a class="nav-link py-1 px-2 {% if current == 4 %}active{% endif %} {% if current < 4 %}disabled{% endif %}"
                    href="{% if current >= 4 %}{% url 'cba_step4' %}{% else %}#{% endif %}"
+                   title="Paso 4: Atributos"
+                   aria-label="Paso 4: Atributos"
                    {% if current < 4 %}tabindex="-1" aria-disabled="true"{% endif %}
                    {% if current == 4 %}aria-current="step"{% endif %}>
                     {% if current > 4 %}<i class="fas fa-check mr-1" aria-hidden="true"></i>{% endif %}4
@@ -49,6 +65,8 @@
             <li class="nav-item" role="presentation">
                 <a class="nav-link py-1 px-2 {% if current == 5 %}active{% endif %} {% if current < 5 %}disabled{% endif %}"
                    href="{% if current >= 5 %}{% url 'cba_step5' %}{% else %}#{% endif %}"
+                   title="Paso 5: Ventajas"
+                   aria-label="Paso 5: Ventajas"
                    {% if current < 5 %}tabindex="-1" aria-disabled="true"{% endif %}
                    {% if current == 5 %}aria-current="step"{% endif %}>
                     {% if current > 5 %}<i class="fas fa-check mr-1" aria-hidden="true"></i>{% endif %}5
@@ -57,6 +75,8 @@
             <li class="nav-item" role="presentation">
                 <a class="nav-link py-1 px-2 {% if current == 6 %}active{% endif %} {% if current < 6 %}disabled{% endif %}"
                    href="{% if current >= 6 %}{% url 'cba_step6' %}{% else %}#{% endif %}"
+                   title="Paso 6: Importancia"
+                   aria-label="Paso 6: Importancia"
                    {% if current < 6 %}tabindex="-1" aria-disabled="true"{% endif %}
                    {% if current == 6 %}aria-current="step"{% endif %}>
                     {% if current > 6 %}<i class="fas fa-check mr-1" aria-hidden="true"></i>{% endif %}6
@@ -65,6 +85,8 @@
             <li class="nav-item" role="presentation">
                 <a class="nav-link py-1 px-2 {% if current == 7 %}active{% endif %} {% if current < 7 %}disabled{% endif %}"
                    href="{% if current >= 7 %}{% url 'cba_step7' %}{% else %}#{% endif %}"
+                   title="Paso 7: Evaluación"
+                   aria-label="Paso 7: Evaluación"
                    {% if current < 7 %}tabindex="-1" aria-disabled="true"{% endif %}
                    {% if current == 7 %}aria-current="step"{% endif %}>
                     {% if current > 7 %}<i class="fas fa-check mr-1" aria-hidden="true"></i>{% endif %}7
@@ -73,6 +95,8 @@
             <li class="nav-item" role="presentation">
                 <a class="nav-link py-1 px-2 {% if current == 8 %}active{% endif %} {% if current < 8 %}disabled{% endif %}"
                    href="{% if current >= 8 %}{% url 'cba_step8' %}{% else %}#{% endif %}"
+                   title="Paso 8: Costos"
+                   aria-label="Paso 8: Costos"
                    {% if current < 8 %}tabindex="-1" aria-disabled="true"{% endif %}
                    {% if current == 8 %}aria-current="step"{% endif %}>
                     {% if current > 8 %}<i class="fas fa-check mr-1" aria-hidden="true"></i>{% endif %}8
@@ -81,6 +105,8 @@
             <li class="nav-item" role="presentation">
                 <a class="nav-link py-1 px-2 {% if current == 9 %}active{% endif %} {% if current < 9 %}disabled{% endif %}"
                    href="{% if current >= 9 %}{% url 'cba_step9' %}{% else %}#{% endif %}"
+                   title="Paso 9: Comparación"
+                   aria-label="Paso 9: Comparación"
                    {% if current < 9 %}tabindex="-1" aria-disabled="true"{% endif %}
                    {% if current == 9 %}aria-current="step"{% endif %}>
                     {% if current > 9 %}<i class="fas fa-check mr-1" aria-hidden="true"></i>{% endif %}9
@@ -89,6 +115,8 @@
             <li class="nav-item" role="presentation">
                 <a class="nav-link py-1 px-2 {% if current == 10 %}active{% endif %} {% if current < 10 %}disabled{% endif %}"
                    href="{% if current >= 10 %}{% url 'cba_step10' %}{% else %}#{% endif %}"
+                   title="Paso 10: Selección"
+                   aria-label="Paso 10: Selección"
                    {% if current < 10 %}tabindex="-1" aria-disabled="true"{% endif %}
                    {% if current == 10 %}aria-current="step"{% endif %}>
                     {% if current > 10 %}<i class="fas fa-check mr-1" aria-hidden="true"></i>{% endif %}10

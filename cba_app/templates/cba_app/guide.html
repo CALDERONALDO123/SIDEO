@@ -1,13 +1,25 @@
 {% extends "cba_app/base.html" %}
 
-{% block body_class %}page-guide{% endblock %}
+{% block body_class %}layout--panel page-guide{% endblock %}
 
 {% block content %}
-    <div class="guide-pagehead">
-        <h2>Guía</h2>
-        <p class="text-muted">Gestiona el PDF de referencia y compártelo como libro digital.</p>
-        <a href="{% url 'cba_home' %}" class="link-back" aria-label="Volver al panel principal">&larr; Panel</a>
-    </div>
+    <section class="content pt-3">
+        <div class="container-fluid">
+            <div class="card">
+                <div class="card-header">
+                    <div class="step-head">
+                        <div>
+                            <p class="step-head__eyebrow">Panel · Guía</p>
+                            <h3 class="step-head__title m-0">Guía</h3>
+                            <p class="step-head__lede">Gestiona el PDF de referencia y compártelo como libro digital.</p>
+                        </div>
+                        <div class="step-head__actions">
+                            <a href="{% url 'cba_home' %}" class="btn btn-outline-secondary btn-sm" aria-label="Volver al panel principal">&larr; Panel</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body">
 
     <div class="guide-layout" aria-label="Guía">
         <aside class="guide-sidebar" aria-label="Gestión de guía">
@@ -148,6 +160,11 @@
             {% endif %}
         </section>
     </div>
+
+                </div>
+            </div>
+        </div>
+    </section>
 
     <script>
         (function () {

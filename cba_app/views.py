@@ -804,11 +804,18 @@ def cba_about(request):
     return render(request, "cba_app/about.html")
 
 
+def cba_privacy(request):
+    return render(request, "cba_app/privacy.html")
+
+
 # Paso 1: Identificación de alternativas
 
 
 @login_required
 def cba_step1(request):
+    def _is_htmx(req):
+        return (req.headers.get("HX-Request") or "").lower() == "true"
+
     setup = request.session.get("cba_setup")
     force_setup = request.GET.get("setup") == "1"
 
@@ -846,6 +853,19 @@ def cba_step1(request):
         delete_id = request.POST.get("delete_id")
         if delete_id:
             Alternative.objects.filter(id=delete_id).delete()
+            if _is_htmx(request):
+                alternatives = Alternative.objects.all()
+                form = AlternativeForm()
+                return render(
+                    request,
+                    "cba_app/_step1_alternatives_panel.html",
+                    {
+                        "alternatives": alternatives,
+                        "form": form,
+                        "editing_alt": None,
+                        "setup": setup,
+                    },
+                )
             return redirect("cba_step1")
 
         # Actualizar nombre si viene un id de actualización
@@ -857,6 +877,19 @@ def cba_step1(request):
                 if new_name:
                     alt.name = new_name
                     alt.save()
+            if _is_htmx(request):
+                alternatives = Alternative.objects.all()
+                form = AlternativeForm()
+                return render(
+                    request,
+                    "cba_app/_step1_alternatives_panel.html",
+                    {
+                        "alternatives": alternatives,
+                        "form": form,
+                        "editing_alt": None,
+                        "setup": setup,
+                    },
+                )
             return redirect("cba_step1")
 
         # Alta normal de alternativa
@@ -864,6 +897,19 @@ def cba_step1(request):
         if form.is_valid():
             form.save()
             # Se queda en el Paso 1 para poder seguir agregando postores
+            if _is_htmx(request):
+                alternatives = Alternative.objects.all()
+                form = AlternativeForm()
+                return render(
+                    request,
+                    "cba_app/_step1_alternatives_panel.html",
+                    {
+                        "alternatives": alternatives,
+                        "form": form,
+                        "editing_alt": None,
+                        "setup": setup,
+                    },
+                )
             return redirect("cba_step1")
     else:
         form = AlternativeForm()
@@ -875,6 +921,9 @@ def cba_step1(request):
         "editing_alt": editing_alt,
         "setup": setup,
     }
+
+    if _is_htmx(request):
+        return render(request, "cba_app/_step1_alternatives_panel.html", context)
     return render(request, "cba_app/step1.html", context)
 
 
@@ -883,6 +932,9 @@ def cba_step1(request):
 
 @login_required
 def cba_step2(request):
+    def _is_htmx(req):
+        return (req.headers.get("HX-Request") or "").lower() == "true"
+
     setup = request.session.get("cba_setup")
     # Identificar si se está editando algún factor (modo GET)
     edit_id = request.GET.get("edit")
@@ -898,6 +950,19 @@ def cba_step2(request):
         delete_id = request.POST.get("delete_id")
         if delete_id:
             Criterion.objects.filter(id=delete_id).delete()
+            if _is_htmx(request):
+                criteria = Criterion.objects.all()
+                form = CriterionForm()
+                return render(
+                    request,
+                    "cba_app/_step2_criteria_panel.html",
+                    {
+                        "criteria": criteria,
+                        "form": form,
+                        "editing_crit": None,
+                        "setup": setup,
+                    },
+                )
             return redirect("cba_step2")
 
         # Actualizar nombre si viene un id de actualización
@@ -909,6 +974,19 @@ def cba_step2(request):
                 if new_name:
                     crit.name = new_name
                     crit.save()
+            if _is_htmx(request):
+                criteria = Criterion.objects.all()
+                form = CriterionForm()
+                return render(
+                    request,
+                    "cba_app/_step2_criteria_panel.html",
+                    {
+                        "criteria": criteria,
+                        "form": form,
+                        "editing_crit": None,
+                        "setup": setup,
+                    },
+                )
             return redirect("cba_step2")
 
         # Alta normal de factor
@@ -916,6 +994,19 @@ def cba_step2(request):
         if form.is_valid():
             form.save()
             # Se queda en el Paso 2 para poder seguir agregando factores
+            if _is_htmx(request):
+                criteria = Criterion.objects.all()
+                form = CriterionForm()
+                return render(
+                    request,
+                    "cba_app/_step2_criteria_panel.html",
+                    {
+                        "criteria": criteria,
+                        "form": form,
+                        "editing_crit": None,
+                        "setup": setup,
+                    },
+                )
             return redirect("cba_step2")
     else:
         form = CriterionForm()
@@ -927,6 +1018,9 @@ def cba_step2(request):
         "editing_crit": editing_crit,
         "setup": setup,
     }
+
+    if _is_htmx(request):
+        return render(request, "cba_app/_step2_criteria_panel.html", context)
     return render(request, "cba_app/step2.html", context)
 
 
@@ -997,13 +1091,15 @@ def cba_step4(request):
             )
         rows.append({"criterion": criterion, "cells": cells})
 
-    # Opciones típicas tipo Excelente/Bueno/Regular/Cumple
-    options = ["Excelente", "Bueno", "Regular", "Cumple"]
+    # Opciones según tipo de criterio (Paso 3)
+    options_must = ["Cumple", "No cumple"]
+    options_want = ["Excelente", "Bueno", "Regular"]
 
     context = {
         "alternatives": alternatives,
         "rows": rows,
-        "options": options,
+        "options_must": options_must,
+        "options_want": options_want,
         "setup": setup,
     }
     return render(request, "cba_app/step4.html", context)
@@ -1012,9 +1108,24 @@ def cba_step4(request):
 # Paso 5: Subrayar el atributo menos preferido de cada factor
 
 
+def _get_disqualified_alternative_ids():
+    """Alternativas descalificadas por incumplir algún criterio indispensable (MUST)."""
+
+    return set(
+        Attribute.objects.filter(
+            criterion__criterion_type=Criterion.TYPE_MUST,
+            description__iexact="No cumple",
+        ).values_list("alternative_id", flat=True)
+    )
+
+
 @login_required
 def cba_step5(request):
     setup = request.session.get("cba_setup")
+
+    disqualified_alt_ids = _get_disqualified_alternative_ids()
+    alternatives = list(Alternative.objects.exclude(id__in=disqualified_alt_ids))
+
     # Recalcular automáticamente el atributo menos preferido por factor
     rating_order = {
         "Excelente": 4,
@@ -1024,7 +1135,9 @@ def cba_step5(request):
     }
 
     attributes = list(
-        Attribute.objects.select_related("criterion", "alternative").all()
+        Attribute.objects.select_related("criterion", "alternative").exclude(
+            alternative_id__in=disqualified_alt_ids
+        )
     )
 
     # Agrupar por criterio y encontrar el peor valor (menor puntuación)
@@ -1049,8 +1162,9 @@ def cba_step5(request):
 
     # Preparar matriz FACTORES x Postores solo con el valor del menos preferido
     criteria = list(Criterion.objects.all())
-    alternatives = list(Alternative.objects.all())
-    attributes = Attribute.objects.select_related("criterion", "alternative")
+    attributes = Attribute.objects.select_related("criterion", "alternative").exclude(
+        alternative_id__in=disqualified_alt_ids
+    )
     least_map = {
         (a.criterion_id, a.alternative_id): a.description
         for a in attributes
@@ -1088,6 +1202,10 @@ def cba_step5(request):
 @login_required
 def cba_step6(request):
     setup = request.session.get("cba_setup")
+
+    disqualified_alt_ids = _get_disqualified_alternative_ids()
+    alternatives = list(Alternative.objects.exclude(id__in=disqualified_alt_ids))
+
     # Calcular automáticamente, para cada factor, la mayor ventaja (mejor valoración)
     rating_order = {
         "Excelente": 4,
@@ -1097,7 +1215,9 @@ def cba_step6(request):
     }
 
     attributes = list(
-        Attribute.objects.select_related("criterion", "alternative").all()
+        Attribute.objects.select_related("criterion", "alternative").exclude(
+            alternative_id__in=disqualified_alt_ids
+        )
     )
 
     # Agrupar por criterio y encontrar el mejor valor (mayor puntuación)
@@ -1122,7 +1242,6 @@ def cba_step6(request):
                 best_map[(attr.criterion_id, attr.alternative_id)] = attr.description
 
     criteria = list(Criterion.objects.all())
-    alternatives = list(Alternative.objects.all())
 
     rows = []
     for criterion in criteria:
@@ -1149,6 +1268,10 @@ def cba_step6(request):
 @login_required
 def cba_step7(request):
     setup = request.session.get("cba_setup")
+
+    disqualified_alt_ids = _get_disqualified_alternative_ids()
+    alternatives = list(Alternative.objects.exclude(id__in=disqualified_alt_ids))
+
     # Usar como referencia la misma lógica del Paso 6 (mejor ventaja por factor)
     rating_order = {
         "Excelente": 4,
@@ -1158,7 +1281,9 @@ def cba_step7(request):
     }
 
     attributes = list(
-        Attribute.objects.select_related("criterion", "alternative").all()
+        Attribute.objects.select_related("criterion", "alternative").exclude(
+            alternative_id__in=disqualified_alt_ids
+        )
     )
 
     # Repetimos el cálculo del Paso 6: best_map solo contiene las celdas donde el postor
@@ -1184,7 +1309,6 @@ def cba_step7(request):
                 best_map[(attr.criterion_id, attr.alternative_id)] = attr
 
     criteria = list(Criterion.objects.all())  # orden: el de más arriba es más importante
-    alternatives = list(Alternative.objects.all())
 
     # Para cada postor, solo consideramos las celdas donde aparece en best_map (es decir,
     # donde ya tiene ventaja en el Paso 6) y de esas elegimos el factor que esté más arriba.
@@ -1268,11 +1392,14 @@ def cba_step8(request):
         "Cumple": 1,
     }
 
-    alternatives = list(Alternative.objects.all())
+    disqualified_alt_ids = _get_disqualified_alternative_ids()
+    alternatives = list(Alternative.objects.exclude(id__in=disqualified_alt_ids))
     criteria = list(Criterion.objects.all())
 
     attributes = list(
-        Attribute.objects.select_related("criterion", "alternative").all()
+        Attribute.objects.select_related("criterion", "alternative").exclude(
+            alternative_id__in=disqualified_alt_ids
+        )
     )
 
     # Igual que en Paso 6: best_map contiene solo las celdas con mejor valoración por factor
@@ -1354,7 +1481,8 @@ def cba_step9(request):
     if request.method == "POST":
         return redirect("cba_step10")
 
-    alternatives = Alternative.objects.all()
+    disqualified_alt_ids = _get_disqualified_alternative_ids()
+    alternatives = Alternative.objects.exclude(id__in=disqualified_alt_ids)
     totals = []
     for alt in alternatives:
         # Sumar únicamente las importancias cargadas en el Paso 8
@@ -1374,7 +1502,8 @@ def cba_step10(request):
     from django.utils import timezone
 
     setup = request.session.get("cba_setup")
-    alternatives = list(Alternative.objects.all())
+    disqualified_alt_ids = _get_disqualified_alternative_ids()
+    alternatives = list(Alternative.objects.exclude(id__in=disqualified_alt_ids))
 
     save_and_close = False
     save_to_dashboard = False
@@ -1596,6 +1725,7 @@ def cba_saved_results(request):
         "cba_app/saved_results.html",
         {
             "results": results,
+            "total_results": results.count(),
             "powerbi_dashboard_url": _get_powerbi_dashboard_url(),
             "powerbi_edit": (request.GET.get("edit_powerbi") == "1"),
         },
@@ -1701,7 +1831,8 @@ def cba_saved_result_delete(request, result_id: int):
 def _build_step10_rows_and_best():
     from decimal import Decimal
 
-    alternatives = list(Alternative.objects.all())
+    disqualified_alt_ids = _get_disqualified_alternative_ids()
+    alternatives = list(Alternative.objects.exclude(id__in=disqualified_alt_ids))
     rows = []
     best_row = None
 
@@ -2856,45 +2987,96 @@ def cba_profile(request):
     profile, _created = UserProfile.objects.get_or_create(user=request.user)
 
     if request.method == "POST":
-        # Evita caching/colisiones en storages (ej. Cloudinary/CDN) usando nombre único por subida.
-        uploaded = request.FILES.get("avatar")
-        if uploaded is not None:
-            _root, ext = os.path.splitext(getattr(uploaded, "name", "") or "")
-            safe_ext = (ext or "").lower()[:10]
-            uploaded.name = f"avatar_{request.user.id}_{int(time.time())}{safe_ext}"
+        is_profile_submit = "save_profile" in request.POST
+        is_photo_submit = (
+            "save_photo" in request.POST
+            or "avatar" in request.FILES
+            or request.POST.get("delete_avatar") in {"1", "true", "True", "on"}
+        )
 
-        form = ProfileForm(request.POST, instance=request.user)
-        photo_form = ProfilePhotoForm(request.POST, request.FILES, instance=profile)
+        if is_profile_submit and not is_photo_submit:
+            form = ProfileForm(request.POST, instance=request.user)
+            photo_form = ProfilePhotoForm(instance=profile)
+            if form.is_valid():
+                form.save()
+                return redirect(f"{reverse('cba_profile')}?saved=1")
 
-        if form.is_valid() and photo_form.is_valid():
-            form.save()
+        elif is_photo_submit and not is_profile_submit:
+            # Evita caching/colisiones en storages (ej. Cloudinary/CDN) usando nombre único por subida.
+            uploaded = request.FILES.get("avatar")
+            if uploaded is not None:
+                _root, ext = os.path.splitext(getattr(uploaded, "name", "") or "")
+                safe_ext = (ext or "").lower()[:10]
+                uploaded.name = f"avatar_{request.user.id}_{int(time.time())}{safe_ext}"
 
-            if photo_form.cleaned_data.get("delete_avatar"):
-                if profile.avatar:
-                    try:
-                        _delete_cloudinary_image_if_possible(profile.avatar)
-                        # CloudinaryField no siempre soporta el mismo API que FileField.
+            form = ProfileForm(instance=request.user)
+            photo_form = ProfilePhotoForm(request.POST, request.FILES, instance=profile)
+            if photo_form.is_valid():
+                if photo_form.cleaned_data.get("delete_avatar"):
+                    if profile.avatar:
                         try:
-                            profile.avatar.delete(save=False)
-                        except TypeError:
-                            profile.avatar.delete()
-                    except Exception:
-                        pass
-                profile.avatar = None
-                profile.save(update_fields=["avatar", "updated_at"])
-            else:
-                if "avatar" in request.FILES and profile.avatar:
-                    try:
-                        _delete_cloudinary_image_if_possible(profile.avatar)
+                            _delete_cloudinary_image_if_possible(profile.avatar)
+                            # CloudinaryField no siempre soporta el mismo API que FileField.
+                            try:
+                                profile.avatar.delete(save=False)
+                            except TypeError:
+                                profile.avatar.delete()
+                        except Exception:
+                            pass
+                    profile.avatar = None
+                    profile.save(update_fields=["avatar", "updated_at"])
+                else:
+                    if "avatar" in request.FILES and profile.avatar:
                         try:
-                            profile.avatar.delete(save=False)
-                        except TypeError:
-                            profile.avatar.delete()
-                    except Exception:
-                        pass
-                photo_form.save()
+                            _delete_cloudinary_image_if_possible(profile.avatar)
+                            try:
+                                profile.avatar.delete(save=False)
+                            except TypeError:
+                                profile.avatar.delete()
+                        except Exception:
+                            pass
+                    photo_form.save()
 
-            return redirect(f"{reverse('cba_profile')}?saved=1")
+                return redirect(f"{reverse('cba_profile')}?saved=1")
+
+        else:
+            # Fallback: si llega un POST mixto, valida y guarda ambos (comportamiento histórico).
+            uploaded = request.FILES.get("avatar")
+            if uploaded is not None:
+                _root, ext = os.path.splitext(getattr(uploaded, "name", "") or "")
+                safe_ext = (ext or "").lower()[:10]
+                uploaded.name = f"avatar_{request.user.id}_{int(time.time())}{safe_ext}"
+
+            form = ProfileForm(request.POST, instance=request.user)
+            photo_form = ProfilePhotoForm(request.POST, request.FILES, instance=profile)
+            if form.is_valid() and photo_form.is_valid():
+                form.save()
+
+                if photo_form.cleaned_data.get("delete_avatar"):
+                    if profile.avatar:
+                        try:
+                            _delete_cloudinary_image_if_possible(profile.avatar)
+                            try:
+                                profile.avatar.delete(save=False)
+                            except TypeError:
+                                profile.avatar.delete()
+                        except Exception:
+                            pass
+                    profile.avatar = None
+                    profile.save(update_fields=["avatar", "updated_at"])
+                else:
+                    if "avatar" in request.FILES and profile.avatar:
+                        try:
+                            _delete_cloudinary_image_if_possible(profile.avatar)
+                            try:
+                                profile.avatar.delete(save=False)
+                            except TypeError:
+                                profile.avatar.delete()
+                        except Exception:
+                            pass
+                    photo_form.save()
+
+                return redirect(f"{reverse('cba_profile')}?saved=1")
     else:
         form = ProfileForm(instance=request.user)
         photo_form = ProfilePhotoForm(instance=profile)

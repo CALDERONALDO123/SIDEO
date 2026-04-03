@@ -1,5 +1,7 @@
 {% extends "cba_app/base.html" %}
 
+{% block body_class %}layout--panel page-saved-results{% endblock %}
+
 {% block extra_head %}
     {{ block.super }}
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap4.min.css">
@@ -10,30 +12,54 @@
 {% block content %}
     <section class="content pt-3">
         <div class="container-fluid">
+            <div class="row mb-3" aria-label="Indicadores de archivos guardados">
+                <div class="col-12 col-md-6 col-xl-4">
+                    <div class="info-box elevation-1">
+                        <span class="info-box-icon sideo-ib-icon--navy">
+                            <i class="fas fa-chart-pie"></i>
+                        </span>
+                        <div class="info-box-content">
+                            <span class="info-box-text text-uppercase font-weight-bold">Análisis guardados</span>
+                            <span class="info-box-number">{{ total_results|default:0 }}</span>
+                            <div class="progress"><div class="progress-bar sideo-progress--navy" style="width:100%"></div></div>
+                            <span class="progress-description">Resultados CBA en historial</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="card">
                 <div class="card-header">
-                    <div class="d-flex flex-column">
-                        <h3 class="m-0">Archivos guardados (resultados CBA)</h3>
-                        <div class="text-muted text-sm mt-2">Búsqueda, filtros, orden y exportación.</div>
+                    <div class="step-head">
+                        <div>
+                            <p class="step-head__eyebrow">Historial</p>
+                            <h3 class="step-head__title m-0">Resultados guardados</h3>
+                            <p class="step-head__lede">Búsqueda, filtros, orden y exportación.</p>
+                        </div>
+                        <div class="step-head__actions">
+                            <span class="text-muted text-sm">Total: <strong>{{ total_results|default:0 }}</strong></span>
+                        </div>
                     </div>
                 </div>
                 <div class="card-body">
-                    <div class="mb-3">
-                        <div class="d-flex flex-wrap align-items-center justify-content-between" style="gap: 10px;">
+                    <div class="table-wrapper table-wrapper--step mb-3">
+                        <div class="step-section-head">
                             <div>
-                                <div class="text-muted text-sm">Power BI</div>
-                                {% if powerbi_dashboard_url %}
-                                    <div class="font-weight-bold">Link global configurado</div>
-                                {% else %}
-                                    <div class="font-weight-bold">Sin link configurado</div>
-                                {% endif %}
+                                <div class="step-section-title">Power BI</div>
+                                <div class="text-muted text-sm">
+                                    {% if powerbi_dashboard_url %}
+                                        Link global configurado
+                                    {% else %}
+                                        Sin link configurado
+                                    {% endif %}
+                                </div>
                             </div>
-                            <div class="d-flex flex-wrap" style="gap: 6px;">
+                            <div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
                                 {% if powerbi_dashboard_url %}
-                                    <a class="btn btn-outline-primary" href="{{ powerbi_dashboard_url }}" target="_blank" rel="noopener">Ir a Power BI</a>
-                                    <a class="btn btn-outline-secondary" href="{% url 'cba_saved_results' %}?edit_powerbi=1">Editar link</a>
+                                    <a class="btn btn-outline-primary btn-sm" href="{{ powerbi_dashboard_url }}" target="_blank" rel="noopener">Ir a Power BI</a>
+                                    <a class="btn btn-outline-secondary btn-sm" href="{% url 'cba_saved_results' %}?edit_powerbi=1">Editar link</a>
                                 {% else %}
-                                    <a class="btn btn-outline-secondary" href="{% url 'cba_saved_results' %}?edit_powerbi=1">Agregar link</a>
+                                    <a class="btn btn-outline-secondary btn-sm" href="{% url 'cba_saved_results' %}?edit_powerbi=1">Agregar link</a>
                                 {% endif %}
                             </div>
                         </div>
@@ -49,7 +75,7 @@
                                         type="url"
                                         class="form-control"
                                         placeholder="Pega aquí el link único de Power BI"
-                                        value=""
+                                        value="{{ powerbi_dashboard_url|default:'' }}"
                                     />
                                     <div class="input-group-append">
                                         <button type="submit" class="btn btn-outline-success">Guardar</button>
@@ -63,17 +89,24 @@
                         {% endif %}
                     </div>
 
-                    <div class="table-responsive">
-                        <table id="savedResultsTable" class="table table-bordered table-striped table-sm dt-responsive nowrap" style="width:100%">
+                    <div class="table-wrapper table-wrapper--step">
+                        <div class="step-section-head">
+                            <div>
+                                <div class="step-section-title">Archivos</div>
+                                <div class="text-muted text-sm">Exporta Excel/PDF o imprime en 1 clic.</div>
+                            </div>
+                        </div>
+
+                        <table id="savedResultsTable" class="table table-bordered table-striped table-sm mb-0 cba-matrix" style="width:100%">
                             <thead>
                                 <tr>
-                                    <th>Nombre</th>
-                                    <th>Fecha</th>
-                                    <th>Ganador</th>
-                                    <th>Total de ventajas</th>
-                                    <th>Costo</th>
-                                    <th>Costo / Ventaja (S/ por punto)</th>
-                                    <th>Acciones</th>
+                                    <th class="cba-matrix__head cba-matrix__head--row">Nombre</th>
+                                    <th class="cba-matrix__head">Fecha</th>
+                                    <th class="cba-matrix__head">Ganador</th>
+                                    <th class="cba-matrix__head">Total de ventajas</th>
+                                    <th class="cba-matrix__head">Costo</th>
+                                    <th class="cba-matrix__head">Costo / Ventaja (S/ por punto)</th>
+                                    <th class="cba-matrix__head">Acciones</th>
                                 </tr>
                                 <tr>
                                     <th><input type="text" class="form-control form-control-sm" placeholder="Filtrar" /></th>
@@ -88,12 +121,12 @@
                             <tbody>
                                 {% for r in results %}
                                     <tr>
-                                        <td>{{ r.name }}</td>
-                                        <td data-order="{{ r.created_at|date:'Y-m-d H:i:s' }}">{{ r.created_at|date:"Y-m-d H:i" }}</td>
-                                        <td>{{ r.winner_name }}</td>
-                                        <td data-order="{{ r.winner_total|default_if_none:'' }}">{{ r.winner_total }}</td>
-                                        <td data-order="{% if r.winner_cost %}{{ r.winner_cost }}{% endif %}">{% if r.winner_cost %}{{ r.winner_cost }}{% else %}-{% endif %}</td>
-                                        <td data-order="{% if r.winner_ratio is not None %}{{ r.winner_ratio }}{% endif %}">{% if r.winner_ratio is not None %}S/ {{ r.winner_ratio|floatformat:4 }}{% else %}-{% endif %}</td>
+                                        <td class="cba-matrix__rowhead">{{ r.name }}</td>
+                                        <td class="cba-matrix__cell" data-order="{{ r.created_at|date:'Y-m-d H:i:s' }}">{{ r.created_at|date:"Y-m-d H:i" }}</td>
+                                        <td class="cba-matrix__cell">{{ r.winner_name }}</td>
+                                        <td class="cba-matrix__cell" data-order="{{ r.winner_total|default_if_none:'' }}">{{ r.winner_total }}</td>
+                                        <td class="cba-matrix__cell" data-order="{% if r.winner_cost %}{{ r.winner_cost }}{% endif %}">{% if r.winner_cost %}{{ r.winner_cost }}{% else %}-{% endif %}</td>
+                                        <td class="cba-matrix__cell" data-order="{% if r.winner_ratio is not None %}{{ r.winner_ratio }}{% endif %}">{% if r.winner_ratio is not None %}S/ {{ r.winner_ratio|floatformat:4 }}{% else %}-{% endif %}</td>
                                         <td class="text-center" style="white-space:nowrap;">
                                             <a class="btn btn-outline-primary btn-sm" href="{% url 'cba_saved_result_detail' r.id %}" title="Ver">Ver</a>
                                             {% if powerbi_dashboard_url %}
@@ -136,19 +169,73 @@
             if (!window.jQuery) return;
             const $ = window.jQuery;
 
+            function clamp(num, min, max) {
+                return Math.max(min, Math.min(max, num));
+            }
+
+            function positionColvisCollection(btnEl) {
+                if (!btnEl) return;
+
+                // Busca la colección visible (DataTables Buttons la crea al click)
+                const collections = Array.from(document.querySelectorAll('.dt-button-collection'));
+                if (collections.length === 0) return;
+                const collectionEl = collections.reverse().find((el) => {
+                    const cs = window.getComputedStyle(el);
+                    return cs && cs.display !== 'none' && cs.visibility !== 'hidden' && cs.opacity !== '0';
+                });
+                if (!collectionEl) return;
+
+                const btnRect = btnEl.getBoundingClientRect();
+                const pad = 8;
+
+                // Forzar overlay sobre cualquier contenedor (AdminLTE/Bootstrap)
+                collectionEl.style.position = 'fixed';
+                collectionEl.style.zIndex = '1060';
+                collectionEl.style.right = '';
+                collectionEl.style.bottom = '';
+
+                // Ajustes de tamaño para no salirse del viewport
+                const maxW = Math.max(240, window.innerWidth - pad * 2);
+                const maxH = Math.max(180, window.innerHeight - pad * 2);
+                collectionEl.style.maxWidth = `${maxW}px`;
+                collectionEl.style.maxHeight = `${maxH}px`;
+                collectionEl.style.overflowY = 'auto';
+
+                // Medir después de aplicar límites
+                const colRect = collectionEl.getBoundingClientRect();
+
+                // Abrir hacia la izquierda: alinear borde derecho con el borde derecho del botón
+                let left = btnRect.right - colRect.width;
+                let top = btnRect.bottom;
+
+                // Clamp horizontal dentro del viewport
+                left = clamp(left, pad, window.innerWidth - colRect.width - pad);
+
+                // Si se sale por abajo, abrir hacia arriba
+                if (top + colRect.height > window.innerHeight - pad) {
+                    top = btnRect.top - colRect.height;
+                }
+                top = clamp(top, pad, window.innerHeight - colRect.height - pad);
+
+                collectionEl.style.left = `${left}px`;
+                collectionEl.style.top = `${top}px`;
+            }
+
             $(function () {
                 const $table = $('#savedResultsTable');
                 if ($table.length === 0 || !$.fn.DataTable) return;
 
                 const dt = $table.DataTable({
-                    responsive: true,
+                    responsive: false,
                     autoWidth: false,
+                    scrollX: true,
+                    scrollCollapse: true,
                     pageLength: 10,
                     lengthMenu: [10, 25, 50, 100],
                     orderCellsTop: true,
                     order: [[1, 'desc']],
                     dom:
-                        "<'row align-items-center mb-2'<'col-sm-12 col-md-6'f><'col-sm-12 col-md-6 text-md-right'B>>" +
+                        "<'row align-items-center mb-2'<'col-sm-12 col-md-4'l><'col-sm-12 col-md-4'f><'col-sm-12 col-md-4 text-md-right'B>>" +
                         "<'row'<'col-sm-12'tr>>" +
                         "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
                     buttons: [
@@ -196,6 +283,22 @@
                 } catch (e) {
                     // no-op
                 }
+
+                // ColVis: abrir hacia la izquierda y mantener dentro del viewport
+                $(document).off('click.savedResultsColvis');
+                $(document).on('click.savedResultsColvis', '#savedResultsTable_wrapper .buttons-colvis', function () {
+                    const btn = this;
+                    window.setTimeout(function () {
+                        positionColvisCollection(btn);
+                    }, 0);
+                });
+
+                window.addEventListener('resize', function () {
+                    const btn = document.querySelector('#savedResultsTable_wrapper .buttons-colvis');
+                    if (!btn) return;
+                    positionColvisCollection(btn);
+                    try { dt.columns.adjust(); } catch (e) { /* no-op */ }
+                });
 
                 // Filtros por columna (segunda fila del thead)
                 $('#savedResultsTable thead tr:eq(1) th').each(function (i) {

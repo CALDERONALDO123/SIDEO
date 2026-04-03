@@ -1,200 +1,183 @@
 {% extends "cba_app/base.html" %}
 
+{% block title %}Mi perfil{% endblock %}
+
+{% block extra_head %}
+  {{ block.super }}
+  {# Tailwind scoped solo para este template, sin preflight para no romper AdminLTE/Bootstrap #}
+  <script>
+    window.tailwind = {
+      config: {
+        important: '.tw-scope',
+        corePlugins: { preflight: false },
+      }
+    }
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" />
+{% endblock %}
+
 {% block content %}
+  <div class="tw-scope">
+    <div class="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
+      <div class="mb-8">
+        <h1 class="text-2xl font-semibold text-gray-900 sm:text-3xl">Mi perfil</h1>
+        <p class="mt-2 text-sm text-gray-600">Actualiza tu información y tu foto.</p>
+      </div>
 
-    <section class="content pt-3">
-        <div class="container-fluid">
-            <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
-                <div class="mb-2 mb-sm-0">
-                    <div class="text-muted text-uppercase text-sm">Cuenta</div>
-                    <h1 class="h4 m-0">Perfil</h1>
-                    <div class="text-muted text-sm mt-1">Actualiza tu nombre y tu foto.</div>
-                </div>
+      {% if request.GET.saved == '1' %}
+        <div class="mb-6 flex items-center rounded-lg bg-green-50 p-4 text-sm text-green-800" role="alert">
+          <span class="font-medium">Listo:</span>&nbsp;Cambios guardados.
+        </div>
+      {% endif %}
+
+      {% if form.non_field_errors or photo_form.non_field_errors %}
+        <div class="mb-6 flex items-start rounded-lg bg-red-50 p-4 text-sm text-red-800" role="alert">
+          <div>
+            <div class="font-medium">Revisa los errores</div>
+            <div class="mt-1">
+              {% for e in form.non_field_errors %}<div>{{ e }}</div>{% endfor %}
+              {% for e in photo_form.non_field_errors %}<div>{{ e }}</div>{% endfor %}
             </div>
+          </div>
+        </div>
+      {% endif %}
 
-            {% if saved %}
-                <div class="alert alert-success">
-                    <i class="fas fa-check-circle mr-1"></i>
-                    Perfil actualizado correctamente.
-                </div>
+      <form method="post" enctype="multipart/form-data" id="photoForm" class="mb-8">
+        {% csrf_token %}
+        <input type="hidden" name="save_photo" value="1" />
+
+        <div class="flex flex-col items-center space-y-4">
+          <div class="relative h-40 w-40 group">
+            {% if user_profile.avatar_url %}
+              <img id="avatarPreview" src="{{ user_profile.avatar_url }}" alt="Avatar" class="h-40 w-40 rounded-full object-cover ring-4 ring-white shadow-2xl transition-transform duration-200 hover:scale-105" />
+              <div id="avatarPlaceholder" class="hidden"></div>
+            {% else %}
+              <div id="avatarPlaceholder" class="h-40 w-40 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white text-5xl font-bold ring-4 ring-white shadow-2xl transition-transform duration-200 hover:scale-105">
+                {{ request.user.username|slice:":1"|upper }}
+              </div>
+              <img id="avatarPreview" src="" alt="Avatar" class="hidden h-40 w-40 rounded-full object-cover ring-4 ring-white shadow-2xl transition-transform duration-200 hover:scale-105" />
             {% endif %}
 
-            <form method="post" enctype="multipart/form-data">
-                {% csrf_token %}
+            <label for="id_avatar" class="absolute bottom-2 right-2 bg-blue-600 text-white p-2.5 rounded-full shadow-md cursor-pointer transition opacity-0 group-hover:opacity-100 hover:bg-blue-700" title="Cambiar foto">
+              <span aria-hidden="true">📷</span>
+              <span class="sr-only">Cambiar foto</span>
+            </label>
 
-                {% if form.non_field_errors %}
-                    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
-                {% endif %}
+            {% if user_profile.avatar_url %}
+              <button type="button" id="deleteAvatarBtn" class="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full text-xs shadow-md transition opacity-0 group-hover:opacity-100 hover:bg-red-600" title="Eliminar foto">
+                <span aria-hidden="true">✕</span>
+                <span class="sr-only">Eliminar foto</span>
+              </button>
+            {% endif %}
+          </div>
 
-                {% if photo_form.non_field_errors %}
-                    <div class="alert alert-danger">{{ photo_form.non_field_errors }}</div>
-                {% endif %}
-
-                <div class="row">
-                    <div class="col-12 col-md-4">
-                        <div class="card card-primary card-outline">
-                            <div class="card-body box-profile">
-                                <div class="text-center">
-                                    <div class="position-relative d-inline-block">
-                                        <img
-                                            class="profile-user-img img-fluid img-circle elevation-2"
-                                            data-role="avatar-img"
-                                            src="{% if profile.avatar %}{{ profile.avatar.url }}{% if profile.updated_at %}?v={{ profile.updated_at|date:'U' }}{% endif %}{% else %}#{% endif %}"
-                                            alt="Foto de perfil"
-                                            {% if not profile.avatar %}style="display:none;"{% endif %}
-                                        >
-
-                                        <div
-                                            class="profile-user-img img-fluid img-circle elevation-2 bg-light {% if profile.avatar %}d-none{% else %}d-flex align-items-center justify-content-center{% endif %}"
-                                            data-role="avatar-placeholder"
-                                        >
-                                            <span class="text-muted text-sm">Sin foto</span>
-                                        </div>
-
-                                        <button
-                                            type="button"
-                                            class="btn btn-primary btn-sm position-absolute"
-                                            data-role="avatar-pick"
-                                            aria-label="Cambiar foto"
-                                            title="Cambiar foto"
-                                            style="right:-6px; bottom:-6px; border-radius:999px; width:34px; height:34px; padding:0; display:grid; place-items:center;"
-                                        >
-                                            <i class="fas fa-camera"></i>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <h3 class="profile-username text-center mt-3 mb-0">
-                                    {% if request.user.first_name or request.user.last_name %}
-                                        {{ request.user.first_name }} {{ request.user.last_name }}
-                                    {% else %}
-                                        {{ request.user.username }}
-                                    {% endif %}
-                                </h3>
-                                <p class="text-muted text-center mb-3">@{{ request.user.username }}</p>
-
-                                {{ photo_form.avatar }}
-                                <div class="text-muted text-sm" data-role="avatar-filename">{% if profile.avatar %}Foto actual{% else %}Sube una imagen (PNG/JPG){% endif %}</div>
-
-                                {% if photo_form.avatar.errors %}
-                                    <div class="text-danger text-sm mt-2">{{ photo_form.avatar.errors }}</div>
-                                {% endif %}
-
-                                {% if profile.avatar %}
-                                    <div class="form-check">
-                                        {{ photo_form.delete_avatar }}
-                                        <label class="form-check-label" for="{{ photo_form.delete_avatar.id_for_label }}">{{ photo_form.delete_avatar.label }}</label>
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-12 col-md-8">
-                        <div class="card">
-                            <div class="card-header">
-                                <h3 class="card-title m-0">Datos personales</h3>
-                            </div>
-                            <div class="card-body">
-                                <div class="form-group">
-                                    <label class="text-muted text-sm mb-1">Usuario</label>
-                                    <div class="input-group">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text"><i class="far fa-user"></i></span>
-                                        </div>
-                                        <input type="text" class="form-control" value="{{ request.user.username }}" readonly>
-                                    </div>
-                                </div>
-
-                                <div class="form-group">
-                                    <label class="text-muted text-sm mb-1">Correo</label>
-                                    <div class="input-group">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text"><i class="far fa-envelope"></i></span>
-                                        </div>
-                                        <input type="email" class="form-control" value="{% if request.user.email %}{{ request.user.email }}{% else %}(sin correo){% endif %}" readonly>
-                                    </div>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="{{ form.first_name.id_for_label }}" class="text-muted text-sm mb-1">{{ form.first_name.label }}</label>
-                                    <div class="input-group">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text"><i class="fas fa-id-card"></i></span>
-                                        </div>
-                                        {{ form.first_name }}
-                                    </div>
-                                    {% if form.first_name.errors %}
-                                        <div class="text-danger text-sm mt-2">{{ form.first_name.errors }}</div>
-                                    {% endif %}
-                                </div>
-
-                                <div class="form-group mb-0">
-                                    <label for="{{ form.last_name.id_for_label }}" class="text-muted text-sm mb-1">{{ form.last_name.label }}</label>
-                                    <div class="input-group">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text"><i class="fas fa-id-card"></i></span>
-                                        </div>
-                                        {{ form.last_name }}
-                                    </div>
-                                    {% if form.last_name.errors %}
-                                        <div class="text-danger text-sm mt-2">{{ form.last_name.errors }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <div class="card-footer d-flex justify-content-end" style="gap:8px;">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-save mr-1"></i> Guardar cambios
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </form>
+          <div class="text-center">
+            <div class="text-xl font-semibold text-gray-900">
+              {% if request.user.first_name or request.user.last_name %}
+                {{ request.user.first_name }} {{ request.user.last_name }}
+              {% else %}
+                {{ request.user.username }}
+              {% endif %}
+            </div>
+            <div class="mt-1 text-sm text-gray-500">{{ request.user.email|default:"" }}</div>
+          </div>
         </div>
-    </section>
+
+        {{ photo_form.avatar }}
+        {{ photo_form.delete_avatar }}
+
+        {% if photo_form.avatar.errors %}
+          <div class="mt-3 text-sm text-red-700">
+            {% for e in photo_form.avatar.errors %}<div>{{ e }}</div>{% endfor %}
+          </div>
+        {% endif %}
+      </form>
+
+      <div class="rounded-xl border border-gray-200 bg-white shadow">
+        <div class="p-6 sm:p-8">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 class="text-lg font-semibold text-gray-900">Información</h2>
+              <p class="mt-1 text-sm text-gray-600">Actualiza tu nombre.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <span class="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">@{{ request.user.username }}</span>
+              {% if request.user.email %}
+                <span class="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">{{ request.user.email }}</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <form method="post" class="mt-6" id="profileForm">
+            {% csrf_token %}
+
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label for="id_first_name" class="mb-2 block text-sm font-medium text-gray-900">Nombre</label>
+                {{ form.first_name }}
+                {% if form.first_name.errors %}
+                  <div class="mt-2 text-sm text-red-700">
+                    {% for e in form.first_name.errors %}<div>{{ e }}</div>{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div>
+                <label for="id_last_name" class="mb-2 block text-sm font-medium text-gray-900">Apellido</label>
+                {{ form.last_name }}
+                {% if form.last_name.errors %}
+                  <div class="mt-2 text-sm text-red-700">
+                    {% for e in form.last_name.errors %}<div>{{ e }}</div>{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="mt-8">
+              <button type="submit" name="save_profile" class="w-full sm:w-auto px-8 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg transition duration-200 focus:outline-none focus:ring-4 focus:ring-blue-300">
+                Guardar cambios
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
 {% endblock %}
 
 {% block extra_js %}
-    <script>
-        (function () {
-            function onReady(fn) {
-                if (document.readyState === 'complete' || document.readyState === 'interactive') fn();
-                else document.addEventListener('DOMContentLoaded', fn);
-            }
+  {{ block.super }}
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
+  <script>
+    (function () {
+      const fileInput = document.getElementById('id_avatar');
+      const avatarPreview = document.getElementById('avatarPreview');
+      const avatarPlaceholder = document.getElementById('avatarPlaceholder');
+      const photoForm = document.getElementById('photoForm');
+      const deleteBtn = document.getElementById('deleteAvatarBtn');
+      const deleteCheckbox = document.getElementById('id_delete_avatar');
 
-            onReady(function () {
-                var input = document.getElementById('{{ photo_form.avatar.id_for_label }}');
-                if (!input) return;
+      if (!fileInput || !avatarPreview) return;
 
-                var pickBtn = document.querySelector('[data-role="avatar-pick"]');
-                var img = document.querySelector('[data-role="avatar-img"]');
-                var placeholder = document.querySelector('[data-role="avatar-placeholder"]');
-                var filename = document.querySelector('[data-role="avatar-filename"]');
+      fileInput.addEventListener('change', function () {
+        const file = this.files && this.files[0];
+        if (!file) return;
 
-                if (pickBtn) {
-                    pickBtn.addEventListener('click', function () {
-                        input.click();
-                    });
-                }
+        const url = URL.createObjectURL(file);
+        avatarPreview.src = url;
+        avatarPreview.classList.remove('hidden');
+        if (avatarPlaceholder) avatarPlaceholder.classList.add('hidden');
 
-                input.addEventListener('change', function () {
-                    var f = input.files && input.files[0];
-                    if (filename) filename.textContent = f ? f.name : 'Sube una imagen (PNG/JPG)';
+        if (photoForm) photoForm.submit();
+      });
 
-                    if (!f) return;
-                    if (!img || !placeholder) return;
-
-                    try {
-                        var url = URL.createObjectURL(f);
-                        img.src = url;
-                        img.style.display = '';
-                        placeholder.style.display = 'none';
-                    } catch (e) {
-                        // noop
-                    }
-                });
-            });
-        })();
-    </script>
+      if (deleteBtn && deleteCheckbox && photoForm) {
+        deleteBtn.addEventListener('click', function () {
+          deleteCheckbox.checked = true;
+          photoForm.submit();
+        });
+      }
+    })();
+  </script>
 {% endblock %}

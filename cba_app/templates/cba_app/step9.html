@@ -1,19 +1,21 @@
 {% extends "cba_app/base.html" %}
 
-{% block body_class %}page-step page-step9{% endblock %}
+{% block body_class %}layout--panel page-step page-step9{% endblock %}
 
 {% block content %}
     <section class="content pt-3">
         <div class="container-fluid">
             <div class="card">
                 <div class="card-header">
-                    <div class="d-flex flex-column">
-                        <div class="text-muted text-uppercase text-sm">CBA · Paso 9</div>
-                        <h3 class="m-0">Total de ventajas por alternativa</h3>
-                        <div class="text-muted text-sm mt-2">Se suma la importancia del Paso 8 para cada postor.</div>
-                    </div>
-                    <div class="mt-2">
-                        {% include "cba_app/_step_progress.html" with current=9 total=10 percent=90 %}
+                    <div class="step-head">
+                        <div>
+                            <p class="step-head__eyebrow">CBA · Paso 9</p>
+                            <h3 class="step-head__title m-0">Total de ventajas por alternativa</h3>
+                            <p class="step-head__lede">Se suma la importancia del Paso 8 para cada postor.</p>
+                        </div>
+                        <div class="step-head__actions">
+                            {% include "cba_app/_step_progress.html" with current=9 total=10 percent=90 %}
+                        </div>
                     </div>
                 </div>
 
@@ -24,22 +26,33 @@
     <p class="text-muted">En este paso solo se suma la importancia de las ventajas del Paso 8 para cada alternativa.</p>
 
     <div class="table-wrapper table-wrapper--step" style="margin-top:16px;">
+        <div class="step-section-head">
+            <div>
+                <div class="step-section-title">Resumen</div>
+                <div class="text-muted text-sm">Alternativas: {{ totals|length }}</div>
+            </div>
+        </div>
+
         <div class="table-responsive">
-        <table class="table table-bordered table-striped table-sm mb-0">
-            <tr>
-                <th>Alternativa</th>
-                <th>Total de ventajas</th>
-            </tr>
+        <table id="cbaTotalsAdvantagesStep9" class="table table-bordered table-striped table-sm mb-0 cba-matrix" style="width:100%">
+            <thead>
+                <tr>
+                    <th class="cba-matrix__head cba-matrix__head--row">Alternativa</th>
+                    <th class="cba-matrix__head">Total de ventajas</th>
+                </tr>
+            </thead>
+            <tbody>
             {% for row in totals %}
-            <tr>
-                <td>{{ row.alternative.name }}</td>
-                <td>{{ row.total_importance }}</td>
-            </tr>
+                <tr>
+                    <td class="cba-matrix__rowhead">{{ row.alternative.name }}</td>
+                    <td class="cba-matrix__cell">{{ row.total_importance }}</td>
+                </tr>
             {% empty %}
-            <tr>
-                <td colspan="2">No hay datos de ventajas aún.</td>
-            </tr>
+                <tr>
+                    <td colspan="2">No hay datos de ventajas aún.</td>
+                </tr>
             {% endfor %}
+            </tbody>
         </table>
         </div>
     </div>

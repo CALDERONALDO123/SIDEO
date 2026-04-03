@@ -33,6 +33,7 @@ urlpatterns = [
     path("cuentas/salir/", views.cba_logout, name="cba_logout"),
     path("", views.cba_home, name="cba_home"),
     path("acerca/", views.cba_about, name="cba_about"),
+    path("privacidad/", views.cba_privacy, name="cba_privacy"),
     path("ai/decision/", ai.cba_ai_decision_assistant, name="cba_ai_decision_assistant"),
     path(
         "ai/suggest-scores/",

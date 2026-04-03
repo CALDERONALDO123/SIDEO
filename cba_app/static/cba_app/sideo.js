@@ -1286,4 +1286,114 @@
             }
         }
     })();
+
+    (function initAdminLTEPanelThemeToggle() {
+        if (typeof document === 'undefined') return;
+
+        const theme = SIDEO.theme || (SIDEO.theme = {});
+        const STORAGE_KEY = 'sideo:panel:sidebarTheme';
+
+        function safeGet(key) {
+            try {
+                return global.localStorage ? global.localStorage.getItem(key) : null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function safeSet(key, value) {
+            try {
+                if (!global.localStorage) return;
+                global.localStorage.setItem(key, value);
+            } catch (e) {
+                // ignore
+            }
+        }
+
+        function getSidebar() {
+            return document.querySelector('.main-sidebar');
+        }
+
+        function getToggle() {
+            return document.getElementById('sideoThemeToggle');
+        }
+
+        function apply(mode) {
+            const isLight = mode === 'light';
+            const isDark = !isLight;
+
+            // Tema del panel: oscuro SOLO en encabezado + sidebar.
+            // (No activamos `dark-mode` global de AdminLTE para mantener el contenido claro.)
+            document.body.classList.toggle('sideo-panel-dark', isDark);
+            document.body.classList.remove('dark-mode');
+
+            // AdminLTE: navbar
+            const navbar = document.querySelector('.main-header.navbar');
+            if (navbar) {
+                navbar.classList.toggle('navbar-dark', isDark);
+                navbar.classList.toggle('navbar-white', isLight);
+                navbar.classList.toggle('navbar-light', isLight);
+                navbar.classList.remove('navbar-gray-dark');
+            }
+
+            // AdminLTE: sidebar
+            const sidebar = getSidebar();
+            if (sidebar) {
+                sidebar.classList.toggle('sidebar-light-primary', isLight);
+                sidebar.classList.toggle('sidebar-dark-primary', isDark);
+                sidebar.classList.toggle('sidebar-light-navy', isLight);
+                sidebar.classList.toggle('sidebar-dark-navy', isDark);
+            }
+
+            const toggle = getToggle();
+            if (toggle) {
+                // aria-pressed = true cuando está en oscuro
+                toggle.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+                toggle.setAttribute('title', isDark ? 'Tema oscuro' : 'Tema claro');
+            }
+
+            // Recalcular offsets por si cambia el alto del navbar.
+            try {
+                if (utils && typeof utils.syncLayoutHeaderOffset === 'function') {
+                    utils.syncLayoutHeaderOffset();
+                }
+            } catch (e) {
+                // ignore
+            }
+        }
+
+        theme.getPanelTheme = function getPanelTheme() {
+            const saved = safeGet(STORAGE_KEY);
+            return (saved === 'light' || saved === 'dark') ? saved : 'dark';
+        };
+
+        theme.setPanelTheme = function setPanelTheme(mode) {
+            const next = (mode === 'light') ? 'light' : 'dark';
+            safeSet(STORAGE_KEY, next);
+            apply(next);
+        };
+
+        function init() {
+            const toggle = getToggle();
+            if (!toggle) {
+                // Si no hay botón, igual aplicamos el tema guardado.
+                apply(theme.getPanelTheme());
+                return;
+            }
+
+            apply(theme.getPanelTheme());
+
+            toggle.addEventListener('click', function () {
+                const current = theme.getPanelTheme();
+                const next = (current === 'light') ? 'dark' : 'light';
+                theme.setPanelTheme(next);
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    })();
 })(window);

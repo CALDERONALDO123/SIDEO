@@ -2,18 +2,26 @@
 
 {% block body_class %}page-step page-step2{% endblock %}
 
+{% block extra_head %}
+    {{ block.super }}
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap4.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap4.min.css">
+{% endblock %}
+
 {% block content %}
     <section class="content pt-3">
         <div class="container-fluid">
             <div class="card">
                 <div class="card-header">
-                    <div class="d-flex flex-column">
-                        <div class="text-muted text-uppercase text-sm">CBA · Paso 2</div>
-                        <h3 class="m-0">Factores de decisión</h3>
-                        <div class="text-muted text-sm mt-2">En este paso defines los factores (criterios) que usarás para comparar a los postores.</div>
-                    </div>
-                    <div class="mt-2">
-                        {% include "cba_app/_step_progress.html" with current=2 total=10 percent=20 %}
+                    <div class="step-head">
+                        <div>
+                            <p class="step-head__eyebrow">CBA · Paso 2</p>
+                            <h3 class="step-head__title m-0">Factores de decisión</h3>
+                            <p class="step-head__lede">En este paso defines los factores (criterios) que usarás para comparar a los postores.</p>
+                        </div>
+                        <div class="step-head__actions">
+                            {% include "cba_app/_step_progress.html" with current=2 total=10 percent=20 %}
+                        </div>
                     </div>
                 </div>
 
@@ -41,65 +49,7 @@
             </div>
         </section>
 
-        <div class="table-wrapper table-wrapper--step">
-            <div class="step-section-head">
-                <div class="step-section-title">Factores de decisión</div>
-            </div>
-
-            <form method="post" class="form-inline form-inline--step">
-                {% csrf_token %}
-                {{ form.name.label_tag }}
-                {{ form.name }}
-                <button type="submit" class="icon-button icon-button-add" title="Agregar factor">+</button>
-            </form>
-
-            <div class="table-responsive">
-            <table class="table table-bordered table-striped table-sm mb-0">
-                <tr>
-                    <th>#</th>
-                    <th>Nombre del factor</th>
-                    <th style="width:80px; text-align:center;">Acciones</th>
-                </tr>
-                {% for c in criteria %}
-                <tr>
-                    <td>{{ forloop.counter }}</td>
-                    <td>
-                        {% if editing_crit and editing_crit.id == c.id %}
-                            <form method="post" class="form-inline form-inline--step" style="gap:6px;">
-                                {% csrf_token %}
-                                <input type="hidden" name="update_id" value="{{ c.id }}">
-                                <input type="text" name="name" value="{{ c.name }}" class="form-control form-control-sm" autocomplete="off" />
-                                <button type="submit" class="icon-button icon-button-edit" title="Guardar cambios">&#10003;</button>
-                                <a href="{% url 'cba_step2' %}" class="icon-button icon-button-delete" title="Cancelar">&times;</a>
-                            </form>
-                        {% else %}
-                            {{ c.name }}
-                        {% endif %}
-                    </td>
-                    <td style="text-align:center; white-space:nowrap;">
-                        {% if not editing_crit or editing_crit.id != c.id %}
-                            <a href="{% url 'cba_step2' %}?edit={{ c.id }}" class="icon-button icon-button-edit" title="Editar">&#9998;</a>
-                        {% endif %}
-                        <form method="post" style="display:inline;">
-                            {% csrf_token %}
-                            <input type="hidden" name="delete_id" value="{{ c.id }}">
-                            <button type="submit" class="icon-button icon-button-delete" title="Eliminar">&times;</button>
-                        </form>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="3">No hay factores/criterios registrados aún.</td>
-                </tr>
-                {% endfor %}
-            </table>
-            </div>
-
-            <div class="step-nav">
-                <a href="{% url 'cba_step1' %}" class="btn btn-outline-secondary nav-prev">&larr; Paso anterior</a>
-                <a href="{% url 'cba_step3' %}" class="btn btn-primary nav-next">Siguiente &rsaquo;</a>
-            </div>
-        </div>
+        {% include "cba_app/_step2_criteria_panel.html" %}
                 </div>
             </div>
         </div>
@@ -247,6 +197,89 @@
                     if (status) status.textContent = (e && e.message) ? e.message : 'Error auditando factores.';
                 } finally {
                     btn.disabled = false;
+                }
+            });
+        })();
+    </script>
+{% endblock %}
+
+{% block extra_js %}
+    {{ block.super }}
+    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap4.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap4.min.js"></script>
+
+    <script>
+        (function initCbaStep2DataTable() {
+            function canInit() {
+                return !!(window.jQuery && window.jQuery.fn && window.jQuery.fn.DataTable);
+            }
+
+            function destroyIfNeeded() {
+                if (!canInit()) return;
+                var $ = window.jQuery;
+                var $table = $('#cbaCriteriaTable');
+                if ($table.length === 0) return;
+                if ($.fn.DataTable.isDataTable($table)) {
+                    $table.DataTable().destroy();
+                }
+            }
+
+            function init() {
+                if (!canInit()) return;
+                var $ = window.jQuery;
+                var $table = $('#cbaCriteriaTable');
+                if ($table.length === 0) return;
+
+                if ($.fn.DataTable.isDataTable($table)) return;
+
+                $table.DataTable({
+                    responsive: true,
+                    autoWidth: false,
+                    pageLength: 10,
+                    lengthMenu: [10, 25, 50, 100],
+                    order: [[0, 'asc']],
+                    columnDefs: [
+                        { targets: [2], orderable: false, searchable: false },
+                    ],
+                    language: {
+                        search: 'Buscar:',
+                        lengthMenu: 'Mostrar _MENU_',
+                        info: 'Mostrando _START_ a _END_ de _TOTAL_',
+                        infoEmpty: 'Sin resultados',
+                        emptyTable: 'No hay factores/criterios registrados aún.',
+                        zeroRecords: 'No hay coincidencias',
+                        paginate: { first: 'Primero', last: 'Último', next: 'Siguiente', previous: 'Anterior' },
+                    },
+                });
+            }
+
+            // Inicialización normal
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+
+            // Integración con HTMX: destruir antes del swap y recrear después
+            document.body.addEventListener('htmx:beforeSwap', function (evt) {
+                try {
+                    if (!evt || !evt.target) return;
+                    if (evt.target.id !== 'criteriaPanel') return;
+                    destroyIfNeeded();
+                } catch (e) {
+                    // no-op
+                }
+            });
+
+            document.body.addEventListener('htmx:afterSwap', function (evt) {
+                try {
+                    if (!evt || !evt.target) return;
+                    if (evt.target.id !== 'criteriaPanel') return;
+                    init();
+                } catch (e) {
+                    // no-op
                 }
             });
         })();
