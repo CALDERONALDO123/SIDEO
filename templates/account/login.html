@@ -26,8 +26,9 @@
         {{ redirect_field }}
         {% csrf_token %}
 
-        <div class="flex flex-col">
-          <a class="link self-end text-sm" href="{% url "account_reset_password" %}">¿Olvidaste tu contraseña?</a>
+        <div class="mt-2 flex items-center justify-between gap-3">
+          <span class="text-sm opacity-70">¿Olvidaste tu contraseña?</span>
+          <a class="link text-sm" href="{% url "account_reset_password" %}">Recuperar contraseña</a>
         </div>
       {% /form %}
     {% endif %}
