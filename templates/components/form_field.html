@@ -15,7 +15,7 @@
 
       <button
         type="button"
-        class="join-item btn btn-outline"
+        class="join-item btn btn-outline btn-primary"
         data-password-toggle="{{ field.id_for_label }}"
         data-show-text="Mostrar"
         data-hide-text="Ocultar"
@@ -33,9 +33,9 @@
       {% endif %}
     {% elif field.name == "login" %}
       {% if field.errors %}
-        {% render_field field placeholder="Tu usuario o correo" class="w-full input input-bordered text-primary input-error" %}
+        {% render_field field placeholder="nombre@dominio.com" class="w-full input input-bordered text-primary input-error" %}
       {% else %}
-        {% render_field field placeholder="Tu usuario o correo" class="w-full input input-bordered text-primary" %}
+        {% render_field field placeholder="nombre@dominio.com" class="w-full input input-bordered text-primary" %}
       {% endif %}
     {% else %}
       {% if field.errors %}

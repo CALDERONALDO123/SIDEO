@@ -13,6 +13,19 @@
   border-color: var(--color-accent-strong);
 }
 
+/* Botones outline en tono acento (p.ej. Mostrar/Ocultar contraseña) */
+.btn.btn-outline.btn-primary {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+  background: transparent;
+}
+
+.btn.btn-outline.btn-primary:hover {
+  color: #ffffff;
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
 .link {
   color: var(--color-accent);
 }
