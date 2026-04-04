@@ -45,7 +45,32 @@
   opacity: 0.6;
 }
 
-/* Login: evitar duplicado del link de reset que trae allauth-ui */
-[data-sideo-login] a.link.self-end.text-sm[href*="password/reset"] {
-  display: none;
+/* Toggle de contraseña: ojo minimalista dentro del input */
+.password-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #5f6b7a;
+  cursor: pointer;
+  z-index: 2;
+  transition: color 160ms ease;
+}
+
+.password-toggle:hover {
+  color: #344154;
+}
+
+.password-toggle:focus-visible {
+  outline: none;
+  color: #1f2b3d;
+}
+
+.password-toggle__icon {
+  display: block;
 }

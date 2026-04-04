@@ -308,8 +308,8 @@ ACCOUNT_EMAIL_VERIFICATION = (
 ACCOUNT_UNIQUE_EMAIL = True
 
 # allauth (nueva API)
-# Login directo por correo para todos los entornos.
-ACCOUNT_LOGIN_METHODS = {"email"}
+# Permitir inicio de sesión con usuario o correo.
+ACCOUNT_LOGIN_METHODS = {"username", "email"}
 
 ACCOUNT_SIGNUP_FIELDS = [
     "email*",

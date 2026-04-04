@@ -61,11 +61,27 @@
       (function () {
         function togglePassword(input, button) {
           if (!input) return;
+          var isPassword = input.getAttribute('type') === 'password';
+          var showPassword = isPassword;
+          input.setAttribute('type', showPassword ? 'text' : 'password');
+
+          var showLabel = button.getAttribute('data-show-label') || 'Mostrar contraseña';
+          var hideLabel = button.getAttribute('data-hide-label') || 'Ocultar contraseña';
+          button.setAttribute('aria-label', showPassword ? hideLabel : showLabel);
+          button.setAttribute('aria-pressed', showPassword ? 'true' : 'false');
+
+          var eyeOpen = button.querySelector('[data-eye-open]');
+          var eyeClosed = button.querySelector('[data-eye-closed]');
+
+          if (eyeOpen && eyeClosed) {
+            eyeOpen.style.display = showPassword ? 'none' : 'block';
+            eyeClosed.style.display = showPassword ? 'block' : 'none';
+            return;
+          }
+
           var showText = button.getAttribute('data-show-text') || 'Mostrar';
           var hideText = button.getAttribute('data-hide-text') || 'Ocultar';
-          var isPassword = input.getAttribute('type') === 'password';
-          input.setAttribute('type', isPassword ? 'text' : 'password');
-          button.textContent = isPassword ? hideText : showText;
+          button.textContent = showPassword ? hideText : showText;
         }
 
         document.addEventListener('click', function (ev) {

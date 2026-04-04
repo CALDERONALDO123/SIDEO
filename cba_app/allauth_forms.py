@@ -65,13 +65,12 @@ class AllauthLoginForm(LoginForm):
 
         login_field = self.fields.get("login")
         if login_field is not None:
-            login_field.label = "Correo electrónico"
-            login_field.widget.attrs.setdefault("placeholder", "nombre@dominio.com")
-            login_field.widget.attrs.setdefault("autocomplete", "email")
-            login_field.widget.attrs.setdefault("inputmode", "email")
+            login_field.label = "Usuario o correo"
+            login_field.widget.attrs.setdefault("placeholder", "usuario o nombre@dominio.com")
+            login_field.widget.attrs.setdefault("autocomplete", "username")
             login_field.widget.attrs.setdefault("autocapitalize", "none")
             login_field.widget.attrs.setdefault("spellcheck", "false")
-            login_field.help_text = "Ingresa el correo con el que te registraste."
+            login_field.help_text = "Ingresa tu usuario o correo electrónico."
 
         password_field = self.fields.get("password")
         if password_field is not None:
@@ -93,7 +92,7 @@ class AllauthLoginForm(LoginForm):
 
             login = Login(
                 user=user,
-                email=credentials.get("email"),
+                email=credentials.get("email") or getattr(user, "email", None),
                 email_verification=email_verification,
             )
             if flows.login.is_login_rate_limited(context.request, login):
