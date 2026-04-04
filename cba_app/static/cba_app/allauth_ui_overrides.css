@@ -44,3 +44,8 @@
 ::placeholder {
   opacity: 0.6;
 }
+
+/* Login: evitar duplicado del link de reset que trae allauth-ui */
+[data-sideo-login] a.link.self-end.text-sm[href*="password/reset"] {
+  display: none;
+}

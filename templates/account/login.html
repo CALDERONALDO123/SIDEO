@@ -6,6 +6,7 @@
 {% block head_title %}Ingresar — SIDEO{% endblock head_title %}
 
 {% block content %}
+  <div data-sideo-login>
   {% #container heading="Ingresar" %}
     {% if not SOCIALACCOUNT_ONLY %}
       <div class="py-3 text-sm opacity-80">
@@ -42,4 +43,5 @@
       {% include "socialaccount/snippets/login.html" with page_layout="entrance" %}
     {% endif %}
   {% /container %}
+  </div>
 {% endblock content %}
